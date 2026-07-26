@@ -63,7 +63,23 @@
   }
   .card.status-verde{border-left:4px solid var(--green);}
   .card.status-ambar{border-left:4px solid var(--amber);}
-  .card.status-rojo{border-left:4px solid var(--red);}
+  .card.status-rojo{border-left:4px solid var(--red);opacity:0.55;filter:grayscale(0.6);}
+  .card.status-rojo:hover{opacity:0.9;filter:grayscale(0.2);}
+  .card.status-rojo .card-name{text-decoration:line-through;text-decoration-color:var(--red);}
+  .card.status-rojo .card-review{background:#fbeaea;}
+
+  .card-name-row{display:flex;align-items:center;gap:10px;margin-bottom:2px;}
+  .status-badge{
+    display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+    padding:3px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:0.03em;
+  }
+  .status-badge .circle{width:8px;height:8px;border-radius:50%;}
+  .status-badge.verde{background:#e5f3ec;color:var(--green);}
+  .status-badge.verde .circle{background:var(--green);}
+  .status-badge.ambar{background:#fbeee0;color:#b5730f;}
+  .status-badge.ambar .circle{background:var(--amber);}
+  .status-badge.rojo{background:#fbeaea;color:var(--red);}
+  .status-badge.rojo .circle{background:var(--red);}
   .card.status-{border-left:4px solid var(--border);}
 
   .card-grid{display:grid;grid-template-columns:1.3fr 1fr;}
@@ -86,6 +102,22 @@
 
   .docs-links{margin-top:10px;font-size:12.5px;}
   .docs-links a{color:var(--navy);display:block;margin-top:4px;word-break:break-all;}
+
+  .notes-preview{
+    margin-top:16px;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;
+  }
+  .notes-preview .notes-label{
+    font-size:10.5px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
+    display:block;margin-bottom:6px;
+  }
+  .notes-preview.verde{background:#e5f3ec;color:#1d5c3c;}
+  .notes-preview.verde .notes-label{color:var(--green);}
+  .notes-preview.ambar{background:#fbeee0;color:#7a4d09;}
+  .notes-preview.ambar .notes-label{color:#b5730f;}
+  .notes-preview.rojo{background:#fbeaea;color:#8c2b2b;}
+  .notes-preview.rojo .notes-label{color:var(--red);}
+  .notes-preview.neutro{background:var(--bg);color:var(--muted);border:1px solid var(--border);}
+  .notes-preview.neutro .notes-label{color:var(--muted);}
 
   .review-label{font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:10px;}
   .semaforo{display:flex;gap:10px;margin-bottom:14px;}
@@ -212,7 +244,10 @@
       card.innerHTML = `
         <div class="card-grid">
           <div class="card-data">
-            <div class="card-name">${c['Nombre'] || 'Sin nombre'}</div>
+            <div class="card-name-row">
+              <div class="card-name">${c['Nombre'] || 'Sin nombre'}</div>
+              ${statusBadge(c['Semáforo'])}
+            </div>
             <div class="card-date">${formatDate(c['Fecha'])} · ${c['Situación laboral'] || '—'}</div>
             <div class="data-row"><span>Teléfono</span><span>${c['Teléfono'] || '—'}</span></div>
             <div class="data-row"><span>Email</span><span>${c['Email'] || '—'}</span></div>
@@ -222,6 +257,7 @@
             <div class="data-row"><span>Solvencia</span><span><span class="solvency-pill ${solvenciaClass}">${c['% Solvencia'] || '—'}</span></span></div>
             ${c['Presentación'] ? `<div class="data-row" style="display:block;margin-top:8px;"><span style="display:block;margin-bottom:4px;">Presentación</span><span style="text-align:left;font-weight:400;display:block;">${c['Presentación']}</span></div>` : ''}
             ${docsHtml ? `<div class="docs-links">${docsHtml}</div>` : ''}
+            ${notesPreview(c['Semáforo'], c['Notas Fernando'])}
           </div>
           <div class="card-review">
             <div class="review-label">Tu valoración</div>
@@ -266,6 +302,15 @@
             })
           });
           card.className = 'card status-' + selectedSemaforo;
+          const nameRow = card.querySelector('.card-name-row');
+          const oldBadge = nameRow.querySelector('.status-badge');
+          if(oldBadge) oldBadge.remove();
+          nameRow.insertAdjacentHTML('beforeend', statusBadge(selectedSemaforo));
+
+          const cardData = card.querySelector('.card-data');
+          const oldPreview = cardData.querySelector('.notes-preview');
+          if(oldPreview) oldPreview.remove();
+          cardData.insertAdjacentHTML('beforeend', notesPreview(selectedSemaforo, notas));
           saveStatus.style.display = 'block';
           setTimeout(()=> saveStatus.style.display = 'none', 2500);
         } catch(err){
@@ -291,6 +336,18 @@
   function toDownloadUrl(url){
     if(!url || !url.includes('/upload/')) return url;
     return url.replace('/upload/', '/upload/fl_attachment/');
+  }
+
+  function statusBadge(status){
+    const labels = { verde:'Adelante', ambar:'Dudas', rojo:'Rechazado' };
+    if(!status || !labels[status]) return '';
+    return `<span class="status-badge ${status}"><span class="circle"></span>${labels[status]}</span>`;
+  }
+
+  function notesPreview(status, notas){
+    if(!notas) return '';
+    const cls = (status && ['verde','ambar','rojo'].includes(status)) ? status : 'neutro';
+    return `<div class="notes-preview ${cls}"><span class="notes-label">Valoración de Fernando</span>${notas}</div>`;
   }
 
   document.querySelectorAll('.filter-btn').forEach(btn=>{
