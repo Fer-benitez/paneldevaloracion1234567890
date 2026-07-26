@@ -103,6 +103,17 @@
   .docs-links{margin-top:10px;font-size:12.5px;}
   .docs-links a{color:var(--navy);display:block;margin-top:4px;word-break:break-all;}
 
+  .checklist-section{margin-top:14px;}
+  .checklist-title{font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .checklist-grid{display:flex;flex-wrap:wrap;gap:7px;}
+  .checklist-chip{
+    display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    padding:6px 11px;border-radius:8px;
+  }
+  .checklist-chip.yes{background:#e5f3ec;color:#1d5c3c;}
+  .checklist-chip.no{background:#fbeaea;color:#8c2b2b;}
+  .checklist-chip .mark{font-weight:800;}
+
   .notes-preview{
     margin-top:16px;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.55;
   }
@@ -148,6 +159,34 @@
   .save-btn:hover{background:var(--navy-dark);}
   .save-status{font-size:11.5px;color:var(--green);margin-top:8px;text-align:center;display:none;}
 
+  .delete-btn{
+    width:100%;margin-top:10px;background:transparent;color:var(--red);border:1.5px solid var(--border);
+    padding:9px;border-radius:8px;font-weight:600;font-size:12.5px;cursor:pointer;
+    transition:all .2s var(--ease);font-family:'Inter',sans-serif;
+  }
+  .delete-btn:hover{border-color:var(--red);background:#fbeaea;}
+
+  .confirm-overlay{
+    display:none;position:fixed;inset:0;background:rgba(22,50,74,0.6);
+    z-index:200;align-items:center;justify-content:center;padding:24px;
+  }
+  .confirm-overlay.show{display:flex;}
+  .confirm-card{
+    background:var(--white);border-radius:14px;max-width:380px;width:100%;
+    padding:30px 28px;text-align:center;box-shadow:0 30px 60px -20px rgba(22,50,74,0.4);
+  }
+  .confirm-card h3{font-size:17px;color:var(--text);margin-bottom:8px;}
+  .confirm-card p{font-size:13.5px;color:var(--muted);line-height:1.55;margin-bottom:22px;}
+  .confirm-actions{display:flex;gap:10px;}
+  .confirm-actions button{
+    flex:1;padding:11px;border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer;
+    font-family:'Inter',sans-serif;border:1.5px solid var(--border);transition:all .2s var(--ease);
+  }
+  .confirm-cancel{background:var(--white);color:var(--text);}
+  .confirm-cancel:hover{border-color:var(--navy);}
+  .confirm-delete{background:var(--red);color:var(--white);border-color:var(--red);}
+  .confirm-delete:hover{background:#b83838;}
+
   @media (max-width:760px){
     .card-grid{grid-template-columns:1fr;}
     .card-data{border-right:none;border-bottom:1px solid var(--border);}
@@ -179,6 +218,17 @@
   <p id="emptyMsg">Todavía no hay ninguna ficha registrada.</p>
   <div id="cardsContainer"></div>
 </main>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-card">
+    <h3>¿Eliminar este interesado?</h3>
+    <p>Esta acción borra la fila de tu hoja de forma permanente. No se puede deshacer.</p>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" id="confirmCancelBtn">Cancelar</button>
+      <button class="confirm-delete" id="confirmDeleteBtn">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
 
 <script>
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkAXrG9lZo4BrebFSlBO7ZeCTZsUbQS7YU7-5avFoYUfMpVyDAn_TBK7O-jBqCKFQz/exec';
@@ -256,6 +306,7 @@
             <div class="data-row"><span>Ingresos / Renta</span><span>${c['Ingresos'] || '—'}€ / ${c['Renta'] || '—'}€</span></div>
             <div class="data-row"><span>Solvencia</span><span><span class="solvency-pill ${solvenciaClass}">${c['% Solvencia'] || '—'}</span></span></div>
             ${c['Presentación'] ? `<div class="data-row" style="display:block;margin-top:8px;"><span style="display:block;margin-bottom:4px;">Presentación</span><span style="text-align:left;font-weight:400;display:block;">${c['Presentación']}</span></div>` : ''}
+            ${checklistHtml(c['Checklist documentos'])}
             ${docsHtml ? `<div class="docs-links">${docsHtml}</div>` : ''}
             ${notesPreview(c['Semáforo'], c['Notas Fernando'])}
           </div>
@@ -269,6 +320,7 @@
             <textarea class="review-notes" placeholder="Impresión de la visita, banderas rojas, lo que consideres...">${c['Notas Fernando'] || ''}</textarea>
             <button class="save-btn">Guardar valoración</button>
             <p class="save-status">Guardado ✓</p>
+            <button class="delete-btn">Eliminar interesado</button>
           </div>
         </div>
       `;
@@ -320,6 +372,11 @@
         saveBtn.disabled = false;
       });
 
+      const deleteBtn = card.querySelector('.delete-btn');
+      deleteBtn.addEventListener('click', ()=>{
+        openConfirm(()=> deleteCandidate(c, card));
+      });
+
       container.appendChild(card);
     });
   }
@@ -350,6 +407,19 @@
     return `<div class="notes-preview ${cls}"><span class="notes-label">Valoración de Fernando</span>${notas}</div>`;
   }
 
+  function checklistHtml(raw){
+    if(!raw) return '';
+    const items = raw.split('|').map(pair=>{
+      const idx = pair.lastIndexOf(':');
+      return { label: pair.slice(0, idx), checked: pair.slice(idx+1) === '1' };
+    }).filter(item=> item.label);
+    if(items.length === 0) return '';
+    const chips = items.map(item=>
+      `<span class="checklist-chip ${item.checked ? 'yes' : 'no'}"><span class="mark">${item.checked ? '✓' : '✕'}</span>${item.label}</span>`
+    ).join('');
+    return `<div class="checklist-section"><span class="checklist-title">Documentos que dice tener listos</span><div class="checklist-grid">${chips}</div></div>`;
+  }
+
   document.querySelectorAll('.filter-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
@@ -360,6 +430,49 @@
   });
 
   document.getElementById('refreshBtn').addEventListener('click', loadCandidates);
+
+  // Delete confirmation modal
+  const confirmOverlay = document.getElementById('confirmOverlay');
+  const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+  let pendingAction = null;
+
+  function openConfirm(onConfirm){
+    pendingAction = onConfirm;
+    confirmOverlay.classList.add('show');
+  }
+  function closeConfirm(){
+    pendingAction = null;
+    confirmOverlay.classList.remove('show');
+  }
+  confirmCancelBtn.addEventListener('click', closeConfirm);
+  confirmOverlay.addEventListener('click', (e)=>{ if(e.target === confirmOverlay) closeConfirm(); });
+  confirmDeleteBtn.addEventListener('click', ()=>{
+    if(pendingAction) pendingAction();
+    closeConfirm();
+  });
+
+  async function deleteCandidate(c, card){
+    card.style.opacity = '0.4';
+    card.style.pointerEvents = 'none';
+    try{
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST',
+        mode:'no-cors',
+        body: JSON.stringify({
+          action:'eliminar_interesado',
+          nombre: c['Nombre'],
+          telefono: c['Teléfono']
+        })
+      });
+      card.remove();
+      allCandidates = allCandidates.filter(x => !(x['Nombre'] === c['Nombre'] && x['Teléfono'] === c['Teléfono']));
+    } catch(err){
+      card.style.opacity = '1';
+      card.style.pointerEvents = 'auto';
+      alert('No se pudo eliminar. Revisa tu conexión.');
+    }
+  }
 
   loadCandidates();
 </script>
