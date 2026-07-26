@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de valoración — Interesados | Fincas A.G. Núñez</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #346B93;
+    --navy-dark: #1F4460;
+    --navy-darker: #16324a;
+    --orange: #F5A623;
+    --white: #ffffff;
+    --bg: #f2f5f8;
+    --card: #ffffff;
+    --border: #dde4ea;
+    --text: #1f2d3a;
+    --muted: #64758a;
+    --green: #2e8b57;
+    --amber: #d99a1b;
+    --red: #d64545;
+    --ease: cubic-bezier(.22,.68,0,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:'Montserrat',sans-serif;font-weight:700;letter-spacing:-0.01em;}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 24px;}
+
+  header{background:var(--navy);padding:28px 0;}
+  header h1{color:var(--white);font-size:24px;}
+  header p{color:rgba(255,255,255,0.8);font-size:13.5px;margin-top:6px;}
+
+  main{padding:32px 0 80px;}
+
+  .toolbar{
+    display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
+    margin-bottom:24px;
+  }
+  .filter-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .filter-btn{
+    background:var(--white);border:1.5px solid var(--border);color:var(--muted);
+    font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer;
+    transition:all .2s var(--ease);font-family:'Inter',sans-serif;
+  }
+  .filter-btn:hover{border-color:var(--navy);}
+  .filter-btn.active{background:var(--navy);border-color:var(--navy);color:var(--white);}
+  .refresh-btn{
+    background:var(--white);border:1.5px solid var(--border);color:var(--navy-dark);
+    font-size:13px;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;
+    display:flex;align-items:center;gap:7px;font-family:'Inter',sans-serif;
+  }
+  .refresh-btn:hover{border-color:var(--navy);}
+
+  #loadingMsg, #emptyMsg{color:var(--muted);font-size:14px;padding:40px 0;text-align:center;display:none;}
+
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    margin-bottom:18px;overflow:hidden;box-shadow:0 2px 8px rgba(31,68,96,0.05);
+    transition:border-color .2s var(--ease);
+  }
+  .card.status-verde{border-left:4px solid var(--green);}
+  .card.status-ambar{border-left:4px solid var(--amber);}
+  .card.status-rojo{border-left:4px solid var(--red);}
+  .card.status-{border-left:4px solid var(--border);}
+
+  .card-grid{display:grid;grid-template-columns:1.3fr 1fr;}
+  .card-data{padding:22px 24px;border-right:1px solid var(--border);}
+  .card-review{padding:22px 24px;background:var(--bg);}
+
+  .card-name{font-size:19px;color:var(--navy-darker);margin-bottom:2px;}
+  .card-date{font-size:12px;color:var(--muted);margin-bottom:16px;}
+
+  .data-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13.5px;border-bottom:1px solid var(--bg);}
+  .data-row:last-child{border-bottom:none;}
+  .data-row span:first-child{color:var(--muted);}
+  .data-row span:last-child{color:var(--text);font-weight:600;text-align:right;}
+
+  .solvency-pill{
+    display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;
+  }
+  .solvency-pill.ok{background:#e5f3ec;color:var(--green);}
+  .solvency-pill.warn{background:#fbeee0;color:#b5730f;}
+
+  .docs-links{margin-top:10px;font-size:12.5px;}
+  .docs-links a{color:var(--navy);display:block;margin-top:4px;word-break:break-all;}
+
+  .review-label{font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:10px;}
+  .semaforo{display:flex;gap:10px;margin-bottom:14px;}
+  .sema-btn{
+    flex:1;padding:12px 8px;border-radius:8px;border:2px solid var(--border);background:var(--white);
+    cursor:pointer;text-align:center;font-size:12px;font-weight:700;transition:all .2s var(--ease);
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+  }
+  .sema-btn .circle{width:16px;height:16px;border-radius:50%;}
+  .sema-btn[data-val="verde"] .circle{background:var(--green);}
+  .sema-btn[data-val="ambar"] .circle{background:var(--amber);}
+  .sema-btn[data-val="rojo"] .circle{background:var(--red);}
+  .sema-btn.selected{border-color:var(--navy);background:#eaf1f6;}
+  .sema-btn:hover{border-color:var(--navy);}
+
+  .review-notes{
+    width:100%;background:var(--white);border:1.5px solid var(--border);border-radius:8px;
+    padding:10px 12px;font-family:'Inter',sans-serif;font-size:13.5px;color:var(--text);
+    min-height:80px;resize:vertical;margin-bottom:12px;
+  }
+  .review-notes:focus{outline:none;border-color:var(--navy);}
+
+  .save-btn{
+    width:100%;background:var(--navy);color:var(--white);border:none;padding:11px;
+    border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Inter',sans-serif;
+    transition:background .2s var(--ease);
+  }
+  .save-btn:hover{background:var(--navy-dark);}
+  .save-status{font-size:11.5px;color:var(--green);margin-top:8px;text-align:center;display:none;}
+
+  @media (max-width:760px){
+    .card-grid{grid-template-columns:1fr;}
+    .card-data{border-right:none;border-bottom:1px solid var(--border);}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Panel de valoración</h1>
+    <p>Interesados en alquiler — datos del cliente + tu criterio, lado a lado</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="toolbar">
+    <div class="filter-group">
+      <button class="filter-btn active" data-filter="todos">Todos</button>
+      <button class="filter-btn" data-filter="verde">🟢 Adelante</button>
+      <button class="filter-btn" data-filter="ambar">🟡 Dudas</button>
+      <button class="filter-btn" data-filter="rojo">🔴 Rechazar</button>
+      <button class="filter-btn" data-filter="">Sin valorar</button>
+    </div>
+    <button class="refresh-btn" id="refreshBtn">↻ Actualizar</button>
+  </div>
+
+  <p id="loadingMsg">Cargando interesados...</p>
+  <p id="emptyMsg">Todavía no hay ninguna ficha registrada.</p>
+  <div id="cardsContainer"></div>
+</main>
+
+<script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkAXrG9lZo4BrebFSlBO7ZeCTZsUbQS7YU7-5avFoYUfMpVyDAn_TBK7O-jBqCKFQz/exec';
+
+  let allCandidates = [];
+  let currentFilter = 'todos';
+
+  const container = document.getElementById('cardsContainer');
+  const loadingMsg = document.getElementById('loadingMsg');
+  const emptyMsg = document.getElementById('emptyMsg');
+
+  async function loadCandidates(){
+    loadingMsg.style.display = 'block';
+    emptyMsg.style.display = 'none';
+    container.innerHTML = '';
+    try{
+      const res = await fetch(APPS_SCRIPT_URL);
+      const json = await res.json();
+      loadingMsg.style.display = 'none';
+      if(json.success){
+        allCandidates = json.data.reverse(); // más recientes primero
+        renderCards();
+      } else {
+        emptyMsg.textContent = 'Error al cargar los datos.';
+        emptyMsg.style.display = 'block';
+      }
+    } catch(err){
+      loadingMsg.style.display = 'none';
+      emptyMsg.textContent = 'No se pudo conectar con la hoja. Revisa la URL del Apps Script.';
+      emptyMsg.style.display = 'block';
+    }
+  }
+
+  function renderCards(){
+    container.innerHTML = '';
+    const filtered = allCandidates.filter(c=>{
+      if(currentFilter === 'todos') return true;
+      return (c['Semáforo'] || '') === currentFilter;
+    });
+
+    if(filtered.length === 0){
+      emptyMsg.textContent = 'No hay interesados en este filtro.';
+      emptyMsg.style.display = 'block';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+
+    filtered.forEach(c=>{
+      const statusClass = 'status-' + (c['Semáforo'] || '');
+      const solvenciaVal = parseFloat(c['% Solvencia']);
+      const solvenciaClass = (!isNaN(solvenciaVal) && solvenciaVal <= 30) ? 'ok' : 'warn';
+
+      const docs = (c['Documentos'] || '').split('|').map(d=>d.trim()).filter(Boolean);
+      const docsHtml = docs.map(d=>{
+        const parts = d.split(': ');
+        const name = parts[0] || 'archivo';
+        const url = toDownloadUrl(parts[1] || parts[0]);
+        return `<a href="${url}" target="_blank" rel="noopener">⬇ ${name}</a>`;
+      }).join('');
+
+      const card = document.createElement('div');
+      card.className = 'card ' + statusClass;
+      card.innerHTML = `
+        <div class="card-grid">
+          <div class="card-data">
+            <div class="card-name">${c['Nombre'] || 'Sin nombre'}</div>
+            <div class="card-date">${formatDate(c['Fecha'])} · ${c['Situación laboral'] || '—'}</div>
+            <div class="data-row"><span>Teléfono</span><span>${c['Teléfono'] || '—'}</span></div>
+            <div class="data-row"><span>Email</span><span>${c['Email'] || '—'}</span></div>
+            <div class="data-row"><span>Personas / Mascotas</span><span>${c['Nº personas'] || '—'} · ${c['Mascotas'] || '—'}</span></div>
+            <div class="data-row"><span>Garantías</span><span>${c['Garantías'] || '—'}</span></div>
+            <div class="data-row"><span>Ingresos / Renta</span><span>${c['Ingresos'] || '—'}€ / ${c['Renta'] || '—'}€</span></div>
+            <div class="data-row"><span>Solvencia</span><span><span class="solvency-pill ${solvenciaClass}">${c['% Solvencia'] || '—'}</span></span></div>
+            ${c['Presentación'] ? `<div class="data-row" style="display:block;margin-top:8px;"><span style="display:block;margin-bottom:4px;">Presentación</span><span style="text-align:left;font-weight:400;display:block;">${c['Presentación']}</span></div>` : ''}
+            ${docsHtml ? `<div class="docs-links">${docsHtml}</div>` : ''}
+          </div>
+          <div class="card-review">
+            <div class="review-label">Tu valoración</div>
+            <div class="semaforo">
+              <button class="sema-btn ${c['Semáforo']==='verde'?'selected':''}" data-val="verde"><span class="circle"></span>Adelante</button>
+              <button class="sema-btn ${c['Semáforo']==='ambar'?'selected':''}" data-val="ambar"><span class="circle"></span>Dudas</button>
+              <button class="sema-btn ${c['Semáforo']==='rojo'?'selected':''}" data-val="rojo"><span class="circle"></span>Rechazar</button>
+            </div>
+            <textarea class="review-notes" placeholder="Impresión de la visita, banderas rojas, lo que consideres...">${c['Notas Fernando'] || ''}</textarea>
+            <button class="save-btn">Guardar valoración</button>
+            <p class="save-status">Guardado ✓</p>
+          </div>
+        </div>
+      `;
+
+      let selectedSemaforo = c['Semáforo'] || '';
+      const semaBtns = card.querySelectorAll('.sema-btn');
+      semaBtns.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          semaBtns.forEach(b=>b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedSemaforo = btn.dataset.val;
+        });
+      });
+
+      const saveBtn = card.querySelector('.save-btn');
+      const saveStatus = card.querySelector('.save-status');
+      saveBtn.addEventListener('click', async ()=>{
+        saveBtn.textContent = 'Guardando...';
+        saveBtn.disabled = true;
+        const notas = card.querySelector('.review-notes').value;
+        try{
+          await fetch(APPS_SCRIPT_URL, {
+            method:'POST',
+            mode:'no-cors',
+            body: JSON.stringify({
+              action:'actualizar_valoracion',
+              nombre: c['Nombre'],
+              telefono: c['Teléfono'],
+              semaforo: selectedSemaforo,
+              notas: notas
+            })
+          });
+          card.className = 'card status-' + selectedSemaforo;
+          saveStatus.style.display = 'block';
+          setTimeout(()=> saveStatus.style.display = 'none', 2500);
+        } catch(err){
+          alert('No se pudo guardar. Revisa tu conexión.');
+        }
+        saveBtn.textContent = 'Guardar valoración';
+        saveBtn.disabled = false;
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  function formatDate(val){
+    if(!val) return '—';
+    const d = new Date(val);
+    if(isNaN(d)) return val;
+    return d.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric'});
+  }
+
+  // Inserts Cloudinary's fl_attachment flag so the link downloads the file
+  // directly instead of opening it in the browser's viewer tab.
+  function toDownloadUrl(url){
+    if(!url || !url.includes('/upload/')) return url;
+    return url.replace('/upload/', '/upload/fl_attachment/');
+  }
+
+  document.querySelectorAll('.filter-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderCards();
+    });
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', loadCandidates);
+
+  loadCandidates();
+</script>
+
+</body>
+</html>
