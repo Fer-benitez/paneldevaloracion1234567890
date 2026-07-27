@@ -62,19 +62,56 @@
   /* ---- Tab F: formularios ---- */
   .section-desc{font-size:13.5px;color:var(--muted);margin-bottom:20px;}
   .cards-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:16px;}
-  .form-card{
-    background:var(--white);border:1px solid var(--border);border-left:4px solid var(--orange);
-    border-radius:10px;padding:20px;text-decoration:none;color:inherit;
-    transition:transform .2s var(--ease), box-shadow .2s var(--ease);display:block;
-  }
-  .form-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px -10px rgba(31,68,96,0.25);}
-  .form-card .name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:16px;color:var(--navy-darker);margin-bottom:4px;}
-  .form-card .hint{font-size:12.5px;color:var(--muted);}
   .empty-state{
     border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;
     color:var(--muted);font-size:13.5px;line-height:1.6;
   }
   .empty-state strong{color:var(--navy-dark);}
+
+  .add-piso-card{
+    background:var(--white);border:1px solid var(--border);border-radius:10px;
+    padding:20px;margin-bottom:24px;
+  }
+  .add-piso-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px;}
+  .add-piso-field label{
+    font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--navy-dark);margin-bottom:7px;display:block;
+  }
+  .add-piso-field input[type="text"]{
+    width:100%;background:var(--white);border:1.5px solid var(--border);color:var(--text);
+    padding:11px 13px;font-family:'Inter',sans-serif;font-size:14px;border-radius:8px;
+  }
+  .add-piso-field input[type="text"]:focus{outline:none;border-color:var(--navy);}
+  .add-piso-field input[type="file"]{font-size:13px;width:100%;}
+  .piso-upload-status{font-size:12.5px;color:var(--muted);margin-bottom:12px;min-height:16px;}
+  .piso-upload-status.ok{color:var(--green);}
+  .piso-upload-status.error{color:var(--red);}
+  .add-piso-btn{
+    background:var(--orange);color:var(--navy-darker);border:none;padding:12px 22px;
+    border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:'Montserrat',sans-serif;
+    transition:all .2s var(--ease);
+  }
+  .add-piso-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 18px -6px rgba(245,166,35,0.5);}
+  .add-piso-btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+  .form-card{
+    background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;
+    transition:transform .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .form-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px -10px rgba(31,68,96,0.25);}
+  .form-card .thumb{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--bg);}
+  .form-card .body{padding:14px 16px;}
+  .form-card .name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:15.5px;color:var(--navy-darker);margin-bottom:10px;}
+  .form-card .actions{display:flex;gap:8px;}
+  .form-card .actions a, .form-card .actions button{
+    flex:1;text-align:center;font-size:12.5px;font-weight:700;padding:9px;border-radius:7px;
+    text-decoration:none;cursor:pointer;font-family:'Inter',sans-serif;border:none;
+  }
+  .form-card .open-link{background:var(--navy);color:var(--white);}
+  .form-card .open-link:hover{background:var(--navy-dark);}
+  .form-card .copy-link{background:var(--bg);color:var(--navy-dark);border:1.5px solid var(--border)!important;}
+  .form-card .copy-link:hover{border-color:var(--navy)!important;}
+  .form-card .copy-link.copied{background:#e5f3ec;color:var(--green);border-color:var(--green)!important;}
 
   /* ---- Tab V: panel de valoración ---- */
   .toolbar{
@@ -136,6 +173,9 @@
 
   .card-name{font-size:19px;color:var(--navy-darker);margin-bottom:2px;}
   .card-date{font-size:12px;color:var(--muted);margin-bottom:16px;}
+  .card-piso{
+    font-size:13.5px;font-weight:700;color:var(--navy-dark);margin-top:-10px;margin-bottom:16px;
+  }
 
   .data-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:13.5px;border-bottom:1px solid var(--bg);}
   .data-row:last-child{border-bottom:none;}
@@ -287,31 +327,27 @@
 
   <!-- ==================== TAB F — FORMULARIOS POR PISO ==================== -->
   <div class="tab-panel active" id="tab-formularios">
-    <p class="section-desc">Un enlace distinto para cada propiedad — el interesado rellena la ficha y el piso queda identificado automáticamente.</p>
+    <p class="section-desc">Sube una foto y un nombre — se genera el link y la tarjeta solos. Copia el link para mandárselo al cliente de ese piso.</p>
 
-    <div class="cards-grid" id="formsGrid">
-
-      <!--
-        ============================================================
-        CÓMO AÑADIR UN PISO NUEVO:
-        Copia el bloque de abajo (desde <a class="form-card" hasta </a>),
-        pégalo justo antes de este comentario, y cambia dos cosas:
-          1. El texto "Nombre del piso" por el nombre real (ej. "Aribau")
-          2. El "?piso=NombrePiso" en el href por el mismo nombre, sin espacios
-             (ej. ?piso=Aribau — si el nombre lleva espacio, usa %20, ej. ?piso=Calle%20Duero)
-
-        <a class="form-card" href="ficha-interesado.html?piso=NombrePiso">
-          <div class="name">Nombre del piso</div>
-          <div class="hint">Abrir formulario →</div>
-        </a>
-        ============================================================
-      -->
-
+    <div class="add-piso-card">
+      <div class="add-piso-row">
+        <div class="add-piso-field">
+          <label>Nombre del piso</label>
+          <input type="text" id="nuevoPisoNombre" placeholder="Ej. Calle Duero">
+        </div>
+        <div class="add-piso-field">
+          <label>Foto del piso</label>
+          <input type="file" id="nuevoPisoFoto" accept="image/*">
+        </div>
+      </div>
+      <div id="pisoUploadStatus" class="piso-upload-status"></div>
+      <button id="addPisoBtn" class="add-piso-btn" disabled>Añadir formulario</button>
     </div>
 
-    <div class="empty-state" id="emptyForms">
-      Todavía no has añadido ningún piso.<br>
-      Abre el código de esta página y sigue las instrucciones comentadas junto a <strong>TAB F</strong> para añadir tu primera tarjeta.
+    <p id="loadingPisos" class="section-desc">Cargando pisos...</p>
+    <div class="cards-grid" id="formsGrid"></div>
+    <div class="empty-state" id="emptyForms" style="display:none;">
+      Todavía no has añadido ningún piso. Sube una foto y un nombre arriba para crear el primero.
     </div>
   </div>
 
@@ -356,6 +392,8 @@
 </footer>
 
 <script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwJe2nw_bpxIqsZKvW3mj1eMkG4OkTSPYjrkD6BvPbXze5Q1z0e90kUMqcsB-k-hlgMw/exec';
+
   // ---- Simple access gate (deterrent, not real security) ----
   // Change this password to whatever you like — it lives only in this file.
   const GATE_PASSWORD = 'XX2123?';
@@ -394,15 +432,124 @@
     });
   });
 
-  // ---- Tab F: show empty-state only when there are no form cards yet ----
+  // ---- Tab F: dynamic property cards ----
+  const CLOUDINARY_CLOUD_NAME = 'do9fo5gg';
+  const CLOUDINARY_UPLOAD_PRESET = 'documentos_alquiler';
+
+  const nuevoPisoNombre = document.getElementById('nuevoPisoNombre');
+  const nuevoPisoFoto = document.getElementById('nuevoPisoFoto');
+  const pisoUploadStatus = document.getElementById('pisoUploadStatus');
+  const addPisoBtn = document.getElementById('addPisoBtn');
   const formsGrid = document.getElementById('formsGrid');
   const emptyForms = document.getElementById('emptyForms');
-  if(formsGrid.querySelectorAll('.form-card').length > 0){
-    emptyForms.style.display = 'none';
+  const loadingPisos = document.getElementById('loadingPisos');
+
+  let uploadedImageUrl = '';
+
+  nuevoPisoFoto.addEventListener('change', ()=>{
+    const file = nuevoPisoFoto.files[0];
+    if(!file) return;
+    uploadedImageUrl = '';
+    addPisoBtn.disabled = true;
+    pisoUploadStatus.textContent = 'Subiendo foto...';
+    pisoUploadStatus.className = 'piso-upload-status';
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/auto/upload', { method:'POST', body: fd })
+      .then(res=> res.json())
+      .then(data=>{
+        if(data.secure_url){
+          uploadedImageUrl = data.secure_url;
+          pisoUploadStatus.textContent = 'Foto subida ✓';
+          pisoUploadStatus.className = 'piso-upload-status ok';
+          checkAddPisoReady();
+        } else {
+          pisoUploadStatus.textContent = 'Error al subir la foto.';
+          pisoUploadStatus.className = 'piso-upload-status error';
+        }
+      })
+      .catch(()=>{
+        pisoUploadStatus.textContent = 'Error al subir la foto.';
+        pisoUploadStatus.className = 'piso-upload-status error';
+      });
+  });
+
+  nuevoPisoNombre.addEventListener('input', checkAddPisoReady);
+  function checkAddPisoReady(){
+    addPisoBtn.disabled = !(nuevoPisoNombre.value.trim() && uploadedImageUrl);
   }
 
+  addPisoBtn.addEventListener('click', async ()=>{
+    const nombre = nuevoPisoNombre.value.trim();
+    if(!nombre || !uploadedImageUrl) return;
+    const link = 'ficha-interesado.html?piso=' + encodeURIComponent(nombre) + '&img=' + encodeURIComponent(uploadedImageUrl);
+
+    addPisoBtn.disabled = true;
+    addPisoBtn.textContent = 'Añadiendo...';
+    try{
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST',
+        mode:'no-cors',
+        body: JSON.stringify({ action:'nuevo_piso', piso: nombre, imagen: uploadedImageUrl, link: link })
+      });
+      nuevoPisoNombre.value = '';
+      nuevoPisoFoto.value = '';
+      uploadedImageUrl = '';
+      pisoUploadStatus.textContent = '';
+      await loadPisos();
+    } catch(err){
+      alert('No se pudo añadir el piso. Revisa tu conexión.');
+    }
+    addPisoBtn.textContent = 'Añadir formulario';
+    addPisoBtn.disabled = true;
+  });
+
+  async function loadPisos(){
+    loadingPisos.style.display = 'block';
+    formsGrid.innerHTML = '';
+    emptyForms.style.display = 'none';
+    try{
+      const res = await fetch(APPS_SCRIPT_URL + '?tipo=pisos');
+      const json = await res.json();
+      loadingPisos.style.display = 'none';
+      if(json.success && json.data.length > 0){
+        formsGrid.innerHTML = json.data.reverse().map(p => `
+          <div class="form-card">
+            ${p['Imagen'] ? `<img class="thumb" src="${p['Imagen']}" alt="${p['Piso']}">` : ''}
+            <div class="body">
+              <div class="name">${p['Piso'] || 'Sin nombre'}</div>
+              <div class="actions">
+                <a class="open-link" href="${p['Link']}" target="_blank" rel="noopener">Abrir</a>
+                <button class="copy-link" data-link="${p['Link']}">Copiar link</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+        formsGrid.querySelectorAll('.copy-link').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            navigator.clipboard.writeText(btn.dataset.link).then(()=>{
+              const original = btn.textContent;
+              btn.textContent = 'Copiado ✓';
+              btn.classList.add('copied');
+              setTimeout(()=>{ btn.textContent = original; btn.classList.remove('copied'); }, 2000);
+            });
+          });
+        });
+      } else {
+        emptyForms.style.display = 'block';
+      }
+    } catch(err){
+      loadingPisos.style.display = 'none';
+      emptyForms.textContent = 'No se pudo conectar con la hoja.';
+      emptyForms.style.display = 'block';
+    }
+  }
+  loadPisos();
+
   // ---- Tab V: valuation panel logic ----
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwJe2nw_bpxIqsZKvW3mj1eMkG4OkTSPYjrkD6BvPbXze5Q1z0e90kUMqcsB-k-hlgMw/exec';
 
   let allCandidates = [];
   let currentFilter = 'todos';
@@ -486,7 +633,8 @@
               <div class="card-name">${c['Nombre'] || 'Sin nombre'}</div>
               ${statusBadge(c['Semáforo'])}
             </div>
-            <div class="card-date">${formatDate(c['Fecha'])} · ${c['Situación laboral'] || '—'}${c['Piso'] ? ' · <strong>' + c['Piso'] + '</strong>' : ''}</div>
+            <div class="card-date">${formatDate(c['Fecha'])} · ${c['Situación laboral'] || '—'}</div>
+            ${c['Piso'] ? `<div class="card-piso">📍 ${c['Piso']}</div>` : ''}
             <div class="data-row"><span>Teléfono</span><span>${c['Teléfono'] || '—'}</span></div>
             <div class="data-row"><span>Email</span><span>${c['Email'] || '—'}</span></div>
             <div class="data-row"><span>Personas / Mascotas</span><span>${c['Nº personas'] || '—'} · ${c['Mascotas'] || '—'}</span></div>
