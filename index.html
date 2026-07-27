@@ -93,6 +93,7 @@
   }
   .add-piso-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 18px -6px rgba(245,166,35,0.5);}
   .add-piso-btn:disabled{opacity:0.45;cursor:not-allowed;}
+  .piso-hint{font-size:12px;color:var(--muted);margin-top:8px;}
 
   .form-card{
     background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;
@@ -112,6 +113,12 @@
   .form-card .copy-link{background:var(--bg);color:var(--navy-dark);border:1.5px solid var(--border)!important;}
   .form-card .copy-link:hover{border-color:var(--navy)!important;}
   .form-card .copy-link.copied{background:#e5f3ec;color:var(--green);border-color:var(--green)!important;}
+  .delete-piso-btn{
+    width:100%;margin-top:8px;background:transparent;color:var(--red);border:1.5px solid var(--border);
+    padding:8px;border-radius:7px;font-weight:600;font-size:12px;cursor:pointer;
+    transition:all .2s var(--ease);font-family:'Inter',sans-serif;
+  }
+  .delete-piso-btn:hover{border-color:var(--red);background:#fbeaea;}
 
   /* ---- Tab V: panel de valoración ---- */
   .toolbar{
@@ -327,7 +334,7 @@
 
   <!-- ==================== TAB F — FORMULARIOS POR PISO ==================== -->
   <div class="tab-panel active" id="tab-formularios">
-    <p class="section-desc">Sube una foto y un nombre — se genera el link y la tarjeta solos. Copia el link para mandárselo al cliente de ese piso.</p>
+    <p class="section-desc"><strong>Esto es solo para ti y tu colaborador</strong> — el cliente nunca ve esta página. Cada piso tiene su propio formulario, diseñado aparte y publicado en su propia URL. Aquí simplemente los registras para llevar el control: cuántos formularios hay, quién los ha rellenado, etc.</p>
 
     <div class="add-piso-card">
       <div class="add-piso-row">
@@ -340,14 +347,19 @@
           <input type="file" id="nuevoPisoFoto" accept="image/*">
         </div>
       </div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Link del formulario (el que ya has publicado en GitHub)</label>
+        <input type="text" id="nuevoPisoLink" placeholder="https://fer-benitez.github.io/nombre-del-repo/">
+      </div>
       <div id="pisoUploadStatus" class="piso-upload-status"></div>
-      <button id="addPisoBtn" class="add-piso-btn" disabled>Añadir formulario</button>
+      <button id="addPisoBtn" class="add-piso-btn" disabled>Añadir a Gestión</button>
+      <p class="piso-hint" id="pisoHint">Escribe el nombre, pega el link y sube una foto para poder añadirlo.</p>
     </div>
 
     <p id="loadingPisos" class="section-desc">Cargando pisos...</p>
     <div class="cards-grid" id="formsGrid"></div>
     <div class="empty-state" id="emptyForms" style="display:none;">
-      Todavía no has añadido ningún piso. Sube una foto y un nombre arriba para crear el primero.
+      Todavía no has añadido ningún piso. Escribe un nombre y sube una foto arriba para crear el primero.
     </div>
   </div>
 
@@ -376,8 +388,8 @@
 
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-card">
-    <h3>¿Eliminar este interesado?</h3>
-    <p>Esta acción borra la fila de tu hoja de forma permanente. No se puede deshacer.</p>
+    <h3 id="confirmTitle">¿Eliminar este interesado?</h3>
+    <p id="confirmText">Esta acción borra la fila de tu hoja de forma permanente. No se puede deshacer.</p>
     <div class="confirm-actions">
       <button class="confirm-cancel" id="confirmCancelBtn">Cancelar</button>
       <button class="confirm-delete" id="confirmDeleteBtn">Sí, eliminar</button>
@@ -478,14 +490,31 @@
   });
 
   nuevoPisoNombre.addEventListener('input', checkAddPisoReady);
+  const nuevoPisoLink = document.getElementById('nuevoPisoLink');
+  nuevoPisoLink.addEventListener('input', checkAddPisoReady);
+  const pisoHint = document.getElementById('pisoHint');
+
   function checkAddPisoReady(){
-    addPisoBtn.disabled = !(nuevoPisoNombre.value.trim() && uploadedImageUrl);
+    const nombre = nuevoPisoNombre.value.trim();
+    const link = nuevoPisoLink.value.trim();
+    const ready = !!(nombre && link && uploadedImageUrl);
+    addPisoBtn.disabled = !ready;
+
+    if(ready){
+      pisoHint.textContent = '';
+    } else {
+      const faltan = [];
+      if(!nombre) faltan.push('el nombre');
+      if(!link) faltan.push('el link');
+      if(!uploadedImageUrl) faltan.push('la foto');
+      pisoHint.textContent = 'Falta ' + faltan.join(', ') + '.';
+    }
   }
 
   addPisoBtn.addEventListener('click', async ()=>{
     const nombre = nuevoPisoNombre.value.trim();
-    if(!nombre || !uploadedImageUrl) return;
-    const link = 'ficha-interesado.html?piso=' + encodeURIComponent(nombre) + '&img=' + encodeURIComponent(uploadedImageUrl);
+    const link = nuevoPisoLink.value.trim();
+    if(!nombre || !link || !uploadedImageUrl) return;
 
     addPisoBtn.disabled = true;
     addPisoBtn.textContent = 'Añadiendo...';
@@ -496,14 +525,16 @@
         body: JSON.stringify({ action:'nuevo_piso', piso: nombre, imagen: uploadedImageUrl, link: link })
       });
       nuevoPisoNombre.value = '';
+      nuevoPisoLink.value = '';
       nuevoPisoFoto.value = '';
       uploadedImageUrl = '';
       pisoUploadStatus.textContent = '';
+      pisoHint.textContent = 'Escribe el nombre, pega el link y sube una foto para poder añadirlo.';
       await loadPisos();
     } catch(err){
       alert('No se pudo añadir el piso. Revisa tu conexión.');
     }
-    addPisoBtn.textContent = 'Añadir formulario';
+    addPisoBtn.textContent = 'Añadir a Gestión';
     addPisoBtn.disabled = true;
   });
 
@@ -525,6 +556,7 @@
                 <a class="open-link" href="${p['Link']}" target="_blank" rel="noopener">Abrir</a>
                 <button class="copy-link" data-link="${p['Link']}">Copiar link</button>
               </div>
+              <button class="delete-piso-btn" data-piso="${p['Piso']}" data-link="${p['Link']}">Eliminar formulario</button>
             </div>
           </div>
         `).join('');
@@ -536,6 +568,12 @@
               btn.classList.add('copied');
               setTimeout(()=>{ btn.textContent = original; btn.classList.remove('copied'); }, 2000);
             });
+          });
+        });
+        formsGrid.querySelectorAll('.delete-piso-btn').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const card = btn.closest('.form-card');
+            openConfirm(()=> deletePiso(btn.dataset.piso, btn.dataset.link, card), '¿Eliminar este formulario?', 'Se quitará de Gestión (no borra el repo de GitHub donde está publicado). No se puede deshacer.');
           });
         });
       } else {
@@ -771,8 +809,10 @@
   const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
   let pendingAction = null;
 
-  function openConfirm(onConfirm){
+  function openConfirm(onConfirm, title, text){
     pendingAction = onConfirm;
+    document.getElementById('confirmTitle').textContent = title || '¿Eliminar este interesado?';
+    document.getElementById('confirmText').textContent = text || 'Esta acción borra la fila de tu hoja de forma permanente. No se puede deshacer.';
     confirmOverlay.classList.add('show');
   }
   function closeConfirm(){
@@ -801,6 +841,26 @@
       });
       card.remove();
       allCandidates = allCandidates.filter(x => !(x['Nombre'] === c['Nombre'] && x['Teléfono'] === c['Teléfono']));
+    } catch(err){
+      card.style.opacity = '1';
+      card.style.pointerEvents = 'auto';
+      alert('No se pudo eliminar. Revisa tu conexión.');
+    }
+  }
+
+  async function deletePiso(piso, link, card){
+    card.style.opacity = '0.4';
+    card.style.pointerEvents = 'none';
+    try{
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST',
+        mode:'no-cors',
+        body: JSON.stringify({ action:'eliminar_piso', piso: piso, link: link })
+      });
+      card.remove();
+      if(formsGrid.querySelectorAll('.form-card').length === 0){
+        emptyForms.style.display = 'block';
+      }
     } catch(err){
       card.style.opacity = '1';
       card.style.pointerEvents = 'auto';
