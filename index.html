@@ -314,6 +314,37 @@
   .confirm-delete{background:var(--red);color:var(--white);border-color:var(--red);}
   .confirm-delete:hover{background:#b83838;}
 
+  .reco-detail-overlay{
+    display:none;position:fixed;inset:0;background:rgba(22,50,74,0.6);
+    z-index:210;align-items:center;justify-content:center;padding:20px;
+  }
+  .reco-detail-overlay.show{display:flex;}
+  .reco-detail-card{
+    background:var(--white);border-radius:14px;max-width:560px;width:100%;
+    max-height:85vh;overflow-y:auto;padding:32px 30px;position:relative;
+  }
+  .reco-detail-close{
+    position:absolute;top:16px;right:16px;background:var(--bg);border:none;
+    width:32px;height:32px;border-radius:50%;font-size:15px;color:var(--muted);cursor:pointer;
+  }
+  .reco-detail-close:hover{background:var(--border);color:var(--text);}
+  .reco-detail-card h2{font-size:20px;color:var(--navy-darker);margin-bottom:2px;padding-right:36px;}
+  .reco-detail-subtitle{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .reco-detail-group{margin-bottom:18px;}
+  .reco-detail-group-title{
+    font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--navy);margin-bottom:10px;
+  }
+  .reco-detail-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13.5px;border-bottom:1px solid var(--bg);}
+  .reco-detail-row:last-child{border-bottom:none;}
+  .reco-detail-row span:first-child{color:var(--muted);}
+  .reco-detail-row span:last-child{color:var(--text);font-weight:600;text-align:right;}
+  .reco-detail-notes{
+    background:var(--bg);border-radius:8px;padding:14px 16px;font-size:13.5px;
+    color:var(--text);line-height:1.6;white-space:pre-wrap;
+  }
+  .reco-detail-photos a{color:var(--navy);display:block;margin-top:6px;font-size:13px;}
+
   @media (max-width:760px){
     .card-grid{grid-template-columns:1fr;}
     .card-data{border-right:none;border-bottom:1px solid var(--border);}
@@ -547,6 +578,16 @@
     </div>
   </div>
 </div>
+
+<div class="reco-detail-overlay" id="recoDetailOverlay">
+  <div class="reco-detail-card">
+    <button class="reco-detail-close" id="recoDetailClose">✕</button>
+    <h2 id="recoDetailTitle">Dirección</h2>
+    <p id="recoDetailSubtitle" class="reco-detail-subtitle"></p>
+    <div id="recoDetailBody" class="reco-detail-body"></div>
+  </div>
+</div>
+
 
 <footer>
   <div class="wrap">
@@ -1141,7 +1182,8 @@
       const json = await res.json();
       loadingReco.style.display = 'none';
       if(json.success && json.data.length > 0){
-        recoGrid.innerHTML = json.data.reverse().map(r=>{
+        recoGrid.innerHTML = '';
+        json.data.reverse().forEach(r=>{
           const fotos = (r['Fotos'] || '').split('|').map(f=>f.trim()).filter(Boolean);
           const fotosHtml = fotos.map(f=>{
             const parts = f.split(': ');
@@ -1149,26 +1191,34 @@
             return `<a href="${url}" target="_blank" rel="noopener">⬇ ${parts[0]}</a>`;
           }).join('');
           const fecha = r['Fecha'] ? formatDate(r['Fecha']) : '—';
-          return `
-            <div class="form-card">
-              <div class="body">
-                <div class="name">${r['Dirección'] || 'Sin dirección'}</div>
-                <div class="card-date" style="margin-bottom:10px;">${fecha} · ${r['Estado'] || '—'} · ${r['Habitaciones'] || '—'} hab.</div>
-                ${fotosHtml ? `<div class="reco-photo-list">${fotosHtml}</div>` : ''}
-                <button class="delete-piso-btn" data-direccion="${r['Dirección']}" data-fecha="${r['Fecha']}">Eliminar reconocimiento</button>
-              </div>
+
+          const card = document.createElement('div');
+          card.className = 'form-card';
+          card.style.cursor = 'pointer';
+          card.innerHTML = `
+            <div class="body">
+              <div class="name">${r['Dirección'] || 'Sin dirección'}</div>
+              <div class="card-date" style="margin-bottom:10px;">${fecha} · ${r['Estado'] || '—'} · ${r['Habitaciones'] || '—'} hab.</div>
+              ${fotosHtml ? `<div class="reco-photo-list">${fotosHtml}</div>` : ''}
+              <button class="delete-piso-btn">Eliminar reconocimiento</button>
             </div>
           `;
-        }).join('');
-        recoGrid.querySelectorAll('.delete-piso-btn').forEach(btn=>{
-          btn.addEventListener('click', ()=>{
-            const card = btn.closest('.form-card');
+
+          card.addEventListener('click', (e)=>{
+            if(e.target.closest('a') || e.target.closest('.delete-piso-btn')) return;
+            openRecoDetail(r);
+          });
+
+          card.querySelector('.delete-piso-btn').addEventListener('click', (e)=>{
+            e.stopPropagation();
             openConfirm(
-              ()=> deleteReconocimiento(btn.dataset.direccion, btn.dataset.fecha, card),
+              ()=> deleteReconocimiento(r['Dirección'], r['Fecha'], card),
               '¿Eliminar este reconocimiento?',
               'Se borra de tu hoja de forma permanente. No se puede deshacer.'
             );
           });
+
+          recoGrid.appendChild(card);
         });
       } else {
         emptyReco.textContent = json.error || 'Todavía no has guardado ningún reconocimiento.';
@@ -1179,6 +1229,77 @@
       emptyReco.textContent = 'No se pudo conectar con la hoja.';
       emptyReco.style.display = 'block';
     }
+  }
+
+  // ---- Reco detail modal ----
+  const recoDetailOverlay = document.getElementById('recoDetailOverlay');
+  const recoDetailTitle = document.getElementById('recoDetailTitle');
+  const recoDetailSubtitle = document.getElementById('recoDetailSubtitle');
+  const recoDetailBody = document.getElementById('recoDetailBody');
+
+  document.getElementById('recoDetailClose').addEventListener('click', ()=> recoDetailOverlay.classList.remove('show'));
+  recoDetailOverlay.addEventListener('click', (e)=>{ if(e.target === recoDetailOverlay) recoDetailOverlay.classList.remove('show'); });
+
+  function detailRow(label, value){
+    if(value === undefined || value === null || value === '') return '';
+    return `<div class="reco-detail-row"><span>${label}</span><span>${value}</span></div>`;
+  }
+
+  function openRecoDetail(r){
+    recoDetailTitle.textContent = r['Dirección'] || 'Sin dirección';
+    recoDetailSubtitle.textContent = (r['Fecha'] ? formatDate(r['Fecha']) : '—') + ' · Ref. catastral: ' + (r['Ref. catastral'] || '—');
+
+    const fotos = (r['Fotos'] || '').split('|').map(f=>f.trim()).filter(Boolean);
+    const fotosHtml = fotos.map(f=>{
+      const parts = f.split(': ');
+      const url = toDownloadUrl(parts[1] || parts[0]);
+      return `<a href="${url}" target="_blank" rel="noopener">⬇ ${parts[0]}</a>`;
+    }).join('');
+
+    recoDetailBody.innerHTML = `
+      <div class="reco-detail-group">
+        <div class="reco-detail-group-title">Datos generales</div>
+        ${detailRow('Sup. construida', r['Superficie construida'] ? r['Superficie construida'] + ' m²' : '')}
+        ${detailRow('Sup. útil', r['Superficie útil'] ? r['Superficie útil'] + ' m²' : '')}
+        ${detailRow('Año construcción', r['Año construcción'])}
+        ${detailRow('Planta', r['Planta'])}
+        ${detailRow('Orientación', r['Orientación'])}
+      </div>
+      <div class="reco-detail-group">
+        <div class="reco-detail-group-title">Distribución</div>
+        ${detailRow('Habitaciones', r['Habitaciones'])}
+        ${detailRow('Baños', r['Baños'])}
+        ${detailRow('Cocina', r['Cocina'])}
+        ${detailRow('Terraza', r['Terraza'])}
+        ${detailRow('m² terraza', r['m2 Terraza'])}
+        ${detailRow('Trastero', r['Trastero'])}
+        ${detailRow('Parking', r['Parking'])}
+      </div>
+      <div class="reco-detail-group">
+        <div class="reco-detail-group-title">Estado y calidades</div>
+        ${detailRow('Estado', r['Estado'])}
+        ${detailRow('Suelos', r['Suelos'])}
+        ${detailRow('Ventanas', r['Ventanas'])}
+        ${detailRow('Calefacción', r['Calefacción'])}
+        ${detailRow('Ascensor', r['Ascensor'])}
+      </div>
+      <div class="reco-detail-group">
+        <div class="reco-detail-group-title">Documentación y cargas</div>
+        ${detailRow('Certificado energético', r['Certificado energético'])}
+        ${detailRow('Cédula habitabilidad', r['Cédula habitabilidad'])}
+        ${detailRow('Gastos comunidad', r['Gastos comunidad'] ? r['Gastos comunidad'] + ' €/mes' : '')}
+        ${detailRow('IBI', r['IBI'] ? r['IBI'] + ' €/año' : '')}
+        ${detailRow('Cargas', r['Cargas'])}
+      </div>
+      <div class="reco-detail-group">
+        <div class="reco-detail-group-title">Comercial</div>
+        ${detailRow('Motivo', r['Motivo'])}
+        ${detailRow('Amueblado', r['Amueblado'])}
+      </div>
+      ${r['Notas'] ? `<div class="reco-detail-group"><div class="reco-detail-group-title">Notas y medidas</div><div class="reco-detail-notes">${r['Notas']}</div></div>` : ''}
+      ${fotosHtml ? `<div class="reco-detail-group"><div class="reco-detail-group-title">Fotos</div><div class="reco-detail-photos">${fotosHtml}</div></div>` : ''}
+    `;
+    recoDetailOverlay.classList.add('show');
   }
 
   async function deleteReconocimiento(direccion, fecha, card){
