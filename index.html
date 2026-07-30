@@ -25,7 +25,7 @@
     --ease: cubic-bezier(.22,.68,0,1);
   }
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
   h1,h2,h3{font-family:'Montserrat',sans-serif;font-weight:700;letter-spacing:-0.01em;}
   .wrap{max-width:1100px;margin:0 auto;padding:0 24px;}
 
@@ -38,8 +38,13 @@
 
   /* ---- Tabs ---- */
   .tab-bar{background:var(--navy-darker);}
-  .tab-group{display:flex;gap:4px;}
+  .tab-group{
+    display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .tab-group::-webkit-scrollbar{display:none;}
   .tab-btn{
+    flex-shrink:0;white-space:nowrap;
     background:transparent;border:none;color:rgba(255,255,255,0.6);
     font-family:'Montserrat',sans-serif;font-weight:700;font-size:14px;
     padding:16px 22px;cursor:pointer;display:flex;align-items:center;gap:9px;
@@ -345,6 +350,14 @@
   }
   .reco-detail-photos a{color:var(--navy);display:block;margin-top:6px;font-size:13px;}
 
+  .download-all-btn{
+    width:100%;background:var(--navy);color:var(--white);border:none;padding:11px;
+    border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif;
+    transition:background .2s var(--ease);margin-top:8px;
+  }
+  .download-all-btn:hover{background:var(--navy-dark);}
+  .download-all-btn:disabled{opacity:0.6;cursor:wait;}
+
   @media (max-width:760px){
     .card-grid{grid-template-columns:1fr;}
     .card-data{border-right:none;border-bottom:1px solid var(--border);}
@@ -373,6 +386,7 @@
   .gate-card button:hover{background:var(--navy-dark);}
   .gate-error{display:none;color:#d64545!important;font-size:12.5px;margin-top:10px!important;margin-bottom:0!important;}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -584,6 +598,7 @@
     <button class="reco-detail-close" id="recoDetailClose">✕</button>
     <h2 id="recoDetailTitle">Dirección</h2>
     <p id="recoDetailSubtitle" class="reco-detail-subtitle"></p>
+    <button class="download-all-btn" id="recoDetailDownload" style="margin-bottom:18px;">⬇ Descargar todo (ZIP)</button>
     <div id="recoDetailBody" class="reco-detail-body"></div>
   </div>
 </div>
@@ -1200,13 +1215,19 @@
               <div class="name">${r['Dirección'] || 'Sin dirección'}</div>
               <div class="card-date" style="margin-bottom:10px;">${fecha} · ${r['Estado'] || '—'} · ${r['Habitaciones'] || '—'} hab.</div>
               ${fotosHtml ? `<div class="reco-photo-list">${fotosHtml}</div>` : ''}
+              <button class="download-all-btn">⬇ Descargar todo (ZIP)</button>
               <button class="delete-piso-btn">Eliminar reconocimiento</button>
             </div>
           `;
 
           card.addEventListener('click', (e)=>{
-            if(e.target.closest('a') || e.target.closest('.delete-piso-btn')) return;
+            if(e.target.closest('a') || e.target.closest('.delete-piso-btn') || e.target.closest('.download-all-btn')) return;
             openRecoDetail(r);
+          });
+
+          card.querySelector('.download-all-btn').addEventListener('click', (e)=>{
+            e.stopPropagation();
+            downloadRecoZip(r, e.target);
           });
 
           card.querySelector('.delete-piso-btn').addEventListener('click', (e)=>{
@@ -1239,6 +1260,10 @@
 
   document.getElementById('recoDetailClose').addEventListener('click', ()=> recoDetailOverlay.classList.remove('show'));
   recoDetailOverlay.addEventListener('click', (e)=>{ if(e.target === recoDetailOverlay) recoDetailOverlay.classList.remove('show'); });
+  let currentRecoDetail = null;
+  document.getElementById('recoDetailDownload').addEventListener('click', (e)=>{
+    if(currentRecoDetail) downloadRecoZip(currentRecoDetail, e.target);
+  });
 
   function detailRow(label, value){
     if(value === undefined || value === null || value === '') return '';
@@ -1246,6 +1271,7 @@
   }
 
   function openRecoDetail(r){
+    currentRecoDetail = r;
     recoDetailTitle.textContent = r['Dirección'] || 'Sin dirección';
     recoDetailSubtitle.textContent = (r['Fecha'] ? formatDate(r['Fecha']) : '—') + ' · Ref. catastral: ' + (r['Ref. catastral'] || '—');
 
@@ -1300,6 +1326,67 @@
       ${fotosHtml ? `<div class="reco-detail-group"><div class="reco-detail-group-title">Fotos</div><div class="reco-detail-photos">${fotosHtml}</div></div>` : ''}
     `;
     recoDetailOverlay.classList.add('show');
+  }
+
+  const FIELD_LABELS = {
+    'Dirección':'Dirección', 'Ref. catastral':'Referencia catastral',
+    'Superficie construida':'Superficie construida (m²)', 'Superficie útil':'Superficie útil (m²)',
+    'Año construcción':'Año construcción', 'Planta':'Planta', 'Orientación':'Orientación',
+    'Habitaciones':'Habitaciones', 'Baños':'Baños', 'Cocina':'Cocina', 'Terraza':'Terraza',
+    'm2 Terraza':'m² terraza', 'Trastero':'Trastero', 'Parking':'Parking', 'Estado':'Estado general',
+    'Suelos':'Suelos', 'Ventanas':'Ventanas', 'Calefacción':'Calefacción', 'Ascensor':'Ascensor',
+    'Certificado energético':'Certificado energético', 'Cédula habitabilidad':'Cédula de habitabilidad',
+    'Gastos comunidad':'Gastos comunidad (€/mes)', 'IBI':'IBI (€/año)', 'Cargas':'Cargas / hipoteca',
+    'Motivo':'Motivo de venta/alquiler', 'Amueblado':'Amueblado', 'Notas':'Notas y medidas'
+  };
+
+  async function downloadRecoZip(r, triggerBtn){
+    const originalText = triggerBtn.textContent;
+    triggerBtn.disabled = true;
+    triggerBtn.textContent = 'Preparando ZIP...';
+    try{
+      const zip = new JSZip();
+
+      let texto = 'RECONOCIMIENTO DE PISO\n' + (r['Dirección'] || 'Sin dirección') + '\n';
+      texto += 'Fecha: ' + (r['Fecha'] ? formatDate(r['Fecha']) : '—') + '\n';
+      texto += '========================================\n\n';
+      Object.keys(FIELD_LABELS).forEach(key=>{
+        if(key === 'Dirección') return;
+        const val = r[key];
+        if(val !== undefined && val !== null && val !== ''){
+          texto += FIELD_LABELS[key] + ': ' + val + '\n';
+        }
+      });
+      zip.file('datos.txt', texto);
+
+      const fotos = (r['Fotos'] || '').split('|').map(f=>f.trim()).filter(Boolean);
+      let ok = 0;
+      for(const f of fotos){
+        const parts = f.split(': ');
+        const name = parts[0] || 'foto.jpg';
+        const url = parts[1] || parts[0];
+        try{
+          const res = await fetch(url);
+          const blob = await res.blob();
+          zip.file(name, blob);
+          ok++;
+        } catch(err){ /* si una foto falla, seguimos con las demás */ }
+      }
+
+      const blob = await zip.generateAsync({ type:'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      const safeName = (r['Dirección'] || 'reconocimiento').replace(/[^a-z0-9]/gi, '_').slice(0, 40);
+      link.download = safeName + '.zip';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    } catch(err){
+      alert('No se pudo generar el ZIP. Revisa tu conexión.');
+    }
+    triggerBtn.disabled = false;
+    triggerBtn.textContent = originalText;
   }
 
   async function deleteReconocimiento(direccion, fecha, card){
