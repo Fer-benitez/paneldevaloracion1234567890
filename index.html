@@ -77,11 +77,14 @@
     font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
     color:var(--navy-dark);margin-bottom:7px;display:block;
   }
-  .add-piso-field input[type="text"]{
+  .add-piso-field input[type="text"], .add-piso-field input[type="number"]{
     width:100%;background:var(--white);border:1.5px solid var(--border);color:var(--text);
-    padding:11px 13px;font-family:'Inter',sans-serif;font-size:14px;border-radius:8px;
+    padding:12px 14px;font-family:'Inter',sans-serif;font-size:14.5px;border-radius:8px;
+    transition:border-color .2s var(--ease);
   }
-  .add-piso-field input[type="text"]:focus{outline:none;border-color:var(--navy);}
+  .add-piso-field input[type="text"]:focus, .add-piso-field input[type="number"]:focus{
+    outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(52,107,147,0.12);
+  }
   .add-piso-field input[type="file"]{font-size:13px;width:100%;}
   .piso-upload-status{font-size:12.5px;color:var(--muted);margin-bottom:12px;min-height:16px;}
   .piso-upload-status.ok{color:var(--green);}
@@ -139,6 +142,24 @@
   @media (max-width:760px){
     .reco-row-4{grid-template-columns:1fr 1fr;}
     .reco-row-2{grid-template-columns:1fr;}
+  }
+
+  .choice-group{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;}
+  .choice-btn{
+    font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--navy-dark);
+    background:var(--white);border:2px solid var(--border);
+    padding:13px 20px;border-radius:999px;cursor:pointer;
+    transition:all .2s var(--ease);-webkit-tap-highlight-color:transparent;
+  }
+  .choice-btn:hover{border-color:var(--navy);}
+  .choice-btn.active{background:var(--navy);border-color:var(--navy);color:var(--white);}
+  .choice-btn:active{transform:scale(0.97);}
+
+  @media (max-width:640px){
+    .choice-btn{padding:14px 18px;font-size:14.5px;flex:1 1 auto;text-align:center;}
+    .reco-form{padding:18px;}
+    .reco-row-4{grid-template-columns:1fr;}
+    .add-piso-row{grid-template-columns:1fr;}
   }
 
   /* ---- Tab V: panel de valoración ---- */
