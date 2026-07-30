@@ -364,6 +364,20 @@
   .download-all-btn:hover{background:var(--navy-dark);}
   .download-all-btn:disabled{opacity:0.6;cursor:wait;}
 
+  .edit-reco-btn{
+    width:100%;background:transparent;color:var(--navy);border:1.5px solid var(--navy);
+    padding:10px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;
+    font-family:'Inter',sans-serif;transition:all .2s var(--ease);margin-top:8px;
+  }
+  .edit-reco-btn:hover{background:var(--navy);color:var(--white);}
+
+  .existing-photo-thumb{position:relative;display:inline-block;}
+  .existing-photo-thumb .remove-x{
+    position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;
+    background:var(--red);color:var(--white);border:2px solid var(--white);font-size:12px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;
+  }
+
   @media (max-width:760px){
     .card-grid{grid-template-columns:1fr;}
     .card-data{border-right:none;border-bottom:1px solid var(--border);}
@@ -480,19 +494,49 @@
 
   <!-- ==================== TAB R — RECONOCIMIENTO DE PISO ==================== -->
   <div class="tab-panel" id="tab-reconocimiento">
-    <p class="section-desc">Rellénalo in situ durante la visita — dirección, medidas, estado y fotos. Queda guardado para montar la ficha del piso luego con calma.</p>
+    <p class="section-desc">Rellénalo in situ durante la visita — así queda listo para publicar el anuncio, no solo como nota interna.</p>
 
     <div class="reco-form">
-      <div class="reco-section-title">Datos generales</div>
-      <div class="reco-row-2">
-        <div class="add-piso-field"><label>Dirección completa</label><input type="text" id="rDireccion" placeholder="Calle, número, piso, puerta"></div>
-        <div class="add-piso-field"><label>Referencia catastral</label><input type="text" id="rRefCatastral"></div>
+      <div class="reco-section-title">1 · Tipo de operación e inmueble</div>
+      <div class="add-piso-field">
+        <label>Operación <span style="color:var(--navy);font-weight:700;">(elige una o ambas)</span></label>
+        <div class="choice-group" data-target="rOperacion" data-mode="multi">
+          <button type="button" class="choice-btn">Vender</button><button type="button" class="choice-btn">Alquilar</button>
+        </div>
       </div>
+      <div class="add-piso-field">
+        <label>Tipo de inmueble</label>
+        <div class="choice-group" data-target="rTipoInmueble">
+          <button type="button" class="choice-btn">Piso</button><button type="button" class="choice-btn">Ático</button>
+          <button type="button" class="choice-btn">Dúplex</button><button type="button" class="choice-btn">Estudio</button>
+          <button type="button" class="choice-btn">Loft</button><button type="button" class="choice-btn">Casa/Chalet</button>
+          <button type="button" class="choice-btn">Garaje</button><button type="button" class="choice-btn">Local</button>
+          <button type="button" class="choice-btn">Oficina</button><button type="button" class="choice-btn">Terreno</button>
+        </div>
+      </div>
+
+      <div class="reco-section-title">2 · Ubicación</div>
+      <div class="reco-row-2">
+        <div class="add-piso-field"><label>Localidad</label><input type="text" id="rLocalidad"></div>
+        <div class="add-piso-field"><label>Calle y número</label><input type="text" id="rDireccion" placeholder="Calle, número, piso, puerta"></div>
+      </div>
+      <div class="reco-row-4">
+        <div class="add-piso-field"><label>Planta</label><input type="text" id="rPlanta" placeholder="Ej. 3º 2ª"></div>
+        <div class="add-piso-field"><label>Ascensor</label><div class="choice-group" data-target="rAscensor"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+      </div>
+
+      <div class="reco-section-title">3 · Datos básicos / características</div>
       <div class="reco-row-4">
         <div class="add-piso-field"><label>Sup. construida (m²)</label><input type="number" id="rSupConstruida"></div>
         <div class="add-piso-field"><label>Sup. útil (m²)</label><input type="number" id="rSupUtil"></div>
+        <div class="add-piso-field"><label>Habitaciones</label><input type="number" id="rHabitaciones"></div>
+        <div class="add-piso-field"><label>Baños</label><input type="number" id="rBanos"></div>
+      </div>
+      <div class="reco-row-4">
         <div class="add-piso-field"><label>Año construcción</label><input type="number" id="rAnio"></div>
-        <div class="add-piso-field"><label>Planta</label><input type="text" id="rPlanta" placeholder="Ej. 3º 2ª"></div>
+        <div class="add-piso-field"><label>m² terraza (si hay)</label><input type="number" id="rM2Terraza"></div>
+        <div class="add-piso-field"><label>Terraza/balcón</label><div class="choice-group" data-target="rTerraza"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+        <div class="add-piso-field"><label>Aire acondicionado</label><div class="choice-group" data-target="rAireAcondicionado"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
       </div>
       <div class="add-piso-field">
         <label>Orientación</label>
@@ -502,39 +546,6 @@
           <button type="button" class="choice-btn">Combinada</button>
         </div>
       </div>
-
-      <div class="reco-section-title">Distribución</div>
-      <div class="reco-row-4">
-        <div class="add-piso-field"><label>Habitaciones</label><input type="number" id="rHabitaciones"></div>
-        <div class="add-piso-field"><label>Baños</label><input type="number" id="rBanos"></div>
-        <div class="add-piso-field"><label>m² terraza (si hay)</label><input type="number" id="rM2Terraza"></div>
-        <div class="add-piso-field"><label>Gastos comunidad €/mes</label><input type="number" id="rGastosComunidad"></div>
-      </div>
-      <div class="add-piso-field">
-        <label>Cocina</label>
-        <div class="choice-group" data-target="rCocina">
-          <button type="button" class="choice-btn">Independiente</button><button type="button" class="choice-btn">Office</button><button type="button" class="choice-btn">Americana</button>
-        </div>
-      </div>
-      <div class="reco-row-4">
-        <div class="add-piso-field"><label>Terraza/balcón</label><div class="choice-group" data-target="rTerraza"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
-        <div class="add-piso-field"><label>Trastero</label><div class="choice-group" data-target="rTrastero"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
-        <div class="add-piso-field"><label>Parking</label><div class="choice-group" data-target="rParking"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
-        <div class="add-piso-field"><label>Ascensor</label><div class="choice-group" data-target="rAscensor"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
-      </div>
-
-      <div class="reco-section-title">Estado y calidades</div>
-      <div class="add-piso-field">
-        <label>Estado general</label>
-        <div class="choice-group" data-target="rEstado">
-          <button type="button" class="choice-btn">A reformar</button><button type="button" class="choice-btn">Buen estado</button>
-          <button type="button" class="choice-btn">Reformado</button><button type="button" class="choice-btn">Obra nueva</button>
-        </div>
-      </div>
-      <div class="reco-row-2">
-        <div class="add-piso-field"><label>Suelos</label><input type="text" id="rSuelos" placeholder="Ej. Parquet, gres..."></div>
-        <div class="add-piso-field"><label>Ventanas</label><input type="text" id="rVentanas" placeholder="Ej. Aluminio, doble cristal..."></div>
-      </div>
       <div class="add-piso-field">
         <label>Calefacción</label>
         <div class="choice-group" data-target="rCalefaccion">
@@ -542,42 +553,92 @@
           <button type="button" class="choice-btn">Eléctrica</button><button type="button" class="choice-btn">No tiene</button>
         </div>
       </div>
-
-      <div class="reco-section-title">Documentación y cargas</div>
+      <div class="add-piso-field">
+        <label>Estado del inmueble</label>
+        <div class="choice-group" data-target="rEstado">
+          <button type="button" class="choice-btn">A reformar</button><button type="button" class="choice-btn">Buen estado</button>
+          <button type="button" class="choice-btn">Reformado</button><button type="button" class="choice-btn">Obra nueva</button>
+        </div>
+      </div>
+      <div class="add-piso-field">
+        <label>Amueblado</label>
+        <div class="choice-group" data-target="rAmueblado">
+          <button type="button" class="choice-btn">Amueblado</button><button type="button" class="choice-btn">Sin amueblar</button><button type="button" class="choice-btn">Semi-amueblado</button>
+        </div>
+      </div>
+      <div class="reco-row-2">
+        <div class="add-piso-field"><label>Cocina (tipo)</label><div class="choice-group" data-target="rCocina"><button type="button" class="choice-btn">Independiente</button><button type="button" class="choice-btn">Office</button><button type="button" class="choice-btn">Americana</button></div></div>
+        <div class="add-piso-field"><label>Cocina equipada</label><div class="choice-group" data-target="rCocinaEquipada"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+      </div>
+      <div class="reco-row-4">
+        <div class="add-piso-field"><label>Trastero</label><div class="choice-group" data-target="rTrastero"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+        <div class="add-piso-field"><label>Garaje incluido</label><div class="choice-group" data-target="rGaraje"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+        <div class="add-piso-field"><label>Piscina</label><div class="choice-group" data-target="rPiscina"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+        <div class="add-piso-field"><label>Jardín</label><div class="choice-group" data-target="rJardin"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+      </div>
+      <div class="add-piso-field"><label>Zonas comunes</label><div class="choice-group" data-target="rZonasComunes"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+      <div class="reco-row-2">
+        <div class="add-piso-field"><label>Suelos</label><input type="text" id="rSuelos" placeholder="Ej. Parquet, gres..."></div>
+        <div class="add-piso-field"><label>Ventanas</label><input type="text" id="rVentanas" placeholder="Ej. Aluminio, doble cristal..."></div>
+      </div>
       <div class="reco-row-2">
         <div class="add-piso-field">
-          <label>Certificado energético</label>
+          <label>Certificado energético (letra) — obligatorio</label>
           <div class="choice-group" data-target="rCertEnergetico">
             <button type="button" class="choice-btn">A</button><button type="button" class="choice-btn">B</button><button type="button" class="choice-btn">C</button>
             <button type="button" class="choice-btn">D</button><button type="button" class="choice-btn">E</button><button type="button" class="choice-btn">F</button>
             <button type="button" class="choice-btn">G</button><button type="button" class="choice-btn">No tiene</button>
           </div>
         </div>
-        <div class="add-piso-field">
-          <label>Cédula de habitabilidad</label>
-          <div class="choice-group" data-target="rCedula"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button><button type="button" class="choice-btn">No lo sé</button></div>
-        </div>
+        <div class="add-piso-field"><label>Consumo energético (kWh/m² año)</label><input type="number" id="rConsumoEnergetico"></div>
+      </div>
+      <div class="add-piso-field">
+        <label>Cédula de habitabilidad — obligatoria en Catalunya</label>
+        <div class="choice-group" data-target="rCedula"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button><button type="button" class="choice-btn">No lo sé</button></div>
+      </div>
+
+      <div class="reco-section-title">4 · Precio y condiciones</div>
+      <div class="reco-row-2">
+        <div class="add-piso-field"><label>Precio (€)</label><input type="number" id="rPrecio"></div>
+        <div class="add-piso-field"><label>Gastos comunidad €/mes</label><input type="number" id="rGastosComunidad"></div>
+      </div>
+      <div class="reco-row-4">
+        <div class="add-piso-field"><label>Gastos incluidos en precio</label><div class="choice-group" data-target="rGastosIncluidos"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+        <div class="add-piso-field"><label>Fianza (meses)</label><input type="number" id="rFianzaMeses"></div>
+        <div class="add-piso-field"><label>Aval / garantías adicionales</label><div class="choice-group" data-target="rAvalRequerido"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+        <div class="add-piso-field"><label>Se admiten mascotas</label><div class="choice-group" data-target="rMascotasAdmitidas"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button></div></div>
+      </div>
+      <div class="reco-row-2">
+        <div class="add-piso-field"><label>Disponibilidad (libre desde...)</label><input type="text" id="rDisponibilidad" placeholder="Ej. Inmediata, 1 de septiembre..."></div>
+        <div class="add-piso-field"><label>Tipo de contrato</label><div class="choice-group" data-target="rTipoContrato"><button type="button" class="choice-btn">Habitual</button><button type="button" class="choice-btn">Temporada</button></div></div>
       </div>
       <div class="reco-row-2">
         <div class="add-piso-field"><label>IBI €/año</label><input type="number" id="rIbi"></div>
         <div class="add-piso-field"><label>Cargas / hipoteca pendiente</label><input type="text" id="rCargas"></div>
       </div>
+      <div class="add-piso-field"><label>Motivo de venta/alquiler</label><input type="text" id="rMotivo"></div>
 
-      <div class="reco-section-title">Comercial</div>
-      <div class="reco-row-2">
-        <div class="add-piso-field"><label>Motivo de venta/alquiler</label><input type="text" id="rMotivo"></div>
-        <div class="add-piso-field"><label>Amueblado</label><div class="choice-group" data-target="rAmueblado"><button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn">No</button><button type="button" class="choice-btn">Parcial</button></div></div>
+      <div class="reco-section-title">5 · Descripción y multimedia</div>
+      <div class="add-piso-field">
+        <label>Título del anuncio</label>
+        <input type="text" id="rTituloAnuncio" placeholder="Ej. Piso luminoso con terraza junto al metro">
       </div>
       <div class="add-piso-field" style="margin-bottom:14px;">
-        <label>Notas y medidas (croquis, detalles)</label>
-        <textarea id="rNotas" rows="4" placeholder="Medidas de cada estancia, detalles a destacar, incidencias..."></textarea>
+        <label>Descripción del anuncio</label>
+        <textarea id="rDescripcion" rows="4" placeholder="Características, zona, ventajas — el texto que verá el público"></textarea>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Notas internas (croquis, medidas, incidencias)</label>
+        <textarea id="rNotas" rows="3" placeholder="Solo para vosotros, no sale en el anuncio"></textarea>
       </div>
 
       <div class="reco-section-title">Fotos de la visita</div>
+      <div id="rExistingPhotos" class="photo-thumbs" style="margin-bottom:12px;"></div>
       <input type="file" id="rFotos" accept="image/*" multiple>
       <div id="rFotosStatus" class="piso-upload-status"></div>
 
       <button id="addRecoBtn" class="add-piso-btn" style="margin-top:18px;">Guardar reconocimiento</button>
+      <button id="cancelEditBtn" class="edit-reco-btn" style="display:none;">Cancelar edición</button>
       <p class="piso-hint" id="recoHint"></p>
     </div>
 
@@ -604,7 +665,8 @@
     <button class="reco-detail-close" id="recoDetailClose">✕</button>
     <h2 id="recoDetailTitle">Dirección</h2>
     <p id="recoDetailSubtitle" class="reco-detail-subtitle"></p>
-    <button class="download-all-btn" id="recoDetailDownload" style="margin-bottom:18px;">⬇ Descargar todo (ZIP)</button>
+    <button class="download-all-btn" id="recoDetailDownload" style="margin-bottom:10px;">⬇ Descargar todo (ZIP)</button>
+    <button class="edit-reco-btn" id="recoDetailEdit" style="margin-bottom:18px;">✎ Editar</button>
     <div id="recoDetailBody" class="reco-detail-body"></div>
   </div>
 </div>
@@ -1090,11 +1152,17 @@
   const recoChoices = {};
   document.querySelectorAll('.reco-form .choice-group').forEach(group=>{
     const target = group.dataset.target;
+    const mode = group.dataset.mode || 'single';
     group.querySelectorAll('.choice-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        group.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        recoChoices[target] = btn.textContent.trim();
+        if(mode === 'multi'){
+          btn.classList.toggle('active');
+        } else {
+          group.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+        }
+        const selected = Array.from(group.querySelectorAll('.choice-btn.active')).map(b=>b.textContent.trim());
+        recoChoices[target] = selected.join(', ');
       });
     });
   });
@@ -1147,50 +1215,67 @@
     addRecoBtn.textContent = 'Guardando...';
     const payload = {
       action: 'nuevo_reconocimiento',
+      operacion: recoChoices['rOperacion'] || '',
+      tipoInmueble: recoChoices['rTipoInmueble'] || '',
+      localidad: document.getElementById('rLocalidad').value,
       direccion: direccion,
-      refCatastral: document.getElementById('rRefCatastral').value,
+      planta: document.getElementById('rPlanta').value,
+      ascensor: recoChoices['rAscensor'] || '',
       supConstruida: document.getElementById('rSupConstruida').value,
       supUtil: document.getElementById('rSupUtil').value,
       anioConstruccion: document.getElementById('rAnio').value,
-      planta: document.getElementById('rPlanta').value,
-      orientacion: recoChoices['rOrientacion'] || '',
       habitaciones: document.getElementById('rHabitaciones').value,
       banos: document.getElementById('rBanos').value,
-      cocina: recoChoices['rCocina'] || '',
       terraza: recoChoices['rTerraza'] || '',
       m2Terraza: document.getElementById('rM2Terraza').value,
-      trastero: recoChoices['rTrastero'] || '',
-      parking: recoChoices['rParking'] || '',
+      orientacion: recoChoices['rOrientacion'] || '',
+      aireAcondicionado: recoChoices['rAireAcondicionado'] || '',
+      calefaccion: recoChoices['rCalefaccion'] || '',
       estado: recoChoices['rEstado'] || '',
+      amueblado: recoChoices['rAmueblado'] || '',
+      cocina: recoChoices['rCocina'] || '',
+      cocinaEquipada: recoChoices['rCocinaEquipada'] || '',
+      trastero: recoChoices['rTrastero'] || '',
+      garaje: recoChoices['rGaraje'] || '',
+      piscina: recoChoices['rPiscina'] || '',
+      jardin: recoChoices['rJardin'] || '',
+      zonasComunes: recoChoices['rZonasComunes'] || '',
       suelos: document.getElementById('rSuelos').value,
       ventanas: document.getElementById('rVentanas').value,
-      calefaccion: recoChoices['rCalefaccion'] || '',
-      ascensor: recoChoices['rAscensor'] || '',
       certEnergetico: recoChoices['rCertEnergetico'] || '',
+      consumoEnergetico: document.getElementById('rConsumoEnergetico').value,
       cedula: recoChoices['rCedula'] || '',
+      precio: document.getElementById('rPrecio').value,
+      gastosIncluidos: recoChoices['rGastosIncluidos'] || '',
       gastosComunidad: document.getElementById('rGastosComunidad').value,
+      fianzaMeses: document.getElementById('rFianzaMeses').value,
+      avalRequerido: recoChoices['rAvalRequerido'] || '',
+      mascotasAdmitidas: recoChoices['rMascotasAdmitidas'] || '',
+      disponibilidad: document.getElementById('rDisponibilidad').value,
+      tipoContrato: recoChoices['rTipoContrato'] || '',
       ibi: document.getElementById('rIbi').value,
       cargas: document.getElementById('rCargas').value,
       motivo: document.getElementById('rMotivo').value,
-      amueblado: recoChoices['rAmueblado'] || '',
+      tituloAnuncio: document.getElementById('rTituloAnuncio').value,
+      descripcion: document.getElementById('rDescripcion').value,
       notas: document.getElementById('rNotas').value,
-      fotos: recoPhotoLinks.join(' | ')
+      fotos: editingExistingPhotos.map(p=> p.name + ': ' + p.url).concat(recoPhotoLinks).join(' | ')
     };
+    if(editingFechaOriginal){
+      payload.action = 'actualizar_reconocimiento';
+      payload.fecha = editingFechaOriginal;
+    }
     try{
       await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
-      document.querySelectorAll('.reco-form input[type="text"], .reco-form input[type="number"], .reco-form textarea').forEach(el=> el.value = '');
-      document.querySelectorAll('.reco-form .choice-btn.active').forEach(b=> b.classList.remove('active'));
-      Object.keys(recoChoices).forEach(k=> delete recoChoices[k]);
-      recoPhotoLinks.length = 0;
-      rFotos.value = '';
-      rFotosStatus.textContent = '';
-      recoHint.textContent = 'Guardado ✓';
+      const wasEditing = !!editingFechaOriginal;
+      resetRecoForm();
+      recoHint.textContent = wasEditing ? 'Cambios guardados ✓' : 'Guardado ✓';
       setTimeout(()=> recoHint.textContent = '', 2500);
       await loadReconocimientos();
     } catch(err){
       alert('No se pudo guardar. Revisa tu conexión.');
     }
-    addRecoBtn.textContent = 'Guardar reconocimiento';
+    addRecoBtn.textContent = editingFechaOriginal ? 'Guardar cambios' : 'Guardar reconocimiento';
     addRecoBtn.disabled = false;
   });
 
@@ -1228,14 +1313,20 @@
               <div class="name">${r['Dirección'] || 'Sin dirección'}</div>
               <div class="card-date" style="margin-bottom:10px;">${fecha} · ${r['Estado'] || '—'} · ${r['Habitaciones'] || '—'} hab.</div>
               ${fotosHtml ? `<div class="reco-photo-list">${fotosHtml}</div>` : ''}
+              <button class="edit-reco-btn">✎ Editar</button>
               <button class="download-all-btn">⬇ Descargar todo (ZIP)</button>
               <button class="delete-piso-btn">Eliminar reconocimiento</button>
             </div>
           `;
 
           card.addEventListener('click', (e)=>{
-            if(e.target.closest('a') || e.target.closest('.delete-piso-btn') || e.target.closest('.download-all-btn')) return;
+            if(e.target.closest('a') || e.target.closest('.delete-piso-btn') || e.target.closest('.download-all-btn') || e.target.closest('.edit-reco-btn')) return;
             openRecoDetail(r);
+          });
+
+          card.querySelector('.edit-reco-btn').addEventListener('click', (e)=>{
+            e.stopPropagation();
+            openRecoEdit(r);
           });
 
           card.querySelector('.download-all-btn').addEventListener('click', (e)=>{
@@ -1274,6 +1365,15 @@
   document.getElementById('recoDetailClose').addEventListener('click', ()=> recoDetailOverlay.classList.remove('show'));
   recoDetailOverlay.addEventListener('click', (e)=>{ if(e.target === recoDetailOverlay) recoDetailOverlay.classList.remove('show'); });
   let currentRecoDetail = null;
+  let editingFechaOriginal = null;
+  let editingExistingPhotos = [];
+
+  document.getElementById('recoDetailEdit').addEventListener('click', ()=>{
+    if(currentRecoDetail){
+      recoDetailOverlay.classList.remove('show');
+      openRecoEdit(currentRecoDetail);
+    }
+  });
   document.getElementById('recoDetailDownload').addEventListener('click', (e)=>{
     if(currentRecoDetail) downloadRecoZip(currentRecoDetail, e.target);
   });
@@ -1286,66 +1386,90 @@
   function openRecoDetail(r){
     currentRecoDetail = r;
     recoDetailTitle.textContent = r['Dirección'] || 'Sin dirección';
-    recoDetailSubtitle.textContent = (r['Fecha'] ? formatDate(r['Fecha']) : '—') + ' · Ref. catastral: ' + (r['Ref. catastral'] || '—');
+    recoDetailSubtitle.textContent = (r['Fecha'] ? formatDate(r['Fecha']) : '—') + ' · ' + (r['Tipo de inmueble'] || '—') + ' · ' + (r['Operación'] || '—');
 
     const fotosHtml = photoThumbsHtml(r['Fotos']);
 
     recoDetailBody.innerHTML = `
+      ${r['Título anuncio'] ? `<div class="reco-detail-group"><div class="reco-detail-notes" style="font-weight:700;">${r['Título anuncio']}</div></div>` : ''}
       <div class="reco-detail-group">
-        <div class="reco-detail-group-title">Datos generales</div>
-        ${detailRow('Sup. construida', r['Superficie construida'] ? r['Superficie construida'] + ' m²' : '')}
-        ${detailRow('Sup. útil', r['Superficie útil'] ? r['Superficie útil'] + ' m²' : '')}
-        ${detailRow('Año construcción', r['Año construcción'])}
+        <div class="reco-detail-group-title">1 · Operación e inmueble</div>
+        ${detailRow('Operación', r['Operación'])}
+        ${detailRow('Tipo de inmueble', r['Tipo de inmueble'])}
+      </div>
+      <div class="reco-detail-group">
+        <div class="reco-detail-group-title">2 · Ubicación</div>
+        ${detailRow('Localidad', r['Localidad'])}
+        ${detailRow('Dirección', r['Dirección'])}
         ${detailRow('Planta', r['Planta'])}
-        ${detailRow('Orientación', r['Orientación'])}
-      </div>
-      <div class="reco-detail-group">
-        <div class="reco-detail-group-title">Distribución</div>
-        ${detailRow('Habitaciones', r['Habitaciones'])}
-        ${detailRow('Baños', r['Baños'])}
-        ${detailRow('Cocina', r['Cocina'])}
-        ${detailRow('Terraza', r['Terraza'])}
-        ${detailRow('m² terraza', r['m2 Terraza'])}
-        ${detailRow('Trastero', r['Trastero'])}
-        ${detailRow('Parking', r['Parking'])}
-      </div>
-      <div class="reco-detail-group">
-        <div class="reco-detail-group-title">Estado y calidades</div>
-        ${detailRow('Estado', r['Estado'])}
-        ${detailRow('Suelos', r['Suelos'])}
-        ${detailRow('Ventanas', r['Ventanas'])}
-        ${detailRow('Calefacción', r['Calefacción'])}
         ${detailRow('Ascensor', r['Ascensor'])}
       </div>
       <div class="reco-detail-group">
-        <div class="reco-detail-group-title">Documentación y cargas</div>
+        <div class="reco-detail-group-title">3 · Datos básicos</div>
+        ${detailRow('Sup. construida', r['Superficie construida'] ? r['Superficie construida'] + ' m²' : '')}
+        ${detailRow('Sup. útil', r['Superficie útil'] ? r['Superficie útil'] + ' m²' : '')}
+        ${detailRow('Año construcción', r['Año construcción'])}
+        ${detailRow('Habitaciones', r['Habitaciones'])}
+        ${detailRow('Baños', r['Baños'])}
+        ${detailRow('Terraza', r['Terraza'])}
+        ${detailRow('m² terraza', r['m2 Terraza'])}
+        ${detailRow('Orientación', r['Orientación'])}
+        ${detailRow('Aire acondicionado', r['Aire acondicionado'])}
+        ${detailRow('Calefacción', r['Calefacción'])}
+        ${detailRow('Estado', r['Estado'])}
+        ${detailRow('Amueblado', r['Amueblado'])}
+        ${detailRow('Cocina', r['Cocina'])}
+        ${detailRow('Cocina equipada', r['Cocina equipada'])}
+        ${detailRow('Trastero', r['Trastero'])}
+        ${detailRow('Garaje', r['Garaje'])}
+        ${detailRow('Piscina', r['Piscina'])}
+        ${detailRow('Jardín', r['Jardín'])}
+        ${detailRow('Zonas comunes', r['Zonas comunes'])}
+        ${detailRow('Suelos', r['Suelos'])}
+        ${detailRow('Ventanas', r['Ventanas'])}
         ${detailRow('Certificado energético', r['Certificado energético'])}
+        ${detailRow('Consumo energético', r['Consumo energético'] ? r['Consumo energético'] + ' kWh/m² año' : '')}
         ${detailRow('Cédula habitabilidad', r['Cédula habitabilidad'])}
-        ${detailRow('Gastos comunidad', r['Gastos comunidad'] ? r['Gastos comunidad'] + ' €/mes' : '')}
-        ${detailRow('IBI', r['IBI'] ? r['IBI'] + ' €/año' : '')}
-        ${detailRow('Cargas', r['Cargas'])}
       </div>
       <div class="reco-detail-group">
-        <div class="reco-detail-group-title">Comercial</div>
+        <div class="reco-detail-group-title">4 · Precio y condiciones</div>
+        ${detailRow('Precio', r['Precio'] ? r['Precio'] + ' €' : '')}
+        ${detailRow('Gastos incluidos', r['Gastos incluidos'])}
+        ${detailRow('Gastos comunidad', r['Gastos comunidad'] ? r['Gastos comunidad'] + ' €/mes' : '')}
+        ${detailRow('Fianza', r['Fianza meses'] ? r['Fianza meses'] + ' meses' : '')}
+        ${detailRow('Aval requerido', r['Aval requerido'])}
+        ${detailRow('Mascotas admitidas', r['Mascotas admitidas'])}
+        ${detailRow('Disponibilidad', r['Disponibilidad'])}
+        ${detailRow('Tipo de contrato', r['Tipo de contrato'])}
+        ${detailRow('IBI', r['IBI'] ? r['IBI'] + ' €/año' : '')}
+        ${detailRow('Cargas', r['Cargas'])}
         ${detailRow('Motivo', r['Motivo'])}
-        ${detailRow('Amueblado', r['Amueblado'])}
       </div>
-      ${r['Notas'] ? `<div class="reco-detail-group"><div class="reco-detail-group-title">Notas y medidas</div><div class="reco-detail-notes">${r['Notas']}</div></div>` : ''}
+      ${r['Descripción'] ? `<div class="reco-detail-group"><div class="reco-detail-group-title">5 · Descripción del anuncio</div><div class="reco-detail-notes">${r['Descripción']}</div></div>` : ''}
+      ${r['Notas'] ? `<div class="reco-detail-group"><div class="reco-detail-group-title">Notas internas</div><div class="reco-detail-notes">${r['Notas']}</div></div>` : ''}
       ${fotosHtml ? `<div class="reco-detail-group"><div class="reco-detail-group-title">Fotos</div><div class="reco-detail-photos">${fotosHtml}</div></div>` : ''}
     `;
     recoDetailOverlay.classList.add('show');
   }
 
   const FIELD_LABELS = {
-    'Dirección':'Dirección', 'Ref. catastral':'Referencia catastral',
+    'Operación':'Operación', 'Tipo de inmueble':'Tipo de inmueble',
+    'Localidad':'Localidad', 'Dirección':'Calle y número',
+    'Planta':'Planta', 'Ascensor':'Ascensor',
     'Superficie construida':'Superficie construida (m²)', 'Superficie útil':'Superficie útil (m²)',
-    'Año construcción':'Año construcción', 'Planta':'Planta', 'Orientación':'Orientación',
-    'Habitaciones':'Habitaciones', 'Baños':'Baños', 'Cocina':'Cocina', 'Terraza':'Terraza',
-    'm2 Terraza':'m² terraza', 'Trastero':'Trastero', 'Parking':'Parking', 'Estado':'Estado general',
-    'Suelos':'Suelos', 'Ventanas':'Ventanas', 'Calefacción':'Calefacción', 'Ascensor':'Ascensor',
-    'Certificado energético':'Certificado energético', 'Cédula habitabilidad':'Cédula de habitabilidad',
-    'Gastos comunidad':'Gastos comunidad (€/mes)', 'IBI':'IBI (€/año)', 'Cargas':'Cargas / hipoteca',
-    'Motivo':'Motivo de venta/alquiler', 'Amueblado':'Amueblado', 'Notas':'Notas y medidas'
+    'Año construcción':'Año construcción', 'Habitaciones':'Habitaciones', 'Baños':'Baños',
+    'Terraza':'Terraza', 'm2 Terraza':'m² terraza', 'Orientación':'Orientación',
+    'Aire acondicionado':'Aire acondicionado', 'Calefacción':'Calefacción', 'Estado':'Estado del inmueble',
+    'Amueblado':'Amueblado', 'Cocina':'Cocina (tipo)', 'Cocina equipada':'Cocina equipada',
+    'Trastero':'Trastero', 'Garaje':'Garaje incluido', 'Piscina':'Piscina', 'Jardín':'Jardín',
+    'Zonas comunes':'Zonas comunes', 'Suelos':'Suelos', 'Ventanas':'Ventanas',
+    'Certificado energético':'Certificado energético (letra)', 'Consumo energético':'Consumo energético (kWh/m² año)',
+    'Cédula habitabilidad':'Cédula de habitabilidad',
+    'Precio':'Precio (€)', 'Gastos incluidos':'Gastos incluidos en precio', 'Gastos comunidad':'Gastos comunidad (€/mes)',
+    'Fianza meses':'Fianza (meses)', 'Aval requerido':'Aval / garantías adicionales', 'Mascotas admitidas':'Se admiten mascotas',
+    'Disponibilidad':'Disponibilidad', 'Tipo de contrato':'Tipo de contrato',
+    'IBI':'IBI (€/año)', 'Cargas':'Cargas / hipoteca', 'Motivo':'Motivo de venta/alquiler',
+    'Título anuncio':'Título del anuncio', 'Descripción':'Descripción del anuncio', 'Notas':'Notas internas'
   };
 
   async function downloadRecoZip(r, triggerBtn){
@@ -1395,6 +1519,99 @@
     }
     triggerBtn.disabled = false;
     triggerBtn.textContent = originalText;
+  }
+
+  function setChoiceGroupValue(target, valueStr){
+    const group = document.querySelector('.reco-form .choice-group[data-target="' + target + '"]');
+    if(!group || !valueStr) return;
+    const values = valueStr.split(',').map(v=>v.trim());
+    group.querySelectorAll('.choice-btn').forEach(btn=>{
+      if(values.includes(btn.textContent.trim())){ btn.classList.add('active'); }
+      else{ btn.classList.remove('active'); }
+    });
+    recoChoices[target] = values.join(', ');
+  }
+
+  function renderExistingPhotos(){
+    const container = document.getElementById('rExistingPhotos');
+    container.innerHTML = editingExistingPhotos.map((p, idx) => `
+      <div class="existing-photo-thumb">
+        <div class="photo-thumb"><img src="${p.url}" alt="${p.name}"></div>
+        <div class="remove-x" data-idx="${idx}" title="Quitar foto">✕</div>
+      </div>
+    `).join('');
+    container.querySelectorAll('.remove-x').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        editingExistingPhotos.splice(parseInt(btn.dataset.idx), 1);
+        renderExistingPhotos();
+      });
+    });
+  }
+
+  function openRecoEdit(r){
+    // Cambia a la pestaña R si no está activa
+    document.querySelector('.tab-btn[data-tab="reconocimiento"]').click();
+
+    const textFields = {
+      rLocalidad:'Localidad', rDireccion:'Dirección', rPlanta:'Planta',
+      rSupConstruida:'Superficie construida', rSupUtil:'Superficie útil', rAnio:'Año construcción',
+      rHabitaciones:'Habitaciones', rBanos:'Baños', rM2Terraza:'m2 Terraza',
+      rSuelos:'Suelos', rVentanas:'Ventanas', rConsumoEnergetico:'Consumo energético',
+      rPrecio:'Precio', rGastosComunidad:'Gastos comunidad', rFianzaMeses:'Fianza meses',
+      rDisponibilidad:'Disponibilidad', rIbi:'IBI', rCargas:'Cargas', rMotivo:'Motivo',
+      rTituloAnuncio:'Título anuncio', rDescripcion:'Descripción', rNotas:'Notas'
+    };
+    Object.keys(textFields).forEach(id=>{
+      document.getElementById(id).value = r[textFields[id]] || '';
+    });
+
+    const choiceFields = {
+      rOperacion:'Operación', rTipoInmueble:'Tipo de inmueble', rAscensor:'Ascensor',
+      rTerraza:'Terraza', rOrientacion:'Orientación', rAireAcondicionado:'Aire acondicionado',
+      rCalefaccion:'Calefacción', rEstado:'Estado', rAmueblado:'Amueblado', rCocina:'Cocina',
+      rCocinaEquipada:'Cocina equipada', rTrastero:'Trastero', rGaraje:'Garaje',
+      rPiscina:'Piscina', rJardin:'Jardín', rZonasComunes:'Zonas comunes',
+      rCertEnergetico:'Certificado energético', rCedula:'Cédula habitabilidad',
+      rGastosIncluidos:'Gastos incluidos', rAvalRequerido:'Aval requerido',
+      rMascotasAdmitidas:'Mascotas admitidas', rTipoContrato:'Tipo de contrato'
+    };
+    document.querySelectorAll('.reco-form .choice-btn.active').forEach(b=>b.classList.remove('active'));
+    Object.keys(recoChoices).forEach(k=> delete recoChoices[k]);
+    Object.keys(choiceFields).forEach(target=> setChoiceGroupValue(target, r[choiceFields[target]]));
+
+    editingExistingPhotos = (r['Fotos'] || '').split('|').map(f=>f.trim()).filter(Boolean).map(f=>{
+      const parts = f.split(': ');
+      return { name: parts[0] || 'foto', url: parts[1] || parts[0] };
+    });
+    renderExistingPhotos();
+    recoPhotoLinks.length = 0;
+    rFotos.value = '';
+    rFotosStatus.textContent = '';
+
+    editingFechaOriginal = r['Fecha'];
+    addRecoBtn.textContent = 'Guardar cambios';
+    document.getElementById('cancelEditBtn').style.display = 'block';
+    recoHint.textContent = 'Editando "' + (r['Dirección'] || 'este reconocimiento') + '"';
+    document.querySelector('.reco-form').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  document.getElementById('cancelEditBtn').addEventListener('click', ()=>{
+    resetRecoForm();
+  });
+
+  function resetRecoForm(){
+    document.querySelectorAll('.reco-form input[type="text"], .reco-form input[type="number"], .reco-form textarea').forEach(el=> el.value = '');
+    document.querySelectorAll('.reco-form .choice-btn.active').forEach(b=> b.classList.remove('active'));
+    Object.keys(recoChoices).forEach(k=> delete recoChoices[k]);
+    recoPhotoLinks.length = 0;
+    editingExistingPhotos = [];
+    renderExistingPhotos();
+    rFotos.value = '';
+    rFotosStatus.textContent = '';
+    editingFechaOriginal = null;
+    addRecoBtn.textContent = 'Guardar reconocimiento';
+    document.getElementById('cancelEditBtn').style.display = 'none';
+    recoHint.textContent = '';
   }
 
   async function deleteReconocimiento(direccion, fecha, card){
