@@ -378,6 +378,42 @@
     cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;
   }
 
+  .leads-columns{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .leads-column-title{
+    display:flex;align-items:center;gap:9px;font-family:'Montserrat',sans-serif;font-weight:700;
+    font-size:15px;color:var(--navy-darker);margin-bottom:14px;
+  }
+  .leads-num{
+    display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border-radius:50%;background:var(--navy);color:var(--white);font-size:12px;font-weight:800;
+  }
+  .lead-card{
+    background:var(--white);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;
+    padding:16px;margin-bottom:12px;transition:opacity .2s var(--ease), filter .2s var(--ease);
+  }
+  .lead-card.semaforo-verde{border-left-color:var(--green);}
+  .lead-card.semaforo-rojo{border-left-color:var(--red);opacity:0.55;filter:grayscale(0.6);}
+  .lead-card.semaforo-rojo:hover{opacity:0.9;filter:grayscale(0.2);}
+  .lead-card.semaforo-rojo .name{text-decoration:line-through;text-decoration-color:var(--red);}
+  .lead-card .name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;color:var(--navy-darker);margin-bottom:4px;}
+  .lead-card .meta{font-size:12.5px;color:var(--muted);margin-bottom:8px;}
+  .lead-card .notes{font-size:13px;color:var(--text);margin-bottom:10px;line-height:1.5;}
+  .lead-card .actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .lead-card .actions a, .lead-card .actions button{
+    font-size:12px;font-weight:700;padding:8px 12px;border-radius:7px;border:none;cursor:pointer;
+    text-decoration:none;font-family:'Inter',sans-serif;
+  }
+  .lead-card .wa-link{background:#e5f3ec;color:var(--green);}
+  .lead-card .move-btn{background:var(--navy);color:var(--white);}
+  .lead-card .move-btn:hover{background:var(--navy-dark);}
+  .lead-card .del-btn{background:transparent;color:var(--red);border:1.5px solid var(--border) !important;}
+  .lead-card .del-btn:hover{border-color:var(--red) !important;}
+  .sema-toggle{background:var(--bg);color:var(--navy-dark);border:1.5px solid var(--border) !important;}
+  .sema-toggle:hover{border-color:var(--navy) !important;}
+  .sema-toggle.active-verde{background:#e5f3ec;color:var(--green);border-color:var(--green) !important;}
+  .sema-toggle.active-rojo{background:#fbeaea;color:var(--red);border-color:var(--red) !important;}
+  @media (max-width:700px){ .leads-columns{grid-template-columns:1fr;} }
+
   @media (max-width:760px){
     .card-grid{grid-template-columns:1fr;}
     .card-data{border-right:none;border-bottom:1px solid var(--border);}
@@ -435,6 +471,7 @@
     <button class="tab-btn active" data-tab="formularios"><span class="letter">F</span>Formularios</button>
     <button class="tab-btn" data-tab="valoracion"><span class="letter">V</span>Panel de valoración</button>
     <button class="tab-btn" data-tab="reconocimiento"><span class="letter">R</span>Reconocimiento</button>
+    <button class="tab-btn" data-tab="leads"><span class="letter">L</span>Leads</button>
   </div>
 </div>
 
@@ -647,6 +684,38 @@
     <div class="empty-state" id="emptyReco" style="display:none;">Todavía no has guardado ningún reconocimiento.</div>
   </div>
 
+  <!-- ==================== TAB L — LEADS DE WHATSAPP ==================== -->
+  <div class="tab-panel" id="tab-leads">
+    <p class="section-desc">Contactos que llegan por WhatsApp. Empiezan en Nivel 1 — cuando confirman que quieren visitar, los subes a Nivel 2.</p>
+
+    <div class="add-piso-card">
+      <div class="reco-row-2">
+        <div class="add-piso-field"><label>Nombre</label><input type="text" id="lNombre"></div>
+        <div class="add-piso-field"><label>Teléfono</label><input type="text" id="lTelefono" placeholder="Ej. 34612345678"></div>
+      </div>
+      <div class="add-piso-field"><label>Piso de interés (opcional)</label><input type="text" id="lPisoInteres"></div>
+      <div class="add-piso-field" style="margin-bottom:14px;"><label>Notas</label><textarea id="lNotas" rows="2" placeholder="Lo que te comentó por WhatsApp..."></textarea></div>
+      <button id="addLeadBtn" class="add-piso-btn" disabled>Añadir lead</button>
+      <button id="cancelLeadEditBtn" class="edit-reco-btn" style="display:none;">Cancelar edición</button>
+      <p class="piso-hint" id="leadHint">Escribe al menos el nombre y el teléfono.</p>
+    </div>
+
+    <p id="loadingLeads" class="section-desc">Cargando leads...</p>
+
+    <div class="leads-columns">
+      <div class="leads-column">
+        <div class="leads-column-title"><span class="leads-num">1</span>Entrada</div>
+        <div class="cards-grid" id="leadsGridN1"></div>
+        <div class="empty-state" id="emptyLeadsN1" style="display:none;">Sin leads en Nivel 1.</div>
+      </div>
+      <div class="leads-column">
+        <div class="leads-column-title"><span class="leads-num">2</span>Visitas</div>
+        <div class="cards-grid" id="leadsGridN2"></div>
+        <div class="empty-state" id="emptyLeadsN2" style="display:none;">Sin leads en Nivel 2.</div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <div class="confirm-overlay" id="confirmOverlay">
@@ -720,9 +789,14 @@
         reconocimientoLoaded = true;
         loadReconocimientos();
       }
+      if(btn.dataset.tab === 'leads' && !leadsLoaded){
+        leadsLoaded = true;
+        loadLeads();
+      }
     });
   });
   let reconocimientoLoaded = false;
+  let leadsLoaded = false;
 
   // ---- Tab F: dynamic property cards ----
   const CLOUDINARY_CLOUD_NAME = 'do9fo5gg';
@@ -1265,6 +1339,7 @@
       payload.action = 'actualizar_reconocimiento';
       payload.fecha = editingFechaOriginal;
     }
+    alert('DEBUG\n\naction: ' + payload.action + '\nfecha enviada: ' + payload.fecha + '\ndirección: ' + payload.direccion + '\n\nURL destino:\n' + APPS_SCRIPT_URL);
     try{
       await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
       const wasEditing = !!editingFechaOriginal;
@@ -1629,6 +1704,163 @@
       card.style.pointerEvents = 'auto';
       alert('No se pudo eliminar. Revisa tu conexión.');
     }
+  }
+
+  // ---- Tab L: leads de WhatsApp ----
+  const lNombre = document.getElementById('lNombre');
+  const lTelefono = document.getElementById('lTelefono');
+  const lPisoInteres = document.getElementById('lPisoInteres');
+  const lNotas = document.getElementById('lNotas');
+  const addLeadBtn = document.getElementById('addLeadBtn');
+  const leadHint = document.getElementById('leadHint');
+  const loadingLeads = document.getElementById('loadingLeads');
+  const leadsGridN1 = document.getElementById('leadsGridN1');
+  const leadsGridN2 = document.getElementById('leadsGridN2');
+  const emptyLeadsN1 = document.getElementById('emptyLeadsN1');
+  const emptyLeadsN2 = document.getElementById('emptyLeadsN2');
+
+  function checkLeadReady(){
+    addLeadBtn.disabled = !(lNombre.value.trim() && lTelefono.value.trim());
+    if(!editingLeadFecha) leadHint.textContent = addLeadBtn.disabled ? 'Escribe al menos el nombre y el teléfono.' : '';
+  }
+  lNombre.addEventListener('input', checkLeadReady);
+  lTelefono.addEventListener('input', checkLeadReady);
+
+  let editingLeadFecha = null;
+  const cancelLeadEditBtn = document.getElementById('cancelLeadEditBtn');
+
+  function openLeadEdit(l){
+    lNombre.value = l['Nombre'] || '';
+    lTelefono.value = l['Teléfono'] || '';
+    lPisoInteres.value = l['Piso interés'] || '';
+    lNotas.value = l['Notas'] || '';
+    editingLeadFecha = l['Fecha'];
+    addLeadBtn.textContent = 'Guardar cambios';
+    cancelLeadEditBtn.style.display = 'block';
+    leadHint.textContent = 'Editando a ' + (l['Nombre'] || 'este lead');
+    checkLeadReady();
+    document.querySelector('.add-piso-card').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function resetLeadForm(){
+    lNombre.value = ''; lTelefono.value = ''; lPisoInteres.value = ''; lNotas.value = '';
+    editingLeadFecha = null;
+    addLeadBtn.textContent = 'Añadir lead';
+    cancelLeadEditBtn.style.display = 'none';
+    checkLeadReady();
+  }
+  cancelLeadEditBtn.addEventListener('click', resetLeadForm);
+
+  addLeadBtn.addEventListener('click', async ()=>{
+    addLeadBtn.disabled = true;
+    const wasEditing = !!editingLeadFecha;
+    addLeadBtn.textContent = wasEditing ? 'Guardando...' : 'Añadiendo...';
+    const payload = {
+      action: wasEditing ? 'actualizar_lead' : 'nuevo_lead',
+      nombre: lNombre.value.trim(),
+      telefono: lTelefono.value.trim(),
+      pisoInteres: lPisoInteres.value.trim(),
+      notas: lNotas.value.trim()
+    };
+    if(wasEditing) payload.fecha = editingLeadFecha;
+    try{
+      await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
+      resetLeadForm();
+      leadHint.textContent = wasEditing ? 'Cambios guardados ✓' : 'Lead añadido ✓';
+      setTimeout(()=> leadHint.textContent = 'Escribe al menos el nombre y el teléfono.', 2000);
+      await loadLeads();
+    } catch(err){
+      alert('No se pudo guardar. Revisa tu conexión.');
+    }
+    addLeadBtn.textContent = wasEditing ? 'Guardar cambios' : 'Añadir lead';
+    checkLeadReady();
+  });
+
+  async function loadLeads(){
+    loadingLeads.style.display = 'block';
+    leadsGridN1.innerHTML = ''; leadsGridN2.innerHTML = '';
+    emptyLeadsN1.style.display = 'none'; emptyLeadsN2.style.display = 'none';
+    try{
+      const res = await fetch(APPS_SCRIPT_URL + '?tipo=leads');
+      const json = await res.json();
+      loadingLeads.style.display = 'none';
+      if(!json.success){
+        emptyLeadsN1.textContent = json.error || 'No se pudo conectar con la hoja.';
+        emptyLeadsN1.style.display = 'block';
+        return;
+      }
+      const leads = json.data.reverse();
+      const n1 = leads.filter(l => String(l['Nivel']) !== '2');
+      const n2 = leads.filter(l => String(l['Nivel']) === '2');
+      renderLeadColumn(n1, leadsGridN1, emptyLeadsN1, '2');
+      renderLeadColumn(n2, leadsGridN2, emptyLeadsN2, '1');
+    } catch(err){
+      loadingLeads.style.display = 'none';
+      emptyLeadsN1.textContent = 'No se pudo conectar con la hoja.';
+      emptyLeadsN1.style.display = 'block';
+    }
+  }
+
+  function renderLeadColumn(leads, grid, emptyEl, moveTarget){
+    if(leads.length === 0){ emptyEl.style.display = 'block'; return; }
+    leads.forEach(l=>{
+      const card = document.createElement('div');
+      const sema = l['Semáforo'] || '';
+      card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '');
+      const waPhone = (l['Teléfono'] || '').replace(/[^0-9]/g, '');
+      card.innerHTML = `
+        <div class="name">${l['Nombre'] || 'Sin nombre'}</div>
+        <div class="meta">${l['Fecha'] ? formatDate(l['Fecha']) : '—'} · ${l['Teléfono'] || '—'}${l['Piso interés'] ? ' · ' + l['Piso interés'] : ''}</div>
+        ${l['Notas'] ? `<div class="notes">${l['Notas']}</div>` : ''}
+        <div class="actions">
+          ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+          <button class="sema-toggle sema-verde ${sema==='verde'?'active-verde':''}">🟢 Habilitar</button>
+          <button class="sema-toggle sema-rojo ${sema==='rojo'?'active-rojo':''}">🔴 Descartar</button>
+        </div>
+        <div class="actions" style="margin-top:8px;">
+          <button class="move-btn">${moveTarget === '2' ? 'Pasar a Nivel 2 →' : '← Volver a Nivel 1'}</button>
+          <button class="edit-lead-btn">✎ Editar</button>
+          <button class="del-btn">Eliminar</button>
+        </div>
+      `;
+      card.querySelector('.sema-verde').addEventListener('click', async ()=>{
+        const nuevo = sema === 'verde' ? '' : 'verde';
+        await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_lead', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
+        await loadLeads();
+      });
+      card.querySelector('.sema-rojo').addEventListener('click', async ()=>{
+        const nuevo = sema === 'rojo' ? '' : 'rojo';
+        await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_lead', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
+        await loadLeads();
+      });
+      card.querySelector('.move-btn').addEventListener('click', async ()=>{
+        try{
+          await fetch(APPS_SCRIPT_URL, {
+            method:'POST', mode:'no-cors',
+            body: JSON.stringify({ action:'mover_nivel_lead', fecha: l['Fecha'], telefono: l['Teléfono'], nivel: moveTarget })
+          });
+          await loadLeads();
+        } catch(err){ alert('No se pudo mover. Revisa tu conexión.'); }
+      });
+      card.querySelector('.edit-lead-btn').addEventListener('click', ()=> openLeadEdit(l));
+
+      card.querySelector('.del-btn').addEventListener('click', ()=>{
+        openConfirm(
+          async ()=>{
+            try{
+              await fetch(APPS_SCRIPT_URL, {
+                method:'POST', mode:'no-cors',
+                body: JSON.stringify({ action:'eliminar_lead', fecha: l['Fecha'], telefono: l['Teléfono'] })
+              });
+              await loadLeads();
+            } catch(err){ alert('No se pudo eliminar. Revisa tu conexión.'); }
+          },
+          '¿Eliminar este lead?',
+          'Se borra de tu hoja de forma permanente. No se puede deshacer.'
+        );
+      });
+      grid.appendChild(card);
+    });
   }
 </script>
 
