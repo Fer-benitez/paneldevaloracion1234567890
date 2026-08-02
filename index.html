@@ -82,12 +82,12 @@
     font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
     color:var(--navy-dark);margin-bottom:7px;display:block;
   }
-  .add-piso-field input[type="text"], .add-piso-field input[type="number"]{
+  .add-piso-field input[type="text"], .add-piso-field input[type="number"], .add-piso-field input[type="time"]{
     width:100%;background:var(--white);border:1.5px solid var(--border);color:var(--text);
     padding:12px 14px;font-family:'Inter',sans-serif;font-size:14.5px;border-radius:8px;
     transition:border-color .2s var(--ease);
   }
-  .add-piso-field input[type="text"]:focus, .add-piso-field input[type="number"]:focus{
+  .add-piso-field input[type="text"]:focus, .add-piso-field input[type="number"]:focus, .add-piso-field input[type="time"]:focus{
     outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(52,107,147,0.12);
   }
   .add-piso-field input[type="file"]{font-size:13px;width:100%;}
@@ -412,6 +412,11 @@
   .sema-toggle:hover{border-color:var(--navy) !important;}
   .sema-toggle.active-verde{background:#e5f3ec;color:var(--green);border-color:var(--green) !important;}
   .sema-toggle.active-rojo{background:#fbeaea;color:var(--red);border-color:var(--red) !important;}
+  .leads-group-title{
+    font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;color:var(--navy);
+    text-transform:uppercase;letter-spacing:0.05em;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--border);
+  }
+  .leads-group-title:first-child{margin-top:0;}
   @media (max-width:700px){ .leads-columns{grid-template-columns:1fr;} }
 
   @media (max-width:760px){
@@ -688,13 +693,24 @@
   <div class="tab-panel" id="tab-leads">
     <p class="section-desc">Contactos que llegan por WhatsApp. Empiezan en Nivel 1 — cuando confirman que quieren visitar, los subes a Nivel 2.</p>
 
-    <div class="add-piso-card">
+    <button id="toggleAddLeadBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;margin-bottom:16px;">+ Añadir lead a mano</button>
+
+    <div class="add-piso-card" id="addLeadCard" style="display:none;">
       <div class="reco-row-2">
         <div class="add-piso-field"><label>Nombre</label><input type="text" id="lNombre"></div>
         <div class="add-piso-field"><label>Teléfono</label><input type="text" id="lTelefono" placeholder="Ej. 34612345678"></div>
       </div>
       <div class="add-piso-field"><label>Piso de interés (opcional)</label><input type="text" id="lPisoInteres"></div>
       <div class="add-piso-field" style="margin-bottom:14px;"><label>Notas</label><textarea id="lNotas" rows="2" placeholder="Lo que te comentó por WhatsApp..."></textarea></div>
+      <div class="add-piso-field">
+        <label>Día de la visita <span style="color:var(--muted);font-weight:400;text-transform:none;">(necesario para pasar a Nivel 2)</span></label>
+        <div class="choice-group" id="diaVisitaGroup">
+          <button type="button" class="choice-btn">Hoy</button>
+          <button type="button" class="choice-btn">Mañana</button>
+          <button type="button" class="choice-btn">Otro</button>
+        </div>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;"><label>Hora de la visita</label><input type="time" id="lHoraVisita"></div>
       <button id="addLeadBtn" class="add-piso-btn" disabled>Añadir lead</button>
       <button id="cancelLeadEditBtn" class="edit-reco-btn" style="display:none;">Cancelar edición</button>
       <p class="piso-hint" id="leadHint">Escribe al menos el nombre y el teléfono.</p>
@@ -710,7 +726,7 @@
       </div>
       <div class="leads-column">
         <div class="leads-column-title"><span class="leads-num">2</span>Visitas</div>
-        <div class="cards-grid" id="leadsGridN2"></div>
+        <div id="leadsGridN2"></div>
         <div class="empty-state" id="emptyLeadsN2" style="display:none;">Sin leads en Nivel 2.</div>
       </div>
     </div>
@@ -1722,6 +1738,17 @@
   const emptyLeadsN1 = document.getElementById('emptyLeadsN1');
   const emptyLeadsN2 = document.getElementById('emptyLeadsN2');
 
+  const lHoraVisita = document.getElementById('lHoraVisita');
+  const diaVisitaGroup = document.getElementById('diaVisitaGroup');
+  let diaVisitaSeleccionado = '';
+  diaVisitaGroup.querySelectorAll('.choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      diaVisitaGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      diaVisitaSeleccionado = btn.textContent.trim();
+    });
+  });
+
   function checkLeadReady(){
     addLeadBtn.disabled = !(lNombre.value.trim() && lTelefono.value.trim());
     if(!editingLeadFecha) leadHint.textContent = addLeadBtn.disabled ? 'Escribe al menos el nombre y el teléfono.' : '';
@@ -1731,28 +1758,51 @@
 
   let editingLeadFecha = null;
   const cancelLeadEditBtn = document.getElementById('cancelLeadEditBtn');
+  const addLeadCard = document.getElementById('addLeadCard');
+  const toggleAddLeadBtn = document.getElementById('toggleAddLeadBtn');
+
+  function showAddLeadCard(){
+    addLeadCard.style.display = 'block';
+    toggleAddLeadBtn.textContent = '– Ocultar formulario';
+  }
+  function hideAddLeadCard(){
+    addLeadCard.style.display = 'none';
+    toggleAddLeadBtn.textContent = '+ Añadir lead a mano';
+  }
+  toggleAddLeadBtn.addEventListener('click', ()=>{
+    if(addLeadCard.style.display === 'none') showAddLeadCard();
+    else { hideAddLeadCard(); resetLeadForm(); }
+  });
 
   function openLeadEdit(l){
+    showAddLeadCard();
     lNombre.value = l['Nombre'] || '';
     lTelefono.value = l['Teléfono'] || '';
     lPisoInteres.value = l['Piso interés'] || '';
     lNotas.value = l['Notas'] || '';
+    lHoraVisita.value = l['Hora visita'] || '';
+    diaVisitaGroup.querySelectorAll('.choice-btn').forEach(b=>{
+      b.classList.toggle('active', b.textContent.trim() === l['Día visita']);
+    });
+    diaVisitaSeleccionado = l['Día visita'] || '';
     editingLeadFecha = l['Fecha'];
     addLeadBtn.textContent = 'Guardar cambios';
     cancelLeadEditBtn.style.display = 'block';
     leadHint.textContent = 'Editando a ' + (l['Nombre'] || 'este lead');
     checkLeadReady();
-    document.querySelector('.add-piso-card').scrollIntoView({ behavior:'smooth', block:'start' });
+    addLeadCard.scrollIntoView({ behavior:'smooth', block:'start' });
   }
 
   function resetLeadForm(){
-    lNombre.value = ''; lTelefono.value = ''; lPisoInteres.value = ''; lNotas.value = '';
+    lNombre.value = ''; lTelefono.value = ''; lPisoInteres.value = ''; lNotas.value = ''; lHoraVisita.value = '';
+    diaVisitaGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+    diaVisitaSeleccionado = '';
     editingLeadFecha = null;
     addLeadBtn.textContent = 'Añadir lead';
     cancelLeadEditBtn.style.display = 'none';
     checkLeadReady();
   }
-  cancelLeadEditBtn.addEventListener('click', resetLeadForm);
+  cancelLeadEditBtn.addEventListener('click', ()=>{ resetLeadForm(); hideAddLeadCard(); });
 
   addLeadBtn.addEventListener('click', async ()=>{
     addLeadBtn.disabled = true;
@@ -1763,12 +1813,15 @@
       nombre: lNombre.value.trim(),
       telefono: lTelefono.value.trim(),
       pisoInteres: lPisoInteres.value.trim(),
-      notas: lNotas.value.trim()
+      notas: lNotas.value.trim(),
+      diaVisita: diaVisitaSeleccionado,
+      horaVisita: lHoraVisita.value
     };
     if(wasEditing) payload.fecha = editingLeadFecha;
     try{
       await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
       resetLeadForm();
+      if(wasEditing) hideAddLeadCard();
       leadHint.textContent = wasEditing ? 'Cambios guardados ✓' : 'Lead añadido ✓';
       setTimeout(()=> leadHint.textContent = 'Escribe al menos el nombre y el teléfono.', 2000);
       await loadLeads();
@@ -1795,8 +1848,26 @@
       const leads = json.data.reverse();
       const n1 = leads.filter(l => String(l['Nivel']) !== '2');
       const n2 = leads.filter(l => String(l['Nivel']) === '2');
-      renderLeadColumn(n1, leadsGridN1, emptyLeadsN1, '2');
-      renderLeadColumn(n2, leadsGridN2, emptyLeadsN2, '1');
+
+      if(n1.length === 0){ emptyLeadsN1.style.display = 'block'; }
+      n1.forEach(l => leadsGridN1.appendChild(buildLeadCard(l, '2')));
+
+      if(n2.length === 0){
+        emptyLeadsN2.style.display = 'block';
+      } else {
+        ['Hoy','Mañana','Otro'].forEach(grupo=>{
+          const enGrupo = n2.filter(l => (l['Día visita'] || 'Otro') === grupo);
+          if(enGrupo.length === 0) return;
+          if(grupo !== 'Otro'){
+            enGrupo.sort((a,b) => (a['Hora visita'] || '99:99').localeCompare(b['Hora visita'] || '99:99'));
+          }
+          const groupTitle = document.createElement('div');
+          groupTitle.className = 'leads-group-title';
+          groupTitle.textContent = grupo;
+          leadsGridN2.appendChild(groupTitle);
+          enGrupo.forEach(l => leadsGridN2.appendChild(buildLeadCard(l, '1')));
+        });
+      }
     } catch(err){
       loadingLeads.style.display = 'none';
       emptyLeadsN1.textContent = 'No se pudo conectar con la hoja.';
@@ -1804,16 +1875,19 @@
     }
   }
 
-  function renderLeadColumn(leads, grid, emptyEl, moveTarget){
-    if(leads.length === 0){ emptyEl.style.display = 'block'; return; }
-    leads.forEach(l=>{
+  function buildLeadCard(l, moveTarget){
       const card = document.createElement('div');
       const sema = l['Semáforo'] || '';
       card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '');
       const waPhone = (l['Teléfono'] || '').replace(/[^0-9]/g, '');
+      const visitaTxt = [l['Día visita'], l['Hora visita']].filter(Boolean).join(' · ');
       card.innerHTML = `
         <div class="name">${l['Nombre'] || 'Sin nombre'}</div>
         <div class="meta">${l['Fecha'] ? formatDate(l['Fecha']) : '—'} · ${l['Teléfono'] || '—'}${l['Piso interés'] ? ' · ' + l['Piso interés'] : ''}</div>
+        ${visitaTxt ? `<div class="meta" style="color:var(--navy);font-weight:700;">📅 Visita programada: ${visitaTxt}</div>` : ''}
+        ${l['Disponibilidad visita'] ? `<div class="meta">🗨️ Dijo que podía: ${l['Disponibilidad visita']}</div>` : ''}
+        ${l['Presentación'] ? `<div class="notes"><strong>Sobre ellos:</strong> ${l['Presentación']}</div>` : ''}
+        ${l['Trabajo e ingresos'] ? `<div class="notes"><strong>Trabajo/ingresos:</strong> ${l['Trabajo e ingresos']}</div>` : ''}
         ${l['Notas'] ? `<div class="notes">${l['Notas']}</div>` : ''}
         <div class="actions">
           ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
@@ -1837,6 +1911,17 @@
         await loadLeads();
       });
       card.querySelector('.move-btn').addEventListener('click', async ()=>{
+        if(moveTarget === '2'){
+          const faltan = [];
+          if(sema !== 'verde') faltan.push('marcarlo en verde 🟢');
+          if(!l['Día visita']) faltan.push('elegir el día de la visita');
+          if(!l['Hora visita']) faltan.push('poner la hora de la visita');
+          if(faltan.length > 0){
+            alert('Antes de pasarlo a Nivel 2, falta:\n\n– ' + faltan.join('\n– ') + '\n\nEdítalo para completarlo.');
+            openLeadEdit(l);
+            return;
+          }
+        }
         try{
           await fetch(APPS_SCRIPT_URL, {
             method:'POST', mode:'no-cors',
@@ -1862,8 +1947,7 @@
           'Se borra de tu hoja de forma permanente. No se puede deshacer.'
         );
       });
-      grid.appendChild(card);
-    });
+      return card;
   }
 </script>
 
