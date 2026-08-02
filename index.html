@@ -739,6 +739,7 @@
     <p class="section-desc">Contactos que llegan por WhatsApp. Empiezan en Nivel 1 — cuando confirman que quieren visitar, los subes a Nivel 2.</p>
 
     <button id="toggleAddLeadBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;margin-bottom:16px;">+ Añadir lead a mano</button>
+    <button id="refreshLeadsBtn" class="refresh-btn" style="margin-bottom:16px;margin-left:10px;">↻ Actualizar</button>
 
     <div class="add-piso-card" id="addLeadCard" style="display:none;">
       <div class="reco-row-2">
@@ -1908,6 +1909,7 @@
   const cancelLeadEditBtn = document.getElementById('cancelLeadEditBtn');
   const addLeadCard = document.getElementById('addLeadCard');
   const toggleAddLeadBtn = document.getElementById('toggleAddLeadBtn');
+  document.getElementById('refreshLeadsBtn').addEventListener('click', loadLeads);
 
   function showAddLeadCard(){
     addLeadCard.style.display = 'block';
