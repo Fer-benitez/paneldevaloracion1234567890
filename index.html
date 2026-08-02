@@ -1028,6 +1028,7 @@
             </div>
             <div class="card-date">${formatDate(c['Fecha'])} · ${c['Situación laboral'] || '—'}</div>
             ${c['Piso'] ? `<div class="card-piso">📍 ${c['Piso']}</div>` : ''}
+            <div class="data-row"><span>DNI/NIE</span><span>${c['DNI/NIE'] || '—'}</span></div>
             <div class="data-row"><span>Teléfono</span><span>${c['Teléfono'] || '—'}</span></div>
             <div class="data-row"><span>Email</span><span>${c['Email'] || '—'}</span></div>
             <div class="data-row"><span>Personas / Mascotas</span><span>${c['Nº personas'] || '—'} · ${c['Mascotas'] || '—'}</span></div>
