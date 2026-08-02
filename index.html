@@ -1696,18 +1696,16 @@
     card.style.opacity = '0.4';
     card.style.pointerEvents = 'none';
     try{
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method:'POST',
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST', mode:'no-cors',
         body: JSON.stringify({ action:'eliminar_reconocimiento', direccion: direccion, fecha: fecha })
       });
-      const text = await res.text();
-      alert('RESPUESTA DEL SERVIDOR:\n\n' + text);
       card.remove();
       if(recoGrid.querySelectorAll('.form-card').length === 0){ emptyReco.style.display = 'block'; }
     } catch(err){
-      alert('ERROR AL CONECTAR:\n\n' + err.message);
       card.style.opacity = '1';
       card.style.pointerEvents = 'auto';
+      alert('No se pudo eliminar. Revisa tu conexión.');
     }
   }
 
@@ -1871,5 +1869,3 @@
 
 </body>
 </html>
-
-
