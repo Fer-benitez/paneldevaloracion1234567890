@@ -1693,20 +1693,21 @@
   }
 
   async function deleteReconocimiento(direccion, fecha, card){
-    alert('DEBUG ELIMINAR\n\ndirección: "' + direccion + '"\nfecha: "' + fecha + '"\n\nURL destino:\n' + APPS_SCRIPT_URL);
     card.style.opacity = '0.4';
     card.style.pointerEvents = 'none';
     try{
-      await fetch(APPS_SCRIPT_URL, {
-        method:'POST', mode:'no-cors',
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method:'POST',
         body: JSON.stringify({ action:'eliminar_reconocimiento', direccion: direccion, fecha: fecha })
       });
+      const text = await res.text();
+      alert('RESPUESTA DEL SERVIDOR:\n\n' + text);
       card.remove();
       if(recoGrid.querySelectorAll('.form-card').length === 0){ emptyReco.style.display = 'block'; }
     } catch(err){
+      alert('ERROR AL CONECTAR:\n\n' + err.message);
       card.style.opacity = '1';
       card.style.pointerEvents = 'auto';
-      alert('No se pudo eliminar. Revisa tu conexión.');
     }
   }
 
@@ -1870,4 +1871,5 @@
 
 </body>
 </html>
+
 
