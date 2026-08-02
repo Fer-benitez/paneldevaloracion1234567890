@@ -1342,7 +1342,6 @@
       payload.action = 'actualizar_reconocimiento';
       payload.fecha = editingFechaOriginal;
     }
-    alert('DEBUG\n\naction: ' + payload.action + '\nfecha enviada: ' + payload.fecha + '\ndirección: ' + payload.direccion + '\n\nURL destino:\n' + APPS_SCRIPT_URL);
     try{
       await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
       const wasEditing = !!editingFechaOriginal;
