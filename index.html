@@ -1029,10 +1029,12 @@
             <div class="card-date">${formatDate(c['Fecha'])} · ${c['Situación laboral'] || '—'}</div>
             ${c['Piso'] ? `<div class="card-piso">📍 ${c['Piso']}</div>` : ''}
             <div class="data-row"><span>DNI/NIE</span><span>${c['DNI/NIE'] || '—'}</span></div>
+            ${c['Nombre completo 2'] ? `<div class="data-row"><span>2º titular</span><span>${c['Nombre completo 2']}${c['DNI/NIE 2'] ? ' · ' + c['DNI/NIE 2'] : ''}</span></div>` : ''}
             <div class="data-row"><span>Teléfono</span><span>${c['Teléfono'] || '—'}</span></div>
             <div class="data-row"><span>Email</span><span>${c['Email'] || '—'}</span></div>
             <div class="data-row"><span>Personas / Mascotas</span><span>${c['Nº personas'] || '—'} · ${c['Mascotas'] || '—'}</span></div>
             <div class="data-row"><span>Garantías</span><span>${c['Garantías'] || '—'}</span></div>
+            ${c['Relación con el fiador'] ? `<div class="data-row"><span>Relación con fiador</span><span>${c['Relación con el fiador']}</span></div>` : ''}
             <div class="data-row"><span>Ingresos / Renta</span><span>${c['Ingresos'] || '—'}€ / ${c['Renta'] || '—'}€</span></div>
             <div class="data-row"><span>Solvencia</span><span><span class="solvency-pill ${solvenciaClass}">${c['% Solvencia'] || '—'}</span></span></div>
             ${c['Presentación'] ? `<div class="data-row" style="display:block;margin-top:8px;"><span style="display:block;margin-bottom:4px;">Presentación</span><span style="text-align:left;font-weight:400;display:block;">${c['Presentación']}</span></div>` : ''}
@@ -1691,6 +1693,7 @@
   }
 
   async function deleteReconocimiento(direccion, fecha, card){
+    alert('DEBUG ELIMINAR\n\ndirección: "' + direccion + '"\nfecha: "' + fecha + '"\n\nURL destino:\n' + APPS_SCRIPT_URL);
     card.style.opacity = '0.4';
     card.style.pointerEvents = 'none';
     try{
@@ -1867,3 +1870,4 @@
 
 </body>
 </html>
+
