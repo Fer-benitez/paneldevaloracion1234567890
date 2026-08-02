@@ -121,6 +121,12 @@
   .form-card .copy-link{background:var(--bg);color:var(--navy-dark);border:1.5px solid var(--border)!important;}
   .form-card .copy-link:hover{border-color:var(--navy)!important;}
   .form-card .copy-link.copied{background:#e5f3ec;color:var(--green);border-color:var(--green)!important;}
+  .tipo-badge{
+    display:inline-block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;
+    padding:3px 9px;border-radius:999px;margin-bottom:10px;
+  }
+  .tipo-badge.tipo-ficha{background:#eaf1f6;color:var(--navy);}
+  .tipo-badge.tipo-leads{background:#fdeee0;color:var(--orange);}
   .delete-piso-btn{
     width:100%;margin-top:8px;background:transparent;color:var(--red);border:1.5px solid var(--border);
     padding:8px;border-radius:7px;font-weight:600;font-size:12px;cursor:pointer;
@@ -417,7 +423,30 @@
     text-transform:uppercase;letter-spacing:0.05em;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--border);
   }
   .leads-group-title:first-child{margin-top:0;}
-  @media (max-width:700px){ .leads-columns{grid-template-columns:1fr;} }
+  .visita-programada{color:var(--navy);font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .hora-pill{
+    background:var(--orange);color:var(--navy-darker);font-weight:800;font-size:13px;
+    padding:3px 10px;border-radius:999px;display:inline-block;
+  }
+  .leads-bulk-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+  .lead-select-check{display:none;margin-bottom:10px;}
+  .lead-select-check input{width:18px;height:18px;accent-color:var(--navy);cursor:pointer;}
+  .lead-card.selecting .lead-select-check{display:flex;align-items:center;gap:8px;}
+  .lead-card.select-checked{outline:2px solid var(--navy);outline-offset:2px;}
+  .leads-mobile-tabs{display:none;}
+  @media (max-width:700px){
+    .leads-columns{grid-template-columns:1fr;}
+    .leads-mobile-tabs{
+      display:flex;gap:8px;margin-bottom:18px;background:var(--bg);padding:4px;border-radius:10px;
+    }
+    .leads-mtab{
+      flex:1;background:transparent;border:none;padding:11px;border-radius:8px;
+      font-family:'Inter',sans-serif;font-weight:700;font-size:13.5px;color:var(--muted);cursor:pointer;
+    }
+    .leads-mtab.active{background:var(--white);color:var(--navy);box-shadow:0 1px 4px rgba(22,50,74,0.12);}
+    .leads-column{display:none;}
+    .leads-column.mobile-active{display:block;}
+  }
 
   @media (max-width:760px){
     .card-grid{grid-template-columns:1fr;}
@@ -500,6 +529,13 @@
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Link del formulario (el que ya has publicado en GitHub)</label>
         <input type="text" id="nuevoPisoLink" placeholder="https://fer-benitez.github.io/nombre-del-repo/">
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Tipo de formulario</label>
+        <div class="choice-group" id="tipoPisoGroup">
+          <button type="button" class="choice-btn active">Ficha completa</button>
+          <button type="button" class="choice-btn">Leads (pre-visita)</button>
+        </div>
       </div>
       <div id="pisoUploadStatus" class="piso-upload-status"></div>
       <button id="addPisoBtn" class="add-piso-btn" disabled>Añadir a Gestión</button>
@@ -718,13 +754,28 @@
 
     <p id="loadingLeads" class="section-desc">Cargando leads...</p>
 
+    <div class="leads-bulk-bar">
+      <button id="toggleSelectModeBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;">☑ Seleccionar varios</button>
+      <div id="bulkActions" style="display:none;align-items:center;gap:14px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;">
+          <input type="checkbox" id="selectAllLeads" style="width:17px;height:17px;accent-color:var(--navy);cursor:pointer;">Seleccionar todos
+        </label>
+        <button id="deleteSelectedBtn" class="del-btn" style="width:auto;padding:10px 18px;" disabled>Eliminar seleccionados (0)</button>
+      </div>
+    </div>
+
+    <div class="leads-mobile-tabs">
+      <button class="leads-mtab active" data-target="leadsColN1">Entrada</button>
+      <button class="leads-mtab" data-target="leadsColN2">Visitas</button>
+    </div>
+
     <div class="leads-columns">
-      <div class="leads-column">
+      <div class="leads-column" id="leadsColN1">
         <div class="leads-column-title"><span class="leads-num">1</span>Entrada</div>
         <div class="cards-grid" id="leadsGridN1"></div>
         <div class="empty-state" id="emptyLeadsN1" style="display:none;">Sin leads en Nivel 1.</div>
       </div>
-      <div class="leads-column">
+      <div class="leads-column" id="leadsColN2">
         <div class="leads-column-title"><span class="leads-num">2</span>Visitas</div>
         <div id="leadsGridN2"></div>
         <div class="empty-state" id="emptyLeadsN2" style="display:none;">Sin leads en Nivel 2.</div>
@@ -882,6 +933,16 @@
     }
   }
 
+  const tipoPisoGroup = document.getElementById('tipoPisoGroup');
+  let tipoPisoSeleccionado = 'Ficha completa';
+  tipoPisoGroup.querySelectorAll('.choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      tipoPisoGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      tipoPisoSeleccionado = btn.textContent.trim();
+    });
+  });
+
   addPisoBtn.addEventListener('click', async ()=>{
     const nombre = nuevoPisoNombre.value.trim();
     const link = nuevoPisoLink.value.trim();
@@ -893,13 +954,16 @@
       await fetch(APPS_SCRIPT_URL, {
         method:'POST',
         mode:'no-cors',
-        body: JSON.stringify({ action:'nuevo_piso', piso: nombre, imagen: uploadedImageUrl, link: link })
+        body: JSON.stringify({ action:'nuevo_piso', piso: nombre, imagen: uploadedImageUrl, link: link, tipo: tipoPisoSeleccionado })
       });
       nuevoPisoNombre.value = '';
       nuevoPisoLink.value = '';
       nuevoPisoFoto.value = '';
       uploadedImageUrl = '';
       pisoUploadStatus.textContent = '';
+      tipoPisoGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      tipoPisoGroup.querySelector('.choice-btn').classList.add('active');
+      tipoPisoSeleccionado = 'Ficha completa';
       pisoHint.textContent = 'Escribe el nombre, pega el link y sube una foto para poder añadirlo.';
       await loadPisos();
     } catch(err){
@@ -923,6 +987,7 @@
             ${p['Imagen'] ? `<img class="thumb" src="${p['Imagen']}" alt="${p['Piso']}">` : ''}
             <div class="body">
               <div class="name">${p['Piso'] || 'Sin nombre'}</div>
+              <span class="tipo-badge ${p['Tipo'] === 'Leads (pre-visita)' ? 'tipo-leads' : 'tipo-ficha'}">${p['Tipo'] === 'Leads (pre-visita)' ? 'Leads' : 'Ficha'}</span>
               <div class="actions">
                 <a class="open-link" href="${p['Link']}" target="_blank" rel="noopener">Abrir</a>
                 <button class="copy-link" data-link="${p['Link']}">Copiar link</button>
@@ -1756,6 +1821,80 @@
   lNombre.addEventListener('input', checkLeadReady);
   lTelefono.addEventListener('input', checkLeadReady);
 
+  let selectMode = false;
+  let selectedLeads = new Set();
+  const toggleSelectModeBtn = document.getElementById('toggleSelectModeBtn');
+  const bulkActions = document.getElementById('bulkActions');
+  const selectAllLeads = document.getElementById('selectAllLeads');
+  const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+
+  function updateBulkDeleteBtn(){
+    deleteSelectedBtn.textContent = 'Eliminar seleccionados (' + selectedLeads.size + ')';
+    deleteSelectedBtn.disabled = selectedLeads.size === 0;
+  }
+
+  toggleSelectModeBtn.addEventListener('click', ()=>{
+    selectMode = !selectMode;
+    selectedLeads.clear();
+    selectAllLeads.checked = false;
+    toggleSelectModeBtn.textContent = selectMode ? '✕ Cancelar selección' : '☑ Seleccionar varios';
+    bulkActions.style.display = selectMode ? 'flex' : 'none';
+    document.querySelectorAll('.lead-card').forEach(card=>{
+      card.classList.toggle('selecting', selectMode);
+      card.classList.remove('select-checked');
+      const cb = card.querySelector('.lead-checkbox');
+      if(cb) cb.checked = false;
+    });
+    updateBulkDeleteBtn();
+  });
+
+  selectAllLeads.addEventListener('change', ()=>{
+    document.querySelectorAll('.lead-card').forEach(card=>{
+      const cb = card.querySelector('.lead-checkbox');
+      cb.checked = selectAllLeads.checked;
+      const key = card.dataset.fecha + '|' + card.dataset.telefono;
+      if(selectAllLeads.checked){ selectedLeads.add(key); card.classList.add('select-checked'); }
+      else { selectedLeads.delete(key); card.classList.remove('select-checked'); }
+    });
+    updateBulkDeleteBtn();
+  });
+
+  deleteSelectedBtn.addEventListener('click', ()=>{
+    const n = selectedLeads.size;
+    if(n === 0) return;
+    openConfirm(
+      ()=>{
+        setTimeout(()=>{
+          openConfirm(
+            async ()=>{
+              deleteSelectedBtn.disabled = true;
+              deleteSelectedBtn.textContent = 'Eliminando...';
+              for(const key of selectedLeads){
+                const [fecha, telefono] = key.split('|');
+                try{
+                  await fetch(APPS_SCRIPT_URL, {
+                    method:'POST', mode:'no-cors',
+                    body: JSON.stringify({ action:'eliminar_lead', fecha: fecha, telefono: telefono })
+                  });
+                } catch(err){ /* seguimos con los demás aunque uno falle */ }
+              }
+              selectedLeads.clear();
+              selectMode = false;
+              toggleSelectModeBtn.textContent = '☑ Seleccionar varios';
+              bulkActions.style.display = 'none';
+              selectAllLeads.checked = false;
+              await loadLeads();
+            },
+            '⚠️ Última confirmación',
+            'Vas a borrar ' + n + ' lead(s) de forma DEFINITIVA. Esta acción no se puede deshacer. ¿Seguro que quieres continuar?'
+          );
+        }, 50);
+      },
+      '¿Eliminar ' + n + ' lead(s) seleccionados?',
+      'Se borrarán de tu hoja de Google. Te pediremos que lo confirmes una vez más.'
+    );
+  });
+
   let editingLeadFecha = null;
   const cancelLeadEditBtn = document.getElementById('cancelLeadEditBtn');
   const addLeadCard = document.getElementById('addLeadCard');
@@ -1780,7 +1919,7 @@
     lTelefono.value = l['Teléfono'] || '';
     lPisoInteres.value = l['Piso interés'] || '';
     lNotas.value = l['Notas'] || '';
-    lHoraVisita.value = l['Hora visita'] || '';
+    lHoraVisita.value = formatHora(l['Hora visita']);
     diaVisitaGroup.querySelectorAll('.choice-btn').forEach(b=>{
       b.classList.toggle('active', b.textContent.trim() === l['Día visita']);
     });
@@ -1859,7 +1998,7 @@
           const enGrupo = n2.filter(l => (l['Día visita'] || 'Otro') === grupo);
           if(enGrupo.length === 0) return;
           if(grupo !== 'Otro'){
-            enGrupo.sort((a,b) => (a['Hora visita'] || '99:99').localeCompare(b['Hora visita'] || '99:99'));
+            enGrupo.sort((a,b) => (formatHora(a['Hora visita']) || '99:99').localeCompare(formatHora(b['Hora visita']) || '99:99'));
           }
           const groupTitle = document.createElement('div');
           groupTitle.className = 'leads-group-title';
@@ -1875,16 +2014,43 @@
     }
   }
 
+  document.getElementById('leadsColN1').classList.add('mobile-active');
+  document.querySelectorAll('.leads-mtab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.leads-mtab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.leads-column').forEach(c=>c.classList.remove('mobile-active'));
+      document.getElementById(btn.dataset.target).classList.add('mobile-active');
+    });
+  });
+
+  function formatHora(val){
+    if(!val) return '';
+    const str = String(val);
+    if(str.includes('T') && str.includes(':')){
+      // Sheets lo convirtió a fecha completa por error — nos quedamos solo con HH:MM
+      const match = str.match(/T(\d{2}:\d{2})/);
+      return match ? match[1] : str;
+    }
+    return str;
+  }
+
   function buildLeadCard(l, moveTarget){
       const card = document.createElement('div');
       const sema = l['Semáforo'] || '';
-      card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '');
+      card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '') + (selectMode ? ' selecting' : '');
+      card.dataset.fecha = l['Fecha'];
+      card.dataset.telefono = l['Teléfono'];
       const waPhone = (l['Teléfono'] || '').replace(/[^0-9]/g, '');
-      const visitaTxt = [l['Día visita'], l['Hora visita']].filter(Boolean).join(' · ');
+      const horaLimpia = formatHora(l['Hora visita']);
+      const visitaHtml = (l['Día visita'] || horaLimpia)
+        ? `<div class="meta visita-programada">📅 Visita: <strong>${l['Día visita'] || ''}</strong>${horaLimpia ? ` <span class="hora-pill">${horaLimpia}</span>` : ''}</div>`
+        : '';
       card.innerHTML = `
+        <label class="lead-select-check"><input type="checkbox" class="lead-checkbox"> Seleccionar</label>
         <div class="name">${l['Nombre'] || 'Sin nombre'}</div>
         <div class="meta">${l['Fecha'] ? formatDate(l['Fecha']) : '—'} · ${l['Teléfono'] || '—'}${l['Piso interés'] ? ' · ' + l['Piso interés'] : ''}</div>
-        ${visitaTxt ? `<div class="meta" style="color:var(--navy);font-weight:700;">📅 Visita programada: ${visitaTxt}</div>` : ''}
+        ${visitaHtml}
         ${l['Disponibilidad visita'] ? `<div class="meta">🗨️ Dijo que podía: ${l['Disponibilidad visita']}</div>` : ''}
         ${l['Presentación'] ? `<div class="notes"><strong>Sobre ellos:</strong> ${l['Presentación']}</div>` : ''}
         ${l['Trabajo e ingresos'] ? `<div class="notes"><strong>Trabajo/ingresos:</strong> ${l['Trabajo e ingresos']}</div>` : ''}
@@ -1900,6 +2066,13 @@
           <button class="del-btn">Eliminar</button>
         </div>
       `;
+      card.querySelector('.lead-checkbox').addEventListener('change', (e)=>{
+        const key = l['Fecha'] + '|' + l['Teléfono'];
+        if(e.target.checked){ selectedLeads.add(key); card.classList.add('select-checked'); }
+        else { selectedLeads.delete(key); card.classList.remove('select-checked'); }
+        updateBulkDeleteBtn();
+      });
+
       card.querySelector('.sema-verde').addEventListener('click', async ()=>{
         const nuevo = sema === 'verde' ? '' : 'verde';
         await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_lead', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
