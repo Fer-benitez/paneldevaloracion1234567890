@@ -401,6 +401,15 @@
   .lead-card.semaforo-rojo{border-left-color:var(--red);opacity:0.55;filter:grayscale(0.6);}
   .lead-card.semaforo-rojo:hover{opacity:0.9;filter:grayscale(0.2);}
   .lead-card.semaforo-rojo .name{text-decoration:line-through;text-decoration-color:var(--red);}
+  .lead-card.visita-hecha{opacity:0.6;}
+  .lead-card.visita-hecha:hover{opacity:0.9;}
+  .lead-card.visita-hecha .name::after{content:" ✓ ya visitado";font-size:11px;font-weight:600;color:var(--muted);text-decoration:none;}
+  .visita-realizada-btn{
+    background:var(--bg);color:var(--navy-dark);border:1.5px solid var(--border);
+    padding:8px 12px;border-radius:7px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .visita-realizada-btn:hover{border-color:var(--navy);}
+  .visita-realizada-btn.active-realizada{background:#eaf1f6;color:var(--navy);border-color:var(--navy);}
   .lead-card .name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;color:var(--navy-darker);margin-bottom:4px;}
   .lead-card .meta{font-size:12.5px;color:var(--muted);margin-bottom:8px;}
   .lead-card .notes{font-size:13px;color:var(--text);margin-bottom:10px;line-height:1.5;}
@@ -2038,7 +2047,8 @@
   function buildLeadCard(l, moveTarget){
       const card = document.createElement('div');
       const sema = l['Semáforo'] || '';
-      card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '') + (selectMode ? ' selecting' : '');
+      const realizada = l['Visita realizada'] === 'Sí';
+      card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '') + (selectMode ? ' selecting' : '') + (realizada ? ' visita-hecha' : '');
       card.dataset.fecha = l['Fecha'];
       card.dataset.telefono = l['Teléfono'];
       const waPhone = (l['Teléfono'] || '').replace(/[^0-9]/g, '');
@@ -2061,6 +2071,7 @@
           <button class="sema-toggle sema-rojo ${sema==='rojo'?'active-rojo':''}">🔴 Descartar</button>
         </div>
         <div class="actions" style="margin-top:8px;">
+          ${moveTarget === '1' ? `<button class="visita-realizada-btn ${realizada ? 'active-realizada' : ''}">${realizada ? '✓ Visita realizada' : 'Marcar visita realizada'}</button>` : ''}
           <button class="move-btn">${moveTarget === '2' ? 'Pasar a Nivel 2 →' : '← Volver a Nivel 1'}</button>
           <button class="edit-lead-btn">✎ Editar</button>
           <button class="del-btn">Eliminar</button>
@@ -2072,6 +2083,14 @@
         else { selectedLeads.delete(key); card.classList.remove('select-checked'); }
         updateBulkDeleteBtn();
       });
+
+      if(moveTarget === '1'){
+        card.querySelector('.visita-realizada-btn').addEventListener('click', async ()=>{
+          const nuevo = realizada ? '' : 'Sí';
+          await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'marcar_visita_realizada', fecha: l['Fecha'], telefono: l['Teléfono'], realizada: nuevo }) });
+          await loadLeads();
+        });
+      }
 
       card.querySelector('.sema-verde').addEventListener('click', async ()=>{
         const nuevo = sema === 'verde' ? '' : 'verde';
