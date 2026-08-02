@@ -2053,7 +2053,7 @@
       card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '') + (selectMode ? ' selecting' : '') + (realizada ? ' visita-hecha' : '');
       card.dataset.fecha = l['Fecha'];
       card.dataset.telefono = l['Teléfono'];
-      const waPhone = (l['Teléfono'] || '').replace(/[^0-9]/g, '');
+      const waPhone = String(l['Teléfono'] || '').replace(/[^0-9]/g, '');
       const horaLimpia = formatHora(l['Hora visita']);
       const visitaHtml = (l['Día visita'] || horaLimpia)
         ? `<div class="meta visita-programada">📅 Visita: <strong>${l['Día visita'] || ''}</strong>${horaLimpia ? ` <span class="hora-pill">${horaLimpia}</span>` : ''}</div>`
