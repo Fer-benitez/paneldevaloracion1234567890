@@ -431,7 +431,7 @@
     background:var(--white);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;
     padding:16px;margin-bottom:12px;transition:opacity .2s var(--ease), filter .2s var(--ease);
   }
-  .lead-card.semaforo-verde{border-left-color:var(--green);}
+  .lead-card.semaforo-verde{border-left-color:var(--green);background:rgba(46,139,87,0.1);}
   .lead-card.semaforo-rojo{border-left-color:var(--red);opacity:0.55;filter:grayscale(0.6);}
   .lead-card.semaforo-rojo:hover{opacity:0.9;filter:grayscale(0.2);}
   .lead-card.semaforo-rojo .name{text-decoration:line-through;text-decoration-color:var(--red);}
@@ -470,6 +470,10 @@
   .entrada-hora{
     display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;
     color:var(--navy-darker);margin-bottom:8px;
+  }
+  .entrada-pill{
+    background:#dde3e8;color:var(--navy-darker);font-weight:800;font-size:13px;
+    padding:3px 10px;border-radius:999px;display:inline-block;
   }
   .hora-pill{
     background:var(--orange);color:var(--navy-darker);font-weight:800;font-size:13px;
@@ -2229,6 +2233,21 @@
     return d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
   }
 
+  function resaltarDiaHora(texto){
+    if(!texto) return '';
+    let out = String(texto);
+    // Horas tipo 18:20, 9:00, 18h, 18h20
+    out = out.replace(/\b\d{1,2}:\d{2}\b/g, m => `<strong>${m}</strong>`);
+    out = out.replace(/\b\d{1,2}h(?:\d{2})?\b/gi, m => `<strong>${m}</strong>`);
+    // Días: hoy, mañana, pasado mañana, y días de la semana
+    const dias = ['hoy','mañana','pasado mañana','lunes','martes','miércoles','miercoles','jueves','viernes','sábado','sabado','domingo'];
+    dias.forEach(dia=>{
+      const re = new RegExp('\\b' + dia + '\\b', 'gi');
+      out = out.replace(re, m => `<strong>${m}</strong>`);
+    });
+    return out;
+  }
+
   function buildLeadCard(l, moveTarget){
       const card = document.createElement('div');
       const sema = l['Semáforo'] || '';
@@ -2243,11 +2262,11 @@
         : '';
       card.innerHTML = `
         <label class="lead-select-check"><input type="checkbox" class="lead-checkbox"> Seleccionar</label>
-        ${moveTarget === '2' ? `<div class="entrada-hora">🕐 Entró a las <span class="hora-pill">${horaLlegada(l['Fecha']) || '—'}</span></div>` : ''}
+        ${moveTarget === '2' ? `<div class="entrada-hora">🕐 Entró a las <span class="entrada-pill">${horaLlegada(l['Fecha']) || '—'}</span></div>` : ''}
         <div class="name">${l['Nombre'] || 'Sin nombre'}</div>
         <div class="meta">${l['Fecha'] ? formatDate(l['Fecha']) : '—'} · ${l['Teléfono'] || '—'}${l['Piso interés'] ? ' · ' + l['Piso interés'] : ''}</div>
         ${visitaHtml}
-        ${l['Disponibilidad visita'] ? `<div class="meta">🗨️ Dijo que podía: ${l['Disponibilidad visita']}</div>` : ''}
+        ${l['Disponibilidad visita'] ? `<div class="meta">🗨️ Dijo que podía: ${resaltarDiaHora(l['Disponibilidad visita'])}</div>` : ''}
         ${l['Presentación'] ? `<div class="notes"><strong>Sobre ellos:</strong> ${l['Presentación']}</div>` : ''}
         ${l['Trabajo e ingresos'] ? `<div class="notes"><strong>Trabajo/ingresos:</strong> ${l['Trabajo e ingresos']}</div>` : ''}
         ${l['Notas'] ? `<div class="notes">${l['Notas']}</div>` : ''}
