@@ -467,6 +467,10 @@
   }
   .leads-group-title:first-child{margin-top:0;}
   .visita-programada{color:var(--navy);font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .entrada-hora{
+    display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;
+    color:var(--navy-darker);margin-bottom:8px;
+  }
   .hora-pill{
     background:var(--orange);color:var(--navy-darker);font-weight:800;font-size:13px;
     padding:3px 10px;border-radius:999px;display:inline-block;
@@ -1182,6 +1186,7 @@
             ${c['Relación con el fiador'] ? `<div class="data-row"><span>Relación con fiador</span><span>${c['Relación con el fiador']}</span></div>` : ''}
             <div class="data-row"><span>Ingresos / Renta</span><span>${c['Ingresos'] || '—'}€ / ${c['Renta'] || '—'}€</span></div>
             <div class="data-row"><span>Solvencia</span><span><span class="solvency-pill ${solvenciaClass}">${c['% Solvencia'] || '—'}</span></span></div>
+            <div class="data-row"><span>RGPD</span><span>${c['Consentimiento RGPD'] ? '✓ Aceptado' + (c['Fecha consentimiento'] ? ' · ' + c['Fecha consentimiento'] : '') : '✕ No consta'}</span></div>
             ${c['Presentación'] ? `<div class="data-row" style="display:block;margin-top:8px;"><span style="display:block;margin-bottom:4px;">Presentación</span><span style="text-align:left;font-weight:400;display:block;">${c['Presentación']}</span></div>` : ''}
             ${checklistHtml(c['Checklist documentos'])}
             ${docsHtml ? `<div class="docs-links">${docsHtml}</div>` : ''}
@@ -2148,6 +2153,15 @@
       const n1 = leads.filter(l => String(l['Nivel']) !== '2');
       const n2 = leads.filter(l => String(l['Nivel']) === '2');
 
+      n1.sort((a, b) => {
+        const da = parseFechaLead(a['Fecha']);
+        const db = parseFechaLead(b['Fecha']);
+        if(!da && !db) return 0;
+        if(!da) return 1;
+        if(!db) return -1;
+        return da - db;
+      });
+
       if(n1.length === 0){ emptyLeadsN1.style.display = 'block'; }
       n1.forEach(l => leadsGridN1.appendChild(buildLeadCard(l, '2')));
 
@@ -2195,6 +2209,26 @@
     return str;
   }
 
+  function parseFechaLead(val){
+    if(!val) return null;
+    if(val instanceof Date) return val;
+    const str = String(val).trim();
+    // Formato típico de Sheets: "DD/MM/YYYY HH:MM:SS"
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[ ,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if(m){
+      const [, d, mo, y, h, mi, s] = m;
+      return new Date(+y, +mo - 1, +d, +h, +mi, +(s || 0));
+    }
+    const d2 = new Date(str);
+    return isNaN(d2) ? null : d2;
+  }
+
+  function horaLlegada(val){
+    const d = parseFechaLead(val);
+    if(!d) return '';
+    return d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+  }
+
   function buildLeadCard(l, moveTarget){
       const card = document.createElement('div');
       const sema = l['Semáforo'] || '';
@@ -2209,6 +2243,7 @@
         : '';
       card.innerHTML = `
         <label class="lead-select-check"><input type="checkbox" class="lead-checkbox"> Seleccionar</label>
+        ${moveTarget === '2' ? `<div class="entrada-hora">🕐 Entró a las <span class="hora-pill">${horaLlegada(l['Fecha']) || '—'}</span></div>` : ''}
         <div class="name">${l['Nombre'] || 'Sin nombre'}</div>
         <div class="meta">${l['Fecha'] ? formatDate(l['Fecha']) : '—'} · ${l['Teléfono'] || '—'}${l['Piso interés'] ? ' · ' + l['Piso interés'] : ''}</div>
         ${visitaHtml}
