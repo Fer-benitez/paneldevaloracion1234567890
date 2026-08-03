@@ -2037,6 +2037,7 @@
             async ()=>{
               deleteSelectedBtn.disabled = true;
               deleteSelectedBtn.textContent = 'Eliminando...';
+              const keysBorrados = new Set(selectedLeads);
               for(const key of selectedLeads){
                 const [fecha, telefono] = key.split('|');
                 try{
@@ -2046,12 +2047,19 @@
                   });
                 } catch(err){ /* seguimos con los demás aunque uno falle */ }
               }
+              document.querySelectorAll('.lead-card').forEach(card=>{
+                const key = card.dataset.fecha + '|' + card.dataset.telefono;
+                if(keysBorrados.has(key)) card.remove();
+              });
+              cleanupEmptyN1();
+              cleanupEmptyN2();
               selectedLeads.clear();
               selectMode = false;
               toggleSelectModeBtn.textContent = '☑ Seleccionar varios';
               bulkActions.style.display = 'none';
               selectAllLeads.checked = false;
-              await loadLeads();
+              deleteSelectedBtn.disabled = false;
+              updateBulkDeleteBtn();
             },
             '⚠️ Última confirmación',
             'Vas a borrar ' + n + ' lead(s) de forma DEFINITIVA. Esta acción no se puede deshacer. ¿Seguro que quieres continuar?'
@@ -2248,6 +2256,27 @@
     return out;
   }
 
+  function cleanupEmptyN1(){
+    if(leadsGridN1.querySelectorAll('.lead-card').length === 0){
+      emptyLeadsN1.style.display = 'block';
+    }
+  }
+  function cleanupEmptyN2(){
+    // quita títulos de grupo (Hoy/Mañana/Otro) que se quedaron sin tarjetas debajo
+    const children = Array.from(leadsGridN2.children);
+    children.forEach((el, idx)=>{
+      if(el.classList.contains('leads-group-title')){
+        const next = children[idx + 1];
+        if(!next || next.classList.contains('leads-group-title')){
+          el.remove();
+        }
+      }
+    });
+    if(leadsGridN2.querySelectorAll('.lead-card').length === 0){
+      emptyLeadsN2.style.display = 'block';
+    }
+  }
+
   function buildLeadCard(l, moveTarget){
       const card = document.createElement('div');
       const sema = l['Semáforo'] || '';
@@ -2337,7 +2366,8 @@
                 method:'POST', mode:'no-cors',
                 body: JSON.stringify({ action:'eliminar_lead', fecha: l['Fecha'], telefono: l['Teléfono'] })
               });
-              await loadLeads();
+              card.remove();
+              if(moveTarget === '2'){ cleanupEmptyN1(); } else { cleanupEmptyN2(); }
             } catch(err){ alert('No se pudo eliminar. Revisa tu conexión.'); }
           },
           '¿Eliminar este lead?',
