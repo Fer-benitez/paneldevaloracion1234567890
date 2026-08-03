@@ -2241,21 +2241,6 @@
     return d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
   }
 
-  function resaltarDiaHora(texto){
-    if(!texto) return '';
-    let out = String(texto);
-    // Horas tipo 18:20, 9:00, 18h, 18h20
-    out = out.replace(/\b\d{1,2}:\d{2}\b/g, m => `<strong>${m}</strong>`);
-    out = out.replace(/\b\d{1,2}h(?:\d{2})?\b/gi, m => `<strong>${m}</strong>`);
-    // Días: hoy, mañana, pasado mañana, y días de la semana
-    const dias = ['hoy','mañana','pasado mañana','lunes','martes','miércoles','miercoles','jueves','viernes','sábado','sabado','domingo'];
-    dias.forEach(dia=>{
-      const re = new RegExp('\\b' + dia + '\\b', 'gi');
-      out = out.replace(re, m => `<strong>${m}</strong>`);
-    });
-    return out;
-  }
-
   function cleanupEmptyN1(){
     if(leadsGridN1.querySelectorAll('.lead-card').length === 0){
       emptyLeadsN1.style.display = 'block';
@@ -2295,9 +2280,10 @@
         <div class="name">${l['Nombre'] || 'Sin nombre'}</div>
         <div class="meta">${l['Fecha'] ? formatDate(l['Fecha']) : '—'} · ${l['Teléfono'] || '—'}${l['Piso interés'] ? ' · ' + l['Piso interés'] : ''}</div>
         ${visitaHtml}
-        ${l['Disponibilidad visita'] ? `<div class="meta">🗨️ Dijo que podía: ${resaltarDiaHora(l['Disponibilidad visita'])}</div>` : ''}
+        ${l['Disponibilidad visita'] ? `<div class="meta">🗨️ Dijo que podía: ${l['Disponibilidad visita']}</div>` : ''}
         ${l['Presentación'] ? `<div class="notes"><strong>Sobre ellos:</strong> ${l['Presentación']}</div>` : ''}
         ${l['Trabajo e ingresos'] ? `<div class="notes"><strong>Trabajo/ingresos:</strong> ${l['Trabajo e ingresos']}</div>` : ''}
+        <div class="meta">${l['Consentimiento RGPD'] ? '✓ RGPD aceptado' + (l['Fecha consentimiento'] ? ' · ' + l['Fecha consentimiento'] : '') : '✕ RGPD no consta'}</div>
         ${l['Notas'] ? `<div class="notes">${l['Notas']}</div>` : ''}
         <div class="actions">
           ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
