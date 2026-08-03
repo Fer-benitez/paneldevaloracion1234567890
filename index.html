@@ -303,15 +303,39 @@
   .save-btn:hover{background:var(--navy-dark);}
   .save-status{font-size:11.5px;color:var(--green);margin-top:8px;text-align:center;display:none;}
 
-  .drive-btn{
-    width:100%;margin-top:10px;background:var(--white);color:var(--navy);border:1.5px solid var(--navy);
+  .zip-btn{
+    width:100%;margin-top:14px;background:var(--white);color:var(--navy);border:1.5px solid var(--navy);
     padding:10px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;
     transition:all .2s var(--ease);
   }
-  .drive-btn:hover{background:var(--navy);color:var(--white);}
-  .drive-btn:disabled{opacity:0.6;cursor:wait;}
-  .drive-status{font-size:11.5px;color:var(--muted);margin-top:8px;text-align:center;display:none;}
-  .drive-status.ok{color:var(--green);}
+  .zip-btn:hover{background:var(--navy);color:var(--white);}
+  .zip-btn:disabled{opacity:0.6;cursor:wait;}
+
+  .zip-info-overlay{
+    display:none;position:fixed;inset:0;background:rgba(22,50,74,0.6);
+    z-index:220;align-items:center;justify-content:center;padding:24px;
+  }
+  .zip-info-overlay.show{display:flex;}
+  .zip-info-card{
+    background:var(--white);border-radius:14px;max-width:440px;width:100%;
+    padding:30px 28px;box-shadow:0 30px 60px -20px rgba(22,50,74,0.4);
+    max-height:85vh;overflow-y:auto;
+  }
+  .zip-info-card h3{font-size:17px;color:var(--text);margin-bottom:8px;text-align:center;}
+  .zip-info-card>p{font-size:13.5px;color:var(--muted);line-height:1.55;margin-bottom:18px;text-align:center;}
+  .zip-info-block{background:var(--bg);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+  .zip-info-block strong{display:block;font-size:13px;color:var(--navy-darker);margin-bottom:4px;}
+  .zip-info-block p{font-size:13px;color:var(--muted);line-height:1.55;margin:0;}
+  .zip-info-actions{display:flex;gap:10px;margin-top:20px;}
+  .zip-info-actions button{
+    flex:1;padding:11px;border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer;
+    font-family:'Inter',sans-serif;border:1.5px solid var(--border);transition:all .2s var(--ease);
+  }
+  .zip-info-cancel{background:var(--white);color:var(--text);}
+  .zip-info-cancel:hover{border-color:var(--navy);}
+  .zip-info-confirm{background:var(--navy);color:var(--white);border-color:var(--navy);}
+  .zip-info-confirm:hover{background:var(--navy-dark);}
+  .zip-info-confirm:disabled{opacity:0.6;cursor:wait;}
 
   .delete-btn{
     width:100%;margin-top:10px;background:transparent;color:var(--red);border:1.5px solid var(--border);
@@ -816,6 +840,25 @@
   </div>
 </div>
 
+<div class="zip-info-overlay" id="zipInfoOverlay">
+  <div class="zip-info-card">
+    <h3>📦 Descargar ficha en ZIP</h3>
+    <p>Se va a descargar un único archivo comprimido (.zip) con todos los documentos del interesado y un texto con sus datos.</p>
+    <div class="zip-info-block">
+      <strong>📱 En el móvil</strong>
+      <p>El ZIP se guarda en la carpeta "Descargas". Ábrelo desde ahí: en Android, tu gestor de archivos lo descomprime al tocarlo (o pulsa "Extraer"). En iPhone, tócalo en la app Archivos y elige "Descomprimir".</p>
+    </div>
+    <div class="zip-info-block">
+      <strong>💻 En el ordenador</strong>
+      <p>El ZIP se guarda en tu carpeta de Descargas. Haz doble clic sobre él en Windows, o simplemente ábrelo en Mac — se descomprime automáticamente en una carpeta con el mismo nombre.</p>
+    </div>
+    <div class="zip-info-actions">
+      <button class="zip-info-cancel" id="zipInfoCancel">Cancelar</button>
+      <button class="zip-info-confirm" id="zipInfoConfirm">⬇ Descargar</button>
+    </div>
+  </div>
+</div>
+
 <div class="reco-detail-overlay" id="recoDetailOverlay">
   <div class="reco-detail-card">
     <button class="reco-detail-close" id="recoDetailClose">✕</button>
@@ -1142,6 +1185,7 @@
             ${c['Presentación'] ? `<div class="data-row" style="display:block;margin-top:8px;"><span style="display:block;margin-bottom:4px;">Presentación</span><span style="text-align:left;font-weight:400;display:block;">${c['Presentación']}</span></div>` : ''}
             ${checklistHtml(c['Checklist documentos'])}
             ${docsHtml ? `<div class="docs-links">${docsHtml}</div>` : ''}
+            <button class="zip-btn">⬇ Descargar ficha (ZIP)</button>
             ${notesPreview(c['Semáforo'], c['Notas Fernando'])}
           </div>
           <div class="card-review">
@@ -1154,8 +1198,6 @@
             <textarea class="review-notes" placeholder="Impresión de la visita, banderas rojas, lo que consideres...">${c['Notas Fernando'] || ''}</textarea>
             <button class="save-btn">Guardar valoración</button>
             <p class="save-status">Guardado ✓</p>
-            <button class="drive-btn">📥 Descargar a Drive</button>
-            <p class="drive-status">Guardando en tu Drive… puede tardar unos segundos con muchos documentos.</p>
             <button class="delete-btn">Eliminar interesado</button>
           </div>
         </div>
@@ -1208,31 +1250,9 @@
         saveBtn.disabled = false;
       });
 
-      const driveBtn = card.querySelector('.drive-btn');
-      const driveStatus = card.querySelector('.drive-status');
-      driveBtn.addEventListener('click', async ()=>{
-        driveBtn.disabled = true;
-        driveBtn.textContent = 'Guardando en Drive…';
-        driveStatus.className = 'drive-status';
-        driveStatus.textContent = 'Guardando en tu Drive… puede tardar unos segundos con muchos documentos.';
-        driveStatus.style.display = 'block';
-        try{
-          await fetch(APPS_SCRIPT_URL, {
-            method:'POST',
-            mode:'no-cors',
-            body: JSON.stringify({
-              action:'descargar_a_drive',
-              nombre: c['Nombre'],
-              telefono: c['Teléfono']
-            })
-          });
-          driveStatus.className = 'drive-status ok';
-          driveStatus.textContent = 'Guardado en Drive ✓ — busca la carpeta "Fichas de interesados" › ' + (c['Piso'] || 'Sin piso') + '.';
-        } catch(err){
-          driveStatus.textContent = 'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.';
-        }
-        driveBtn.textContent = '📥 Descargar a Drive';
-        driveBtn.disabled = false;
+      const zipBtn = card.querySelector('.zip-btn');
+      zipBtn.addEventListener('click', ()=>{
+        openZipInfo(c, zipBtn);
       });
 
       const deleteBtn = card.querySelector('.delete-btn');
@@ -1314,6 +1334,96 @@
     if(pendingAction) pendingAction();
     closeConfirm();
   });
+
+  // Popup de descarga en ZIP de la ficha del interesado
+  const zipInfoOverlay = document.getElementById('zipInfoOverlay');
+  const zipInfoCancel = document.getElementById('zipInfoCancel');
+  const zipInfoConfirm = document.getElementById('zipInfoConfirm');
+  let pendingZipCandidate = null;
+  let pendingZipBtn = null;
+
+  function openZipInfo(c, triggerBtn){
+    pendingZipCandidate = c;
+    pendingZipBtn = triggerBtn;
+    zipInfoOverlay.classList.add('show');
+  }
+  function closeZipInfo(){
+    pendingZipCandidate = null;
+    pendingZipBtn = null;
+    zipInfoOverlay.classList.remove('show');
+  }
+  zipInfoCancel.addEventListener('click', closeZipInfo);
+  zipInfoOverlay.addEventListener('click', (e)=>{ if(e.target === zipInfoOverlay) closeZipInfo(); });
+  zipInfoConfirm.addEventListener('click', async ()=>{
+    if(!pendingZipCandidate) return;
+    const c = pendingZipCandidate;
+    const triggerBtn = pendingZipBtn;
+    zipInfoConfirm.disabled = true;
+    zipInfoConfirm.textContent = 'Preparando ZIP...';
+    if(triggerBtn){ triggerBtn.disabled = true; triggerBtn.textContent = 'Preparando ZIP...'; }
+    await downloadInteresadoZip(c);
+    zipInfoConfirm.disabled = false;
+    zipInfoConfirm.textContent = '⬇ Descargar';
+    if(triggerBtn){ triggerBtn.disabled = false; triggerBtn.textContent = '⬇ Descargar ficha (ZIP)'; }
+    closeZipInfo();
+  });
+
+  async function downloadInteresadoZip(c){
+    try{
+      const zip = new JSZip();
+
+      let texto = 'FICHA DEL INTERESADO\n';
+      texto += (c['Nombre'] || 'Sin nombre') + '\n';
+      texto += '========================================\n\n';
+      texto += 'Nombre: ' + (c['Nombre'] || '') + '\n';
+      texto += 'DNI/NIE: ' + (c['DNI/NIE'] || '') + '\n';
+      if(c['Nombre completo 2']) texto += '2º titular: ' + c['Nombre completo 2'] + (c['DNI/NIE 2'] ? ' · ' + c['DNI/NIE 2'] : '') + '\n';
+      texto += 'Teléfono: ' + (c['Teléfono'] || '') + '\n';
+      texto += 'Email: ' + (c['Email'] || '') + '\n';
+      texto += 'Piso: ' + (c['Piso'] || '') + '\n';
+      texto += 'Fecha ficha: ' + (c['Fecha'] ? formatDate(c['Fecha']) : '') + '\n\n';
+      texto += 'Situación laboral: ' + (c['Situación laboral'] || '') + '\n';
+      texto += 'Nº personas: ' + (c['Nº personas'] || '') + '\n';
+      texto += 'Mascotas: ' + (c['Mascotas'] || '') + '\n';
+      texto += 'Garantías: ' + (c['Garantías'] || '') + '\n';
+      if(c['Relación con el fiador']) texto += 'Relación con el fiador: ' + c['Relación con el fiador'] + '\n';
+      texto += 'Ingresos: ' + (c['Ingresos'] || '') + '€\n';
+      texto += 'Renta: ' + (c['Renta'] || '') + '€\n';
+      texto += 'Solvencia: ' + (c['% Solvencia'] || '') + '\n\n';
+      texto += 'Checklist documentos: ' + (c['Checklist documentos'] || '') + '\n';
+      texto += 'Consentimiento RGPD: ' + (c['Consentimiento RGPD'] || '') + (c['Fecha consentimiento'] ? ' (' + c['Fecha consentimiento'] + ')' : '') + '\n\n';
+      texto += 'Presentación:\n' + (c['Presentación'] || '') + '\n\n';
+      texto += 'Valoración de Fernando: ' + (c['Semáforo'] || '') + '\n';
+      texto += 'Notas: ' + (c['Notas Fernando'] || '') + '\n';
+      zip.file('Ficha - ' + (c['Nombre'] || 'interesado') + '.txt', texto);
+
+      const docs = (c['Documentos'] || '').split('|').map(d=>d.trim()).filter(Boolean);
+      for(const d of docs){
+        const idx = d.indexOf(':');
+        if(idx === -1) continue;
+        const name = d.slice(0, idx).trim();
+        const url = d.slice(idx + 1).trim();
+        if(!url) continue;
+        try{
+          const res = await fetch(url);
+          const blob = await res.blob();
+          zip.file(name, blob);
+        } catch(err){ /* si un documento falla, seguimos con el resto */ }
+      }
+
+      const blob = await zip.generateAsync({ type:'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      const safeName = (c['Nombre'] || 'interesado').replace(/[^a-z0-9]/gi, '_').slice(0, 40);
+      link.download = safeName + '.zip';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    } catch(err){
+      alert('No se pudo generar el ZIP. Revisa tu conexión.');
+    }
+  }
 
   async function deleteCandidate(c, card){
     card.style.opacity = '0.4';
