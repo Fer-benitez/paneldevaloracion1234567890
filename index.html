@@ -2219,7 +2219,10 @@
     }
   }
 
+  let loadLeadsInFlight = false;
   async function loadLeads(){
+    if(loadLeadsInFlight) return;
+    loadLeadsInFlight = true;
     loadingLeads.style.display = 'block';
     leadsGridN1.innerHTML = ''; leadsGridN2.innerHTML = '';
     emptyLeadsN1.style.display = 'none'; emptyLeadsN2.style.display = 'none';
@@ -2230,6 +2233,7 @@
       if(!json.success){
         emptyLeadsN1.textContent = json.error || 'No se pudo conectar con la hoja.';
         emptyLeadsN1.style.display = 'block';
+        loadLeadsInFlight = false;
         return;
       }
       cachedLeads = json.data.reverse();
@@ -2239,6 +2243,7 @@
       emptyLeadsN1.textContent = 'No se pudo conectar con la hoja.';
       emptyLeadsN1.style.display = 'block';
     }
+    loadLeadsInFlight = false;
   }
 
   document.getElementById('leadsColN1').classList.add('mobile-active');
@@ -2285,8 +2290,8 @@
 
   function buildLeadCard(l, moveTarget){
       const card = document.createElement('div');
-      const sema = l['Semáforo'] || '';
-      const realizada = l['Visita realizada'] === 'Sí';
+      let sema = l['Semáforo'] || '';
+      let realizada = l['Visita realizada'] === 'Sí';
       card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '') + (selectMode ? ' selecting' : '') + (realizada ? ' visita-hecha' : '');
       card.dataset.fecha = l['Fecha'];
       card.dataset.telefono = l['Teléfono'];
@@ -2326,27 +2331,59 @@
       });
 
       if(moveTarget === '1'){
-        card.querySelector('.visita-realizada-btn').addEventListener('click', async ()=>{
+        card.querySelector('.visita-realizada-btn').addEventListener('click', async (e)=>{
+          const btn = e.currentTarget;
+          if(btn.disabled) return;
+          btn.disabled = true;
           const nuevo = realizada ? '' : 'Sí';
-          await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'marcar_visita_realizada', fecha: l['Fecha'], telefono: l['Teléfono'], realizada: nuevo }) });
-          updateCachedLead(l['Fecha'], l['Teléfono'], { 'Visita realizada': nuevo });
-          renderLeads();
+          try{
+            await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'marcar_visita_realizada', fecha: l['Fecha'], telefono: l['Teléfono'], realizada: nuevo }) });
+            realizada = !!nuevo;
+            l['Visita realizada'] = nuevo;
+            updateCachedLead(l['Fecha'], l['Teléfono'], { 'Visita realizada': nuevo });
+            card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '') + (selectMode ? ' selecting' : '') + (realizada ? ' visita-hecha' : '');
+            btn.textContent = realizada ? '✓ Visita realizada' : 'Marcar visita realizada';
+            btn.classList.toggle('active-realizada', realizada);
+          } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+          btn.disabled = false;
         });
       }
 
-      card.querySelector('.sema-verde').addEventListener('click', async ()=>{
+      card.querySelector('.sema-verde').addEventListener('click', async (e)=>{
+        const btn = e.currentTarget;
+        if(btn.disabled) return;
+        btn.disabled = true;
         const nuevo = sema === 'verde' ? '' : 'verde';
-        await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_lead', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
-        updateCachedLead(l['Fecha'], l['Teléfono'], { 'Semáforo': nuevo });
-        renderLeads();
+        try{
+          await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_lead', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
+          sema = nuevo;
+          l['Semáforo'] = nuevo;
+          updateCachedLead(l['Fecha'], l['Teléfono'], { 'Semáforo': nuevo });
+          card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '') + (selectMode ? ' selecting' : '') + (realizada ? ' visita-hecha' : '');
+          card.querySelector('.sema-verde').classList.toggle('active-verde', sema === 'verde');
+          card.querySelector('.sema-rojo').classList.toggle('active-rojo', sema === 'rojo');
+        } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+        btn.disabled = false;
       });
-      card.querySelector('.sema-rojo').addEventListener('click', async ()=>{
+      card.querySelector('.sema-rojo').addEventListener('click', async (e)=>{
+        const btn = e.currentTarget;
+        if(btn.disabled) return;
+        btn.disabled = true;
         const nuevo = sema === 'rojo' ? '' : 'rojo';
-        await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_lead', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
-        updateCachedLead(l['Fecha'], l['Teléfono'], { 'Semáforo': nuevo });
-        renderLeads();
+        try{
+          await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_lead', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
+          sema = nuevo;
+          l['Semáforo'] = nuevo;
+          updateCachedLead(l['Fecha'], l['Teléfono'], { 'Semáforo': nuevo });
+          card.className = 'lead-card' + (sema ? ' semaforo-' + sema : '') + (selectMode ? ' selecting' : '') + (realizada ? ' visita-hecha' : '');
+          card.querySelector('.sema-verde').classList.toggle('active-verde', sema === 'verde');
+          card.querySelector('.sema-rojo').classList.toggle('active-rojo', sema === 'rojo');
+        } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+        btn.disabled = false;
       });
-      card.querySelector('.move-btn').addEventListener('click', async ()=>{
+      card.querySelector('.move-btn').addEventListener('click', async (e)=>{
+        const btn = e.currentTarget;
+        if(btn.disabled) return;
         if(moveTarget === '2'){
           const faltan = [];
           if(sema !== 'verde') faltan.push('marcarlo en verde 🟢');
@@ -2358,6 +2395,7 @@
             return;
           }
         }
+        btn.disabled = true;
         try{
           await fetch(APPS_SCRIPT_URL, {
             method:'POST', mode:'no-cors',
@@ -2365,7 +2403,7 @@
           });
           updateCachedLead(l['Fecha'], l['Teléfono'], { 'Nivel': moveTarget });
           renderLeads();
-        } catch(err){ alert('No se pudo mover. Revisa tu conexión.'); }
+        } catch(err){ alert('No se pudo mover. Revisa tu conexión.'); btn.disabled = false; }
       });
       card.querySelector('.edit-lead-btn').addEventListener('click', ()=> openLeadEdit(l));
 
