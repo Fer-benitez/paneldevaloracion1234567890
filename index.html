@@ -2047,12 +2047,8 @@
                   });
                 } catch(err){ /* seguimos con los demás aunque uno falle */ }
               }
-              document.querySelectorAll('.lead-card').forEach(card=>{
-                const key = card.dataset.fecha + '|' + card.dataset.telefono;
-                if(keysBorrados.has(key)) card.remove();
-              });
-              cleanupEmptyN1();
-              cleanupEmptyN2();
+              cachedLeads = cachedLeads.filter(l => !keysBorrados.has(leadKey(l)));
+              renderLeads();
               selectedLeads.clear();
               selectMode = false;
               toggleSelectModeBtn.textContent = '☑ Seleccionar varios';
@@ -2137,16 +2133,91 @@
     try{
       await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
       resetLeadForm();
-      if(wasEditing) hideAddLeadCard();
+      if(wasEditing){
+        hideAddLeadCard();
+        updateCachedLeadByFecha(payload.fecha, {
+          'Nombre': payload.nombre,
+          'Teléfono': payload.telefono,
+          'Piso interés': payload.pisoInteres,
+          'Notas': payload.notas,
+          'Día visita': payload.diaVisita,
+          'Hora visita': payload.horaVisita
+        });
+        renderLeads();
+      } else {
+        await loadLeads();
+      }
       leadHint.textContent = wasEditing ? 'Cambios guardados ✓' : 'Lead añadido ✓';
       setTimeout(()=> leadHint.textContent = 'Escribe al menos el nombre y el teléfono.', 2000);
-      await loadLeads();
     } catch(err){
       alert('No se pudo guardar. Revisa tu conexión.');
     }
     addLeadBtn.textContent = wasEditing ? 'Guardar cambios' : 'Añadir lead';
     checkLeadReady();
   });
+
+  let cachedLeads = [];
+
+  function leadKey(l){ return l['Fecha'] + '|' + l['Teléfono']; }
+
+  function updateCachedLead(fecha, telefono, cambios){
+    const key = fecha + '|' + telefono;
+    const idx = cachedLeads.findIndex(l => leadKey(l) === key);
+    if(idx !== -1){
+      cachedLeads[idx] = Object.assign({}, cachedLeads[idx], cambios);
+    }
+    return idx !== -1 ? cachedLeads[idx] : null;
+  }
+
+  function updateCachedLeadByFecha(fecha, cambios){
+    const idx = cachedLeads.findIndex(l => String(l['Fecha']) === String(fecha));
+    if(idx !== -1){
+      cachedLeads[idx] = Object.assign({}, cachedLeads[idx], cambios);
+    }
+    return idx !== -1 ? cachedLeads[idx] : null;
+  }
+
+  function removeCachedLead(fecha, telefono){
+    const key = fecha + '|' + telefono;
+    cachedLeads = cachedLeads.filter(l => leadKey(l) !== key);
+  }
+
+  function renderLeads(){
+    leadsGridN1.innerHTML = ''; leadsGridN2.innerHTML = '';
+    emptyLeadsN1.style.display = 'none'; emptyLeadsN2.style.display = 'none';
+
+    const n1 = cachedLeads.filter(l => String(l['Nivel']) !== '2');
+    const n2 = cachedLeads.filter(l => String(l['Nivel']) === '2');
+
+    n1.sort((a, b) => {
+      const da = parseFechaLead(a['Fecha']);
+      const db = parseFechaLead(b['Fecha']);
+      if(!da && !db) return 0;
+      if(!da) return 1;
+      if(!db) return -1;
+      return da - db;
+    });
+
+    if(n1.length === 0){ emptyLeadsN1.style.display = 'block'; }
+    n1.forEach(l => leadsGridN1.appendChild(buildLeadCard(l, '2')));
+
+    if(n2.length === 0){
+      emptyLeadsN2.style.display = 'block';
+    } else {
+      ['Hoy','Mañana','Otro'].forEach(grupo=>{
+        const enGrupo = n2.filter(l => (l['Día visita'] || 'Otro') === grupo);
+        if(enGrupo.length === 0) return;
+        if(grupo !== 'Otro'){
+          enGrupo.sort((a,b) => (formatHora(a['Hora visita']) || '99:99').localeCompare(formatHora(b['Hora visita']) || '99:99'));
+        }
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'leads-group-title';
+        groupTitle.textContent = grupo;
+        leadsGridN2.appendChild(groupTitle);
+        enGrupo.forEach(l => leadsGridN2.appendChild(buildLeadCard(l, '1')));
+      });
+    }
+  }
 
   async function loadLeads(){
     loadingLeads.style.display = 'block';
@@ -2161,38 +2232,8 @@
         emptyLeadsN1.style.display = 'block';
         return;
       }
-      const leads = json.data.reverse();
-      const n1 = leads.filter(l => String(l['Nivel']) !== '2');
-      const n2 = leads.filter(l => String(l['Nivel']) === '2');
-
-      n1.sort((a, b) => {
-        const da = parseFechaLead(a['Fecha']);
-        const db = parseFechaLead(b['Fecha']);
-        if(!da && !db) return 0;
-        if(!da) return 1;
-        if(!db) return -1;
-        return da - db;
-      });
-
-      if(n1.length === 0){ emptyLeadsN1.style.display = 'block'; }
-      n1.forEach(l => leadsGridN1.appendChild(buildLeadCard(l, '2')));
-
-      if(n2.length === 0){
-        emptyLeadsN2.style.display = 'block';
-      } else {
-        ['Hoy','Mañana','Otro'].forEach(grupo=>{
-          const enGrupo = n2.filter(l => (l['Día visita'] || 'Otro') === grupo);
-          if(enGrupo.length === 0) return;
-          if(grupo !== 'Otro'){
-            enGrupo.sort((a,b) => (formatHora(a['Hora visita']) || '99:99').localeCompare(formatHora(b['Hora visita']) || '99:99'));
-          }
-          const groupTitle = document.createElement('div');
-          groupTitle.className = 'leads-group-title';
-          groupTitle.textContent = grupo;
-          leadsGridN2.appendChild(groupTitle);
-          enGrupo.forEach(l => leadsGridN2.appendChild(buildLeadCard(l, '1')));
-        });
-      }
+      cachedLeads = json.data.reverse();
+      renderLeads();
     } catch(err){
       loadingLeads.style.display = 'none';
       emptyLeadsN1.textContent = 'No se pudo conectar con la hoja.';
@@ -2241,26 +2282,6 @@
     return d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
   }
 
-  function cleanupEmptyN1(){
-    if(leadsGridN1.querySelectorAll('.lead-card').length === 0){
-      emptyLeadsN1.style.display = 'block';
-    }
-  }
-  function cleanupEmptyN2(){
-    // quita títulos de grupo (Hoy/Mañana/Otro) que se quedaron sin tarjetas debajo
-    const children = Array.from(leadsGridN2.children);
-    children.forEach((el, idx)=>{
-      if(el.classList.contains('leads-group-title')){
-        const next = children[idx + 1];
-        if(!next || next.classList.contains('leads-group-title')){
-          el.remove();
-        }
-      }
-    });
-    if(leadsGridN2.querySelectorAll('.lead-card').length === 0){
-      emptyLeadsN2.style.display = 'block';
-    }
-  }
 
   function buildLeadCard(l, moveTarget){
       const card = document.createElement('div');
@@ -2308,19 +2329,22 @@
         card.querySelector('.visita-realizada-btn').addEventListener('click', async ()=>{
           const nuevo = realizada ? '' : 'Sí';
           await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'marcar_visita_realizada', fecha: l['Fecha'], telefono: l['Teléfono'], realizada: nuevo }) });
-          await loadLeads();
+          updateCachedLead(l['Fecha'], l['Teléfono'], { 'Visita realizada': nuevo });
+          renderLeads();
         });
       }
 
       card.querySelector('.sema-verde').addEventListener('click', async ()=>{
         const nuevo = sema === 'verde' ? '' : 'verde';
         await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_lead', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
-        await loadLeads();
+        updateCachedLead(l['Fecha'], l['Teléfono'], { 'Semáforo': nuevo });
+        renderLeads();
       });
       card.querySelector('.sema-rojo').addEventListener('click', async ()=>{
         const nuevo = sema === 'rojo' ? '' : 'rojo';
         await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_lead', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
-        await loadLeads();
+        updateCachedLead(l['Fecha'], l['Teléfono'], { 'Semáforo': nuevo });
+        renderLeads();
       });
       card.querySelector('.move-btn').addEventListener('click', async ()=>{
         if(moveTarget === '2'){
@@ -2339,7 +2363,8 @@
             method:'POST', mode:'no-cors',
             body: JSON.stringify({ action:'mover_nivel_lead', fecha: l['Fecha'], telefono: l['Teléfono'], nivel: moveTarget })
           });
-          await loadLeads();
+          updateCachedLead(l['Fecha'], l['Teléfono'], { 'Nivel': moveTarget });
+          renderLeads();
         } catch(err){ alert('No se pudo mover. Revisa tu conexión.'); }
       });
       card.querySelector('.edit-lead-btn').addEventListener('click', ()=> openLeadEdit(l));
@@ -2352,8 +2377,8 @@
                 method:'POST', mode:'no-cors',
                 body: JSON.stringify({ action:'eliminar_lead', fecha: l['Fecha'], telefono: l['Teléfono'] })
               });
-              card.remove();
-              if(moveTarget === '2'){ cleanupEmptyN1(); } else { cleanupEmptyN2(); }
+              removeCachedLead(l['Fecha'], l['Teléfono']);
+              renderLeads();
             } catch(err){ alert('No se pudo eliminar. Revisa tu conexión.'); }
           },
           '¿Eliminar este lead?',
