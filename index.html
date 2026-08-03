@@ -303,6 +303,16 @@
   .save-btn:hover{background:var(--navy-dark);}
   .save-status{font-size:11.5px;color:var(--green);margin-top:8px;text-align:center;display:none;}
 
+  .drive-btn{
+    width:100%;margin-top:10px;background:var(--white);color:var(--navy);border:1.5px solid var(--navy);
+    padding:10px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;
+    transition:all .2s var(--ease);
+  }
+  .drive-btn:hover{background:var(--navy);color:var(--white);}
+  .drive-btn:disabled{opacity:0.6;cursor:wait;}
+  .drive-status{font-size:11.5px;color:var(--muted);margin-top:8px;text-align:center;display:none;}
+  .drive-status.ok{color:var(--green);}
+
   .delete-btn{
     width:100%;margin-top:10px;background:transparent;color:var(--red);border:1.5px solid var(--border);
     padding:9px;border-radius:8px;font-weight:600;font-size:12.5px;cursor:pointer;
@@ -1121,7 +1131,7 @@
             <div class="card-date">${formatDate(c['Fecha'])} · ${c['Situación laboral'] || '—'}</div>
             ${c['Piso'] ? `<div class="card-piso">📍 ${c['Piso']}</div>` : ''}
             <div class="data-row"><span>DNI/NIE</span><span>${c['DNI/NIE'] || '—'}</span></div>
-            ${c['Nombre completo 2'] ? `<div class="data-row"><span>2º titular</span><span>${c['Nombre completo 2']}${c['DNI/NIE 2'] ? ' · ' + c['DNI/NIE 2'] : ''}</span></div>` : ''}
+            ${(c['Nombre completo 2'] || c['DNI/NIE 2']) ? `<div class="data-row"><span>2º titular</span><span>${c['Nombre completo 2'] || '—'}${c['DNI/NIE 2'] ? ' · ' + c['DNI/NIE 2'] : ''}</span></div>` : ''}
             <div class="data-row"><span>Teléfono</span><span>${c['Teléfono'] || '—'}</span></div>
             <div class="data-row"><span>Email</span><span>${c['Email'] || '—'}</span></div>
             <div class="data-row"><span>Personas / Mascotas</span><span>${c['Nº personas'] || '—'} · ${c['Mascotas'] || '—'}</span></div>
@@ -1144,6 +1154,8 @@
             <textarea class="review-notes" placeholder="Impresión de la visita, banderas rojas, lo que consideres...">${c['Notas Fernando'] || ''}</textarea>
             <button class="save-btn">Guardar valoración</button>
             <p class="save-status">Guardado ✓</p>
+            <button class="drive-btn">📥 Descargar a Drive</button>
+            <p class="drive-status">Guardando en tu Drive… puede tardar unos segundos con muchos documentos.</p>
             <button class="delete-btn">Eliminar interesado</button>
           </div>
         </div>
@@ -1194,6 +1206,33 @@
         }
         saveBtn.textContent = 'Guardar valoración';
         saveBtn.disabled = false;
+      });
+
+      const driveBtn = card.querySelector('.drive-btn');
+      const driveStatus = card.querySelector('.drive-status');
+      driveBtn.addEventListener('click', async ()=>{
+        driveBtn.disabled = true;
+        driveBtn.textContent = 'Guardando en Drive…';
+        driveStatus.className = 'drive-status';
+        driveStatus.textContent = 'Guardando en tu Drive… puede tardar unos segundos con muchos documentos.';
+        driveStatus.style.display = 'block';
+        try{
+          await fetch(APPS_SCRIPT_URL, {
+            method:'POST',
+            mode:'no-cors',
+            body: JSON.stringify({
+              action:'descargar_a_drive',
+              nombre: c['Nombre'],
+              telefono: c['Teléfono']
+            })
+          });
+          driveStatus.className = 'drive-status ok';
+          driveStatus.textContent = 'Guardado en Drive ✓ — busca la carpeta "Fichas de interesados" › ' + (c['Piso'] || 'Sin piso') + '.';
+        } catch(err){
+          driveStatus.textContent = 'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.';
+        }
+        driveBtn.textContent = '📥 Descargar a Drive';
+        driveBtn.disabled = false;
       });
 
       const deleteBtn = card.querySelector('.delete-btn');
