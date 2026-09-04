@@ -490,6 +490,18 @@
     font-family:'Inter',sans-serif;min-width:220px;
   }
   .lead-search-input:focus{outline:none;border-color:var(--navy);}
+  .leads-stats-bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+  .leads-stat-pill{
+    display:inline-flex;align-items:center;gap:5px;background:var(--white);border:1.5px solid var(--border);
+    color:var(--navy-dark);font-weight:700;font-size:13px;padding:7px 14px;border-radius:999px;
+    font-family:'Inter',sans-serif;
+  }
+  .leads-stat-count{font-weight:800;}
+  .leads-stat-total{background:var(--navy);color:var(--white);border-color:var(--navy);}
+  .leads-stat-empty{color:var(--muted);border-style:dashed;}
+  button.leads-stat-pill{cursor:pointer;transition:all .2s var(--ease);}
+  button.leads-stat-pill:hover{border-color:var(--navy);color:var(--navy);}
+  button.leads-stat-pill.leads-stat-active{background:var(--navy);color:var(--white);border-color:var(--navy);}
   @keyframes leadHighlightPulse{
     0%{box-shadow:0 0 0 0 rgba(52,107,147,0.55);}
     70%{box-shadow:0 0 0 14px rgba(52,107,147,0);}
@@ -814,6 +826,8 @@
   <!-- ==================== TAB L — LEADS DE WHATSAPP ==================== -->
   <div class="tab-panel" id="tab-leads">
     <p class="section-desc">Contactos que llegan por WhatsApp. Empiezan en Nivel 1 — cuando confirman que quieren visitar, los subes a Nivel 2.</p>
+
+    <div class="leads-stats-bar" id="leadsStatsBar"></div>
 
     <button id="toggleAddLeadBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;margin-bottom:16px;">+ Añadir lead a mano</button>
     <button id="refreshLeadsBtn" class="refresh-btn" style="margin-bottom:16px;margin-left:10px;">↻ Actualizar</button>
@@ -2273,11 +2287,42 @@
   });
   function populateLeadPisoFilter(){
     const pisos = [...new Set(cachedLeads.map(l => l['Piso interés']).filter(Boolean))].sort();
-    const previousValue = leadPisoFilter.value;
     leadPisoFilter.innerHTML = '<option value="">Todos</option>' +
       pisos.map(p => `<option value="${p}">${p}</option>`).join('');
-    if(pisos.includes(previousValue)){ leadPisoFilter.value = previousValue; }
+    if(pisos.includes(currentLeadPiso)){ leadPisoFilter.value = currentLeadPiso; }
     else { leadPisoFilter.value = ''; currentLeadPiso = ''; }
+  }
+
+  // ---- Resumen de leads totales y por piso/localidad ----
+  const leadsStatsBar = document.getElementById('leadsStatsBar');
+  function renderLeadsStats(){
+    const total = cachedLeads.length;
+    const counts = {};
+    let sinPiso = 0;
+    cachedLeads.forEach(l=>{
+      const piso = (l['Piso interés'] || '').trim();
+      if(!piso){ sinPiso++; return; }
+      counts[piso] = (counts[piso] || 0) + 1;
+    });
+    const pisos = Object.keys(counts).sort((a,b)=> a.localeCompare(b, 'es'));
+
+    let html = `<span class="leads-stat-pill leads-stat-total">Total leads: <span class="leads-stat-count">${total}</span></span>`;
+    pisos.forEach(p=>{
+      const active = currentLeadPiso === p;
+      html += `<button type="button" class="leads-stat-pill${active ? ' leads-stat-active' : ''}" data-piso="${p}">${p}: <span class="leads-stat-count">${counts[p]}</span></button>`;
+    });
+    if(sinPiso > 0){
+      html += `<span class="leads-stat-pill leads-stat-empty">Sin piso indicado: <span class="leads-stat-count">${sinPiso}</span></span>`;
+    }
+    leadsStatsBar.innerHTML = html;
+
+    leadsStatsBar.querySelectorAll('[data-piso]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const piso = btn.dataset.piso;
+        currentLeadPiso = (currentLeadPiso === piso) ? '' : piso;
+        renderLeads();
+      });
+    });
   }
 
   // ---- Buscador por nombre o teléfono ----
@@ -2357,6 +2402,7 @@
     emptyLeadsN1.style.display = 'none'; emptyLeadsN2.style.display = 'none';
 
     populateLeadPisoFilter();
+    renderLeadsStats();
     const numberMap = getLeadNumberMap();
 
     const filtroActivo = !!currentLeadPiso || !!currentLeadSearch.trim();
