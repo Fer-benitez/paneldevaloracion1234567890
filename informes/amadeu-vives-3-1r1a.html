@@ -4,6 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Análisis de inquilinos — Amadeu Vives 3, 1r 1a</title>
+<link rel="icon" type="image/x-icon" href="../favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Fincas A.G. Núñez">
+<meta property="og:title" content="Informes de Solvencia | Amadeu Vives 3">
+<meta property="og:description" content="Análisis de solvencia de inquilinos — Amadeu Vives 3, 1r 1a.">
+<meta property="og:image" content="https://fer-benitez.github.io/paneldevaloracion1234567890/og-informes.jpg">
+<meta property="og:url" content="https://fer-benitez.github.io/paneldevaloracion1234567890/informes/Analisis_Inquilinos_Amadeu_Vives_3_1r1a.html">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Informes de Solvencia | Amadeu Vives 3">
+<meta name="twitter:description" content="Análisis de solvencia de inquilinos — Amadeu Vives 3, 1r 1a.">
+<meta name="twitter:image" content="https://fer-benitez.github.io/paneldevaloracion1234567890/og-informes.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -711,6 +726,8 @@
 <script>
 (function(){
   var PASSWORD = 'FER2030';
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVz1wobYSJD4uN7irJMzrjOsle7qMrDPFces31LszXDdwrqahcjtEdvfD-n3wsstJM/exec';
+  var INFORME_ID = 'amadeu-vives-3-1r1a';
   var verdict = document.getElementById('verdictBox');
   var editBtn = document.getElementById('verdictEditBtn');
   var toolbar = document.getElementById('verdictToolbar');
@@ -743,24 +760,44 @@
   }
 
   function save(){
+    var payload = {
+      level: currentLevel(),
+      title: titleEl.innerHTML,
+      desc: descEl.innerHTML
+    };
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(payload)); }catch(e){}
     try{
-      localStorage.setItem(STORE_KEY, JSON.stringify({
-        level: currentLevel(),
-        title: titleEl.innerHTML,
-        desc: descEl.innerHTML
-      }));
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({ id: INFORME_ID, level: payload.level, title: payload.title, desc: payload.desc, pass: PASSWORD })
+      });
     }catch(e){}
   }
 
   function load(){
+    // pinta lo último conocido al instante (cache local), mientras llega la versión compartida
     try{
       var raw = localStorage.getItem(STORE_KEY);
-      if(!raw) return;
-      var data = JSON.parse(raw);
-      if(data.level) applyLevel(data.level);
-      if(data.title) titleEl.innerHTML = data.title;
-      if(data.desc) descEl.innerHTML = data.desc;
+      if(raw){
+        var cached = JSON.parse(raw);
+        if(cached.level) applyLevel(cached.level);
+        if(cached.title) titleEl.innerHTML = cached.title;
+        if(cached.desc) descEl.innerHTML = cached.desc;
+      }
     }catch(e){}
+
+    // la fuente de verdad es la hoja compartida: la consultan todos los que abren la página
+    fetch(SCRIPT_URL + '?id=' + encodeURIComponent(INFORME_ID))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(!data || !data.title) return;
+        if(data.level) applyLevel(data.level);
+        titleEl.innerHTML = data.title;
+        if(data.desc) descEl.innerHTML = data.desc;
+        try{ localStorage.setItem(STORE_KEY, JSON.stringify({level:data.level,title:data.title,desc:data.desc})); }catch(e){}
+      })
+      .catch(function(){ /* sin conexión: se queda con la última versión conocida */ });
   }
   load();
 
