@@ -1072,12 +1072,12 @@
   const gatePassword = document.getElementById('gatePassword');
   const gateError = document.getElementById('gateError');
 
-  if(sessionStorage.getItem('gateUnlocked_gestion') === 'yes'){
+  if(localStorage.getItem('gateUnlocked_gestion') === 'yes'){
     gateOverlay.style.display = 'none';
   }
   function tryUnlock(){
     if(gatePassword.value === GATE_PASSWORD){
-      sessionStorage.setItem('gateUnlocked_gestion', 'yes');
+      localStorage.setItem('gateUnlocked_gestion', 'yes');
       gateOverlay.style.display = 'none';
     } else {
       gateError.style.display = 'block';
