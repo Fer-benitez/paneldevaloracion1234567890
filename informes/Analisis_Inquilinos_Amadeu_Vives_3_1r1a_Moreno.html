@@ -845,5 +845,51 @@
 })();
 </script>
 
+<script>
+(function(){
+  var PASSWORD = 'FER2030';
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVz1wobYSJD4uN7irJMzrjOsle7qMrDPFces31LszXDdwrqahcjtEdvfD-n3wsstJM/exec';
+  var INFORME_ID = 'amadeu-vives-3-1r1a-moreno';
+  var CANDIDATO = {
+    id: INFORME_ID,
+    propiedad: 'amadeu-vives-3-1r1a',
+    nombre: 'Montserrat Moreno Jiménez',
+    nombre_corto: 'Montserrat Moreno',
+    url: 'Analisis_Inquilinos_Amadeu_Vives_3_1r1a_Moreno.html',
+    esfuerzo_display: '26,4 – 27,4 %',
+    esfuerzo_alto: 27.4,
+    antiguedad_display: '≈11 años',
+    ingresos_verificados_display: '2.805,42 € (2 de 2)',
+    antiguedad_meses: 141,
+    garantias_display: 'Aval de la madre, sin doc.',
+    garantias_class: 'mid',
+    coherencia_nivel: 'Alta',
+    flags_alta: 1,
+    flags_media: 2,
+    flags_baja: 3,
+    personas: 4,
+    titulares_total: 2
+  };
+
+  function registrar(nivel){
+    var payload = {};
+    for (var k in CANDIDATO) payload[k] = CANDIDATO[k];
+    payload.tipo = 'candidato';
+    payload.veredicto_nivel = nivel || '';
+    payload.pass = PASSWORD;
+    try{
+      fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(function(){});
+    }catch(e){}
+  }
+
+  // Se registra (o actualiza) este candidato en el listado que lee
+  // la página de comparativa, usando el veredicto más reciente.
+  fetch(SCRIPT_URL + '?id=' + encodeURIComponent(INFORME_ID))
+    .then(function(r){ return r.json(); })
+    .then(function(data){ registrar(data && data.level ? data.level : 'verde'); })
+    .catch(function(){ registrar('verde'); });
+})();
+</script>
+
 </body>
 </html>
