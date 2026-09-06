@@ -80,11 +80,19 @@
   table.cmp td b.mid{color:var(--amber-ink);}
   table.cmp td b.bad{color:var(--red-ink);}
 
-  .lectura{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;box-shadow:0 2px 8px rgba(31,68,96,0.05);}
-  .lectura p{font-size:13.5px;line-height:1.7;color:var(--text);margin-bottom:12px;}
-  .lectura p:last-child{margin-bottom:0;}
-  .lectura b{color:var(--navy-darker);}
-  .lectura .disclaimer{font-size:11.5px;color:var(--muted);font-style:italic;border-top:1px dashed var(--border);padding-top:12px;margin-top:14px;}
+  .lectura-intro{font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+  .lg-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 2px 0 6px;vertical-align:middle;}
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 2px 8px rgba(31,68,96,0.05);}
+  .chart-title{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;color:var(--navy-darker);margin-bottom:3px;}
+  .chart-sub{font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.4;}
+  .chart-card svg{display:block;}
+  .lectura-note{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-top:16px;box-shadow:0 2px 8px rgba(31,68,96,0.05);}
+  .lectura-note p{font-size:13px;line-height:1.65;color:var(--text);}
+  .lectura-note .disclaimer{font-size:11.5px;color:var(--muted);font-style:italic;border-top:1px dashed var(--border);padding-top:12px;margin-top:12px;}
+  @media (max-width:720px){
+    .chart-grid{grid-template-columns:1fr;}
+  }
 
   footer{margin:34px 0 0;}
   .foot-band{background:var(--navy-darker);color:#cfe0ee;padding:16px 26px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;}
@@ -157,7 +165,7 @@
           <span class="flag-chip media">1 media</span>
           <span class="flag-chip baja">2 baja</span>
         </div>
-        <a class="cand-link" href="Analisis_Inquilinos_Amadeu_Vives_3_1r1a.html" target="_blank" rel="noopener">Ver informe completo →</a>
+        <a class="cand-link" href="amadeu-vives-3-1r1a.html" target="_blank" rel="noopener">Ver informe completo →</a>
       </div>
 
       <div class="cand-card">
@@ -174,12 +182,12 @@
           <div class="stat-row"><span class="k">Antigüedad laboral (titular 1)</span><span class="v mid">≈1,5 años</span></div>
           <div class="stat-row"><span class="k">Ingresos verificados</span><span class="v">2.365,18 € (2 de 3)</span></div>
           <div class="stat-row"><span class="k">Garantías</span><span class="v bad">Ninguna aportada</span></div>
-          <div class="stat-row"><span class="k">Coherencia ficha ↔ documentos</span><span class="v bad">Baja</span></div>
+          <div class="stat-row"><span class="k">Coherencia ficha ↔ documentos</span><span class="v mid">Media</span></div>
         </div>
         <span class="verdict-pill ambar">! Ámbar</span>
         <div class="flags-mini">
-          <span class="flag-chip alta">2 alta</span>
-          <span class="flag-chip media">2 media</span>
+          <span class="flag-chip alta">1 alta</span>
+          <span class="flag-chip media">3 media</span>
           <span class="flag-chip baja">2 baja</span>
         </div>
         <a class="cand-link" href="Analisis_Inquilinos_Amadeu_Vives_3_1r1a_Fishwick.html" target="_blank" rel="noopener">Ver informe completo →</a>
@@ -229,19 +237,39 @@
           <tr><th>Ingresos verificados</th><td>5.215 € (2 de 3 titulares)</td><td>2.365,18 € (2 de 3 titulares)</td><td>2.805,42 € (2 de 2 titulares)</td></tr>
           <tr><th>Antigüedad laboral (titular 1)</th><td><b class="bad">≈10 meses</b></td><td><b class="mid">≈1,5 años</b></td><td><b class="good">≈11 años</b></td></tr>
           <tr><th>Garantías declaradas</th><td>Aval bancario (sin documento)</td><td>Ninguna (ficha se contradice)</td><td>Aval de la madre (sin documento, no necesario)</td></tr>
-          <tr><th>Coherencia ficha ↔ documentos</th><td><b class="mid">Media</b> — posible unidad familiar no declarada</td><td><b class="bad">Baja</b> — tercera persona sin identificar</td><td><b class="good">Alta</b> — ficha y documentos encajan</td></tr>
-          <tr><th>Puntos de atención (alta·media·baja)</th><td>3 · 1 · 2</td><td>2 · 2 · 2</td><td>1 · 2 · 3</td></tr>
+          <tr><th>Coherencia ficha ↔ documentos</th><td><b class="mid">Media</b> — posible unidad familiar no declarada</td><td><b class="mid">Media</b> — DNI caducado (con pasaporte vigente); resto coherente</td><td><b class="good">Alta</b> — ficha y documentos encajan</td></tr>
+          <tr><th>Puntos de atención (alta·media·baja)</th><td>3 · 1 · 2</td><td>1 · 3 · 2</td><td>1 · 2 · 3</td></tr>
           <tr><th>Veredicto del informe</th><td><b class="good">Verde</b></td><td><b class="mid">Ámbar</b></td><td><b class="good">Verde</b></td></tr>
         </tbody>
       </table>
     </div>
 
     <h2 class="section">Lectura comparativa</h2>
-    <div class="lectura">
-      <p><b>Solvencia.</b> En ratio de esfuerzo puro, Juan Guerrero es el más holgado (12,1–14,2&nbsp;%), gracias sobre todo a la pensión de Ibrahima. Montserrat (26,4–27,4&nbsp;%) y Fishwick (24,7–31,3&nbsp;%, la más ajustada de las tres) quedan dentro del umbral habitual del sector (≤30–35&nbsp;%) pero con bastante menos margen.</p>
-      <p><b>Coherencia.</b> Montserrat es la candidatura donde ficha y documentos encajan mejor: no hay contradicciones internas y los ingresos verificados incluso superan la cifra declarada. Juan Guerrero tiene un punto de coherencia real por aclarar — la declaración de IRPF de Ibrahima sugiere una unidad familiar (cónyuge e hija menor) que la ficha no contempla entre los ocupantes. El caso de Fishwick es el más flojo en este punto: hay una tercera compañera sin nombre, DNI ni ingresos que la propia ficha usa para justificar cerca de una quinta parte del ingreso conjunto citado.</p>
-      <p><b>Antigüedad laboral.</b> Aquí la diferencia es la más clara de toda la comparativa: Montserrat lleva 11 años de alta continuada en la misma empresa, frente al año y medio de Fishwick (con un cambio de empresa por subrogación de por medio) y los apenas 10 meses de Juan Guerrero, que acaba de superar el periodo de prueba.</p>
-      <p><b>Menos objeciones documentales.</b> Contando el peso de los puntos de atención abiertos (dando más peso a los de severidad alta), Montserrat es la candidatura con menos objeciones pendientes — y su único punto de severidad alta, el aval de la madre, ni siquiera es necesario, porque los dos titulares identificados ya cubren la renta por sí solos. Juan Guerrero y Fishwick quedan en un peso similar entre sí, aunque por motivos distintos: en el primero, por la posible composición real del hogar; en la segunda, por la persona sin identificar y el menor margen de esfuerzo.</p>
+    <p class="lectura-intro">Los cuatro criterios de la comparativa, en un vistazo. Cada candidatura mantiene su color en los cuatro gráficos: <span class="lg-dot" style="background:#2a78d6"></span> Juan Guerrero · <span class="lg-dot" style="background:#eb6834"></span> Adriana Fishwick · <span class="lg-dot" style="background:#4a3aa7"></span> Montserrat Moreno.</p>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">Esfuerzo (renta / ingresos)</div>
+        <div class="chart-sub">Menor barra = mejor · zona sombreada = umbral del sector (30–35&nbsp;%)</div>
+        <svg viewBox="0 0 420 140" width="100%" style="max-width:420px" role="img" aria-label="Comparativa de esfuerzo renta sobre ingresos"><rect x="305.1" y="0" width="32.9" height="140" fill="#fbeee0" opacity="0.6"/><line x1="305.1" y1="0" x2="305.1" y2="140" stroke="#d99a1b" stroke-width="1" stroke-opacity="0.55"/><text x="0" y="27.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Juan Guerrero</text><rect x="108" y="12" width="93.3" height="22" rx="4" fill="#2a78d6"/><text x="209.3" y="27.0" font-size="11.5" font-weight="700" fill="#1f2d3a" font-family='Inter,sans-serif'>12,1–14,2 %</text><text x="0" y="71.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Fishwick</text><rect x="108" y="56" width="205.7" height="22" rx="4" fill="#eb6834"/><text x="321.7" y="71.0" font-size="11.5" font-weight="700" fill="#1f2d3a" font-family='Inter,sans-serif'>24,7–31,3 %</text><text x="0" y="115.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Montserrat</text><rect x="108" y="100" width="180.1" height="22" rx="4" fill="#4a3aa7"/><text x="296.1" y="115.0" font-size="11.5" font-weight="700" fill="#1f2d3a" font-family='Inter,sans-serif'>26,4–27,4 %</text><text x="305.1" y="139" font-size="9.5" fill="#b5730f" font-family='Inter,sans-serif' text-anchor="middle">umbral 30–35%</text></svg>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Antigüedad laboral (titular 1)</div>
+        <div class="chart-sub">Mayor barra = contrato más asentado</div>
+        <svg viewBox="0 0 420 140" width="100%" style="max-width:420px" role="img" aria-label="Comparativa de antigüedad laboral del primer firmante"><text x="0" y="27.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Juan Guerrero</text><rect x="108" y="12" width="15.9" height="22" rx="4" fill="#2a78d6"/><text x="131.9" y="27.0" font-size="11.5" font-weight="700" fill="#1f2d3a" font-family='Inter,sans-serif'>≈10 meses</text><text x="0" y="71.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Fishwick</text><rect x="108" y="56" width="29.7" height="22" rx="4" fill="#eb6834"/><text x="145.7" y="71.0" font-size="11.5" font-weight="700" fill="#1f2d3a" font-family='Inter,sans-serif'>≈1,5 años</text><text x="0" y="115.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Montserrat</text><rect x="108" y="100" width="226.2" height="22" rx="4" fill="#4a3aa7"/><text x="342.2" y="115.0" font-size="11.5" font-weight="700" fill="#1f2d3a" font-family='Inter,sans-serif'>≈11 años</text></svg>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Coherencia ficha ↔ documentos</div>
+        <div class="chart-sub">Más segmentos rellenos = mejor encaje entre lo declarado y lo documentado</div>
+        <svg viewBox="0 0 420 140" width="100%" style="max-width:420px" role="img" aria-label="Comparativa de coherencia entre ficha y documentos"><text x="0" y="27.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Juan Guerrero</text><rect x="108" y="16.0" width="34" height="14" rx="3" fill="#2a78d6"/><rect x="147" y="16.0" width="34" height="14" rx="3" fill="#2a78d6"/><rect x="186" y="16.0" width="34" height="14" rx="3" fill="#e1e0d9"/><text x="231" y="27.0" font-size="11.5" font-weight="700" fill="#1f2d3a" font-family='Inter,sans-serif'>Media</text><text x="0" y="71.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Fishwick</text><rect x="108" y="60.0" width="34" height="14" rx="3" fill="#eb6834"/><rect x="147" y="60.0" width="34" height="14" rx="3" fill="#eb6834"/><rect x="186" y="60.0" width="34" height="14" rx="3" fill="#e1e0d9"/><text x="231" y="71.0" font-size="11.5" font-weight="700" fill="#1f2d3a" font-family='Inter,sans-serif'>Media</text><text x="0" y="115.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Montserrat</text><rect x="108" y="104.0" width="34" height="14" rx="3" fill="#4a3aa7"/><rect x="147" y="104.0" width="34" height="14" rx="3" fill="#4a3aa7"/><rect x="186" y="104.0" width="34" height="14" rx="3" fill="#4a3aa7"/><text x="231" y="115.0" font-size="11.5" font-weight="700" fill="#1f2d3a" font-family='Inter,sans-serif'>Alta</text></svg>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Puntos de atención por gravedad</div>
+        <div class="chart-sub">Las 3 candidaturas suman 6 puntos cada una; lo que cambia es su gravedad</div>
+        <svg viewBox="0 0 420 164" width="100%" style="max-width:420px" role="img" aria-label="Comparativa de puntos de atención por gravedad"><text x="0" y="27.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Juan Guerrero</text><rect x="108.0" y="12" width="93.0" height="22" rx="3" fill="#c23838"/><text x="154.5" y="27.0" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle" font-family='Inter,sans-serif'>3</text><rect x="203.0" y="12" width="29.7" height="22" rx="3" fill="#d99a1b"/><text x="217.8" y="27.0" font-size="11" font-weight="700" fill="#4a2f04" text-anchor="middle" font-family='Inter,sans-serif'>1</text><rect x="234.7" y="12" width="61.3" height="22" rx="3" fill="#c3c2b7"/><text x="265.3" y="27.0" font-size="11" font-weight="700" fill="#33322f" text-anchor="middle" font-family='Inter,sans-serif'>2</text><text x="0" y="71.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Fishwick</text><rect x="108.0" y="56" width="29.7" height="22" rx="3" fill="#c23838"/><text x="122.8" y="71.0" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle" font-family='Inter,sans-serif'>1</text><rect x="139.7" y="56" width="93.0" height="22" rx="3" fill="#d99a1b"/><text x="186.2" y="71.0" font-size="11" font-weight="700" fill="#4a2f04" text-anchor="middle" font-family='Inter,sans-serif'>3</text><rect x="234.7" y="56" width="61.3" height="22" rx="3" fill="#c3c2b7"/><text x="265.3" y="71.0" font-size="11" font-weight="700" fill="#33322f" text-anchor="middle" font-family='Inter,sans-serif'>2</text><text x="0" y="115.0" font-size="11.5" font-weight="600" fill="#1f2d3a" font-family='Inter,sans-serif'>Montserrat</text><rect x="108.0" y="100" width="29.7" height="22" rx="3" fill="#c23838"/><text x="122.8" y="115.0" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle" font-family='Inter,sans-serif'>1</text><rect x="139.7" y="100" width="61.3" height="22" rx="3" fill="#d99a1b"/><text x="170.3" y="115.0" font-size="11" font-weight="700" fill="#4a2f04" text-anchor="middle" font-family='Inter,sans-serif'>2</text><rect x="203.0" y="100" width="93.0" height="22" rx="3" fill="#c3c2b7"/><text x="249.5" y="115.0" font-size="11" font-weight="700" fill="#33322f" text-anchor="middle" font-family='Inter,sans-serif'>3</text><g font-family="Inter,sans-serif" font-size="10" fill="#52514e"><rect x="108" y="138" width="10" height="10" rx="2" fill="#c23838"/><text x="122" y="147">Alta</text><rect x="170" y="138" width="10" height="10" rx="2" fill="#d99a1b"/><text x="184" y="147">Media</text><rect x="232" y="138" width="10" height="10" rx="2" fill="#c3c2b7"/><text x="246" y="147">Baja</text></g></svg>
+      </div>
+    </div>
+    <div class="lectura-note">
+      <p>Con dos titulares ya verificados, un tercer ocupante sin documentar no compromete por sí solo la solvencia del expediente — de ahí que ese punto pese poco en la comparativa de Fishwick. Lo que más separa a las tres candidaturas es la antigüedad laboral del primer firmante y, en menor medida, cuánto encaja cada ficha con su documentación.</p>
       <div class="disclaimer">Esta comparativa es un resumen económico y documental elaborado por Fernando Benítez (Ancor Investments / gestión AG Núñez) a partir de los tres informes individuales, para apoyar la revisión de un profesional del derecho. No constituye asesoramiento legal ni una recomendación de aceptación.</div>
     </div>
 
