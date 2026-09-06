@@ -883,5 +883,51 @@ En cuanto a nuestra situación laboral y económica, Juan trabaja actualmente co
 })();
 </script>
 
+<script>
+(function(){
+  var PASSWORD = 'FER2030';
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVz1wobYSJD4uN7irJMzrjOsle7qMrDPFces31LszXDdwrqahcjtEdvfD-n3wsstJM/exec';
+  var INFORME_ID = 'amadeu-vives-3-1r1a';
+  var CANDIDATO = {
+    id: INFORME_ID,
+    propiedad: 'amadeu-vives-3-1r1a',
+    nombre: 'Juan Camilo Guerrero Rodríguez',
+    nombre_corto: 'Juan Guerrero',
+    url: 'amadeu-vives-3-1r1a.html',
+    esfuerzo_display: '12,1 – 14,2 %',
+    esfuerzo_alto: 14.2,
+    antiguedad_display: '≈10 meses',
+    ingresos_verificados_display: '5.215 € (2 de 3)',
+    antiguedad_meses: 10,
+    garantias_display: 'Aval bancario, sin doc.',
+    garantias_class: 'mid',
+    coherencia_nivel: 'Media',
+    flags_alta: 3,
+    flags_media: 1,
+    flags_baja: 2,
+    personas: 3,
+    titulares_total: 3
+  };
+
+  function registrar(nivel){
+    var payload = {};
+    for (var k in CANDIDATO) payload[k] = CANDIDATO[k];
+    payload.tipo = 'candidato';
+    payload.veredicto_nivel = nivel || '';
+    payload.pass = PASSWORD;
+    try{
+      fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(function(){});
+    }catch(e){}
+  }
+
+  // Se registra (o actualiza) este candidato en el listado que lee
+  // la página de comparativa, usando el veredicto más reciente.
+  fetch(SCRIPT_URL + '?id=' + encodeURIComponent(INFORME_ID))
+    .then(function(r){ return r.json(); })
+    .then(function(data){ registrar(data && data.level ? data.level : 'verde'); })
+    .catch(function(){ registrar('verde'); });
+})();
+</script>
+
 </body>
 </html>
