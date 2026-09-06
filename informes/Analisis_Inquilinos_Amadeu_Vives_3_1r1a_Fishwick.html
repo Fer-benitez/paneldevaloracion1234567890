@@ -901,5 +901,51 @@ Muchas gracias por vuestra atención. Quedamos a vuestra disposición para cualq
 })();
 </script>
 
+<script>
+(function(){
+  var PASSWORD = 'FER2030';
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVz1wobYSJD4uN7irJMzrjOsle7qMrDPFces31LszXDdwrqahcjtEdvfD-n3wsstJM/exec';
+  var INFORME_ID = 'amadeu-vives-3-1r1a-fishwick';
+  var CANDIDATO = {
+    id: INFORME_ID,
+    propiedad: 'amadeu-vives-3-1r1a',
+    nombre: 'Adriana Fishwick De los Santos',
+    nombre_corto: 'Adriana Fishwick',
+    url: 'Analisis_Inquilinos_Amadeu_Vives_3_1r1a_Fishwick.html',
+    esfuerzo_display: '24,7 – 31,3 %',
+    esfuerzo_alto: 31.3,
+    antiguedad_display: '≈1,5 años',
+    ingresos_verificados_display: '2.365,18 € (2 de 3)',
+    antiguedad_meses: 18,
+    garantias_display: 'Ninguna aportada',
+    garantias_class: 'bad',
+    coherencia_nivel: 'Media',
+    flags_alta: 1,
+    flags_media: 3,
+    flags_baja: 2,
+    personas: 3,
+    titulares_total: 3
+  };
+
+  function registrar(nivel){
+    var payload = {};
+    for (var k in CANDIDATO) payload[k] = CANDIDATO[k];
+    payload.tipo = 'candidato';
+    payload.veredicto_nivel = nivel || '';
+    payload.pass = PASSWORD;
+    try{
+      fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(function(){});
+    }catch(e){}
+  }
+
+  // Se registra (o actualiza) este candidato en el listado que lee
+  // la página de comparativa, usando el veredicto más reciente.
+  fetch(SCRIPT_URL + '?id=' + encodeURIComponent(INFORME_ID))
+    .then(function(r){ return r.json(); })
+    .then(function(data){ registrar(data && data.level ? data.level : 'ambar'); })
+    .catch(function(){ registrar('ambar'); });
+})();
+</script>
+
 </body>
 </html>
