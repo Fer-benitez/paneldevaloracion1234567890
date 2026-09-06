@@ -291,7 +291,29 @@
 
     .foot-band{flex-direction:column;align-items:flex-start;padding:16px;}
     .foot-note{padding:14px 16px 24px;}
+    .presentacion-card{flex-direction:column;align-items:center;text-align:center;padding:16px;gap:12px;}
+    .presentacion-text blockquote{text-align:left;}
   }
+
+  /* ===== carta de presentacion ===== */
+  .presentacion-card{display:flex;gap:22px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;box-shadow:0 2px 8px rgba(31,68,96,0.05);}
+  .presentacion-photo-wrap{flex:none;width:104px;display:flex;flex-direction:column;align-items:center;gap:9px;}
+  .presentacion-photo{width:92px;height:92px;border-radius:50%;overflow:hidden;border:3px solid var(--navy);background:var(--navy-wash);display:flex;align-items:center;justify-content:center;flex:none;}
+  .presentacion-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+  .presentacion-photo.empty{border:2px dashed var(--border);background:var(--bg);}
+  .presentacion-photo.empty svg{width:38px;height:38px;color:var(--muted);opacity:.55;}
+  .photo-verdict{font-size:9px;font-weight:800;text-align:center;padding:4px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;line-height:1.3;}
+  .photo-verdict.mano{background:#e7f0fb;color:#2456a6;border:1px solid #b9d3f0;}
+  .photo-verdict.ia{background:var(--navy-darker);color:#fff;}
+  .photo-verdict-note{font-size:10px;color:var(--muted);text-align:center;line-height:1.4;max-width:104px;}
+  .text-verdict{display:inline-block;font-size:9.5px;font-weight:800;padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;}
+  .text-verdict.mano{background:#e7f0fb;color:#2456a6;border:1px solid #b9d3f0;}
+  .text-verdict.ia{background:var(--navy-darker);color:#fff;}
+  .text-verdict-note{font-size:10px;color:var(--muted);line-height:1.4;margin:-2px 0 10px;}
+  .photo-empty-note{font-size:10.5px;color:var(--muted);text-align:center;}
+  .presentacion-text{flex:1;min-width:0;}
+  .presentacion-text blockquote{margin:0;font-size:13px;line-height:1.65;color:var(--text);font-style:italic;white-space:pre-line;}
+  .presentacion-signed{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);font-size:11.5px;color:var(--muted);}
 
   @media print{
     body{background:#fff;}
@@ -300,7 +322,8 @@
     .solicitantes,.foot-band{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     .card,.chartbox,table.doc,.flag,.tile,.verdict{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none;}
     .verdict-edit-btn,.verdict-toolbar,.zip-info-overlay,.pdf-btn-top,.no-print{display:none !important;}
-    .cards,h2.section,.flag,.chartbox,.tile,.verdict,.doc-wrap{break-inside:avoid;}
+    .cards,h2.section,.flag,.chartbox,.tile,.verdict,.doc-wrap,.presentacion-card{break-inside:avoid;}
+    
     @page{margin:12mm 10mm;}
   }
 </style>
@@ -349,6 +372,22 @@
       <button type="button" class="verdict-level-btn" data-level="ambar"><span class="dot" style="background:var(--amber)"></span>Ámbar</button>
       <button type="button" class="verdict-level-btn" data-level="rojo"><span class="dot" style="background:var(--red)"></span>Rojo</button>
       <button type="button" class="verdict-lock-btn" id="verdictLockBtn">🔒 Bloquear</button>
+    </div>
+
+    <h2 class="section">Carta de presentación</h2>
+    <div class="presentacion-card">
+      <div class="presentacion-photo-wrap">
+        <div class="presentacion-photo empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg></div>
+        <div class="photo-empty-note">Sin foto aportada</div>
+      </div>
+      <div class="presentacion-text">
+        <div class="text-verdict mano">✍️ Estilo: escrito a mano</div>
+        <div class="text-verdict-note">Lectura lingüística orientativa del texto de la ficha (naturalidad, imperfecciones, coherencia, tono); no es una detección de IA certificada.</div>
+        <blockquote>El piso sería para nosotros tres: mi pareja Juan, mi padre y yo. Somos una familia tranquila y responsable, no tenemos mascotas ni hijos y buscamos una vivienda habitual y de larga duración.
+
+En cuanto a nuestra situación laboral y económica, Juan trabaja actualmente con contrato indefinido, con unos ingresos de 1.300&nbsp;€/mes, y cuenta con antigüedad laboral. Mi padre es pensionista y percibe aproximadamente 3.926&nbsp;€/mes. Yo trabajo a media jornada por 900€ al mes, es un puesto reciente, por lo que también podemos aportar mi documentación como respaldo de solvencia. En conjunto contamos con unos ingresos mensuales de aproximadamente 5.226&nbsp;€, sin contar mi nómina y de 6.126€ si se contara.</blockquote>
+        <div class="presentacion-signed">Texto de presentación tal como aparece en la ficha · 05/09/2026</div>
+      </div>
     </div>
 
     <div class="tiles">
