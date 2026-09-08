@@ -666,6 +666,28 @@
           <div class="panel-eyebrow">Informes</div>
           <div class="panel-title">Activos</div>
 
+          <div class="activo-card" id="cardMeridiana">
+            <div class="activo-card-head">
+              <div class="activo-ico">AM</div>
+              <div class="activo-info">
+                <div class="activo-name">Avenida Meridiana 153</div>
+                <div class="activo-tag tag-live">1 informe</div>
+              </div>
+              <svg class="activo-chev" width="11" height="7" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="activo-reports">
+              <a class="informe-row informe-row-compare" href="informes/Comparativa_Avenida_Meridiana_153_5_3.html" target="_blank" rel="noopener">
+                <span class="informe-row-name">📊 Comparativa de candidaturas</span>
+                <span class="informe-row-arrow">→</span>
+              </a>
+              <div class="informe-row-divider">Informes individuales</div>
+              <a class="informe-row" href="informes/Analisis_Inquilinos_Avenida_Meridiana_153_5_3_Nouri.html" target="_blank" rel="noopener">
+                <span class="informe-row-name">Wael Nouri</span>
+                <span class="informe-row-arrow">→</span>
+              </a>
+            </div>
+          </div>
+
           <div class="activo-card" id="cardAmadeu">
             <div class="activo-card-head">
               <div class="activo-ico">AV</div>
@@ -681,7 +703,7 @@
                 <span class="informe-row-arrow">→</span>
               </a>
               <div class="informe-row-divider">Informes individuales</div>
-              <a class="informe-row" href="informes/amadeu-vives-3-1r1a.html" target="_blank" rel="noopener">
+              <a class="informe-row" href="informes/Analisis_Inquilinos_Amadeu_Vives_3_1r1a.html" target="_blank" rel="noopener">
                 <span class="informe-row-name">Juan Guerrero Rodríguez</span>
                 <span class="informe-row-arrow">→</span>
               </a>
@@ -2823,12 +2845,14 @@
         }
       });
     }
-    const amadeuCard = document.getElementById('cardAmadeu');
-    if(amadeuCard){
-      amadeuCard.querySelector('.activo-card-head').addEventListener('click', ()=>{
-        amadeuCard.classList.toggle('expanded');
-      });
-    }
+    document.querySelectorAll('.activo-card:not(.disabled)').forEach((card)=>{
+      const head = card.querySelector('.activo-card-head');
+      if(head){
+        head.addEventListener('click', ()=>{
+          card.classList.toggle('expanded');
+        });
+      }
+    });
   })();
 </script>
 
