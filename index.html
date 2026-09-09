@@ -625,6 +625,13 @@
   .activo-card.expanded .activo-chev{transform:rotate(180deg);}
   .activo-reports{max-height:0;overflow:hidden;transition:max-height .22s var(--ease);}
   .activo-card.expanded .activo-reports{max-height:430px;}
+  .activo-card.cerrado .activo-ico{background:var(--green);}
+  .activo-tag.tag-cerrado{color:var(--green);font-weight:700;}
+  .panel-tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--bg);border-radius:10px;padding:4px;}
+  .panel-tabs-btn{flex:1;border:none;background:transparent;color:var(--muted);font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;padding:8px 6px;border-radius:8px;cursor:pointer;transition:all .18s var(--ease);line-height:1.25;text-align:center;}
+  .panel-tabs-btn.active{background:var(--white);color:var(--navy-darker);box-shadow:0 2px 6px rgba(22,50,74,0.12);}
+  .panel-tabs-btn:hover:not(.active){color:var(--navy-dark);}
+  .cerradas-empty{font-size:12.5px;color:var(--muted);padding:18px 6px;text-align:center;}
   .informe-row{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
     padding:10px 14px 12px 62px;text-decoration:none;border-top:1px solid var(--bg);
@@ -635,6 +642,8 @@
   .informe-row-compare{background:var(--navy-wash);}
   .informe-row-compare .informe-row-name{color:var(--navy-darker);font-weight:800;}
   .informe-row-divider{padding:9px 14px 4px 62px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-top:1px solid var(--bg);}
+  .informe-row-accepted{background:var(--green-wash);}
+  .informe-row-accepted .informe-row-name{color:var(--green-ink);font-weight:800;}
   @media (max-width:700px){
     .informes-panel{width:calc(100vw - 32px);right:-6px;}
     .informes-btn{padding:8px 13px;font-size:12.5px;}
@@ -664,9 +673,14 @@
         </button>
         <div class="informes-panel" id="informesPanel">
           <div class="panel-eyebrow">Informes</div>
-          <div class="panel-title">Activos</div>
+          <div class="panel-tabs">
+            <button type="button" class="panel-tabs-btn active" id="tabActivosBtn">Activos</button>
+            <button type="button" class="panel-tabs-btn" id="tabCerradasBtn">Operaciones cerradas</button>
+          </div>
 
-          <div class="activo-card" id="cardMeridiana">
+          <div id="activosList">
+
+          <div class="activo-card" id="cardMeridiana" data-propiedad="meridiana-153-5-3">
             <div class="activo-card-head">
               <div class="activo-ico">AM</div>
               <div class="activo-info">
@@ -704,7 +718,7 @@
             </div>
           </div>
 
-          <div class="activo-card" id="cardAmadeu">
+          <div class="activo-card" id="cardAmadeu" data-propiedad="amadeu-vives-3-1r1a">
             <div class="activo-card-head">
               <div class="activo-ico">AV</div>
               <div class="activo-info">
@@ -756,6 +770,12 @@
                 <div class="activo-tag">Sin informes aún</div>
               </div>
             </div>
+          </div>
+
+          </div>
+
+          <div id="cerradasList" style="display:none;">
+            <div class="cerradas-empty" id="cerradasEmpty">Todavía no hay operaciones cerradas.</div>
           </div>
 
         </div>
@@ -2874,6 +2894,96 @@
       }
     });
   })();
+</script>
+
+<script>
+(function(){
+  var INFORMES_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVz1wobYSJD4uN7irJMzrjOsle7qMrDPFces31LszXDdwrqahcjtEdvfD-n3wsstJM/exec';
+
+  var activosList = document.getElementById('activosList');
+  var cerradasList = document.getElementById('cerradasList');
+  var cerradasEmpty = document.getElementById('cerradasEmpty');
+  var tabActivosBtn = document.getElementById('tabActivosBtn');
+  var tabCerradasBtn = document.getElementById('tabCerradasBtn');
+
+  function setTab(which){
+    var showCerradas = which === 'cerradas';
+    if(activosList) activosList.style.display = showCerradas ? 'none' : '';
+    if(cerradasList) cerradasList.style.display = showCerradas ? '' : 'none';
+    if(tabActivosBtn) tabActivosBtn.classList.toggle('active', !showCerradas);
+    if(tabCerradasBtn) tabCerradasBtn.classList.toggle('active', showCerradas);
+  }
+  if(tabActivosBtn) tabActivosBtn.addEventListener('click', function(){ setTab('activos'); });
+  if(tabCerradasBtn) tabCerradasBtn.addEventListener('click', function(){ setTab('cerradas'); });
+
+  function updateCerradasEmptyVisibility(){
+    if(!cerradasList || !cerradasEmpty) return;
+    var hasCards = cerradasList.querySelector('.activo-card') !== null;
+    cerradasEmpty.style.display = hasCards ? 'none' : '';
+  }
+
+  function esc(s){
+    var d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+
+  function marcarCerrado(card, aceptado){
+    if(!card || card.classList.contains('cerrado')) return;
+    card.classList.add('cerrado');
+    var tag = card.querySelector('.activo-tag');
+    if(tag){
+      tag.classList.remove('tag-live');
+      tag.classList.add('tag-cerrado');
+      tag.textContent = 'Cerrado';
+    }
+    var reports = card.querySelector('.activo-reports');
+    if(reports && aceptado){
+      var compareRow = reports.querySelector('.informe-row-compare');
+      var row = document.createElement('a');
+      row.className = 'informe-row informe-row-accepted';
+      row.href = aceptado.url ? ('informes/' + aceptado.url) : '#';
+      row.target = '_blank';
+      row.rel = 'noopener';
+      row.innerHTML = '<span class="informe-row-name">✓ Aceptado: ' + esc(aceptado.nombre) + '</span><span class="informe-row-arrow">→</span>';
+      if(compareRow && compareRow.nextSibling){
+        reports.insertBefore(row, compareRow.nextSibling);
+      } else if(reports.firstChild){
+        reports.insertBefore(row, reports.firstChild);
+      } else {
+        reports.appendChild(row);
+      }
+    }
+    if(cerradasList){
+      cerradasList.appendChild(card);
+      updateCerradasEmptyVisibility();
+    }
+  }
+
+  fetch(INFORMES_SCRIPT_URL + '?action=list_candidatos')
+    .then(function(r){ return r.json(); })
+    .then(function(list){
+      if(!Array.isArray(list)) return;
+      var porPropiedad = {};
+      list.forEach(function(c){
+        var p = c.propiedad || '';
+        if(!p) return;
+        if(!porPropiedad[p]) porPropiedad[p] = [];
+        porPropiedad[p].push(c);
+      });
+      Object.keys(porPropiedad).forEach(function(propiedad){
+        var aceptado = null;
+        for(var i=0;i<porPropiedad[propiedad].length;i++){
+          if(porPropiedad[propiedad][i].estado === 'aceptado'){ aceptado = porPropiedad[propiedad][i]; break; }
+        }
+        if(!aceptado) return;
+        var card = document.querySelector('.activo-card[data-propiedad="' + propiedad + '"]');
+        if(!card) return;
+        marcarCerrado(card, { nombre: aceptado.nombre_corto || aceptado.nombre || '', url: aceptado.url || '' });
+      });
+    })
+    .catch(function(){ /* backend inalcanzable — el panel se queda como está */ });
+})();
 </script>
 
 </body>
