@@ -111,6 +111,34 @@
     .foot-band{padding:14px 18px;flex-direction:column;}
     .foot-note{padding:12px 18px 24px;}
   }
+  .cand-card{position:relative;}
+  .cand-estado-badge{position:absolute;top:14px;right:14px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:4px 10px;border-radius:999px;}
+  .cand-estado-badge.badge-aceptado{background:var(--green-wash);color:var(--green-ink);border:1px solid var(--green);}
+  .cand-estado-badge.badge-descartado{background:var(--red-wash);color:var(--red-ink);border:1px solid var(--red);}
+  .cand-card.estado-descartado{opacity:.55;filter:grayscale(.4);}
+  .cand-card.estado-aceptado{border:2px solid var(--green);box-shadow:0 0 0 3px rgba(46,139,87,.15);}
+  .cand-admin-row{display:flex;gap:8px;margin-top:2px;flex-wrap:wrap;}
+  .cand-admin-btn{flex:1;min-width:100px;border:1px solid var(--border);background:var(--card);color:var(--text);font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .15s var(--ease),border-color .15s var(--ease);}
+  .cand-admin-btn:hover{background:var(--bg);}
+  .cand-admin-btn.btn-aceptar{border-color:var(--green);color:var(--green-ink);}
+  .cand-admin-btn.btn-aceptar:hover{background:var(--green-wash);}
+  .cand-admin-btn.btn-descartar{border-color:var(--red);color:var(--red-ink);}
+  .cand-admin-btn.btn-descartar:hover{background:var(--red-wash);}
+  .cand-admin-btn.btn-revertir{border-color:var(--muted);color:var(--muted);}
+  .cand-admin-btn.btn-revertir:hover{background:var(--bg);}
+  .admin-overlay{position:fixed;inset:0;background:rgba(22,50,74,0.55);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .18s var(--ease);}
+  .admin-overlay.show{opacity:1;pointer-events:auto;}
+  .admin-card{background:#fff;border-radius:16px;padding:26px 24px;max-width:360px;width:calc(100% - 40px);box-shadow:0 12px 40px rgba(22,50,74,0.25);}
+  .admin-card h3{font-family:'Montserrat',sans-serif;font-size:16px;margin-bottom:8px;color:var(--navy-darker);}
+  .admin-card p{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;}
+  .admin-pw-input{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'Inter',sans-serif;margin-bottom:6px;box-sizing:border-box;}
+  .admin-pw-error{color:var(--red-ink);font-size:12px;display:none;margin-bottom:10px;}
+  .admin-card-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:4px;}
+  .admin-btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;cursor:pointer;}
+  .admin-btn-confirm{background:var(--navy);border:none;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 18px;border-radius:8px;cursor:pointer;}
+  .admin-btn-confirm:hover{background:var(--navy-dark);}
+  .admin-btn-confirm.danger{background:var(--red);}
+  .admin-btn-confirm.danger:hover{background:var(--red-ink);}
 </style>
 </head>
 <body>
@@ -240,6 +268,30 @@
     </div>
   </footer>
 
+</div>
+
+<div class="admin-overlay" id="adminPwOverlay">
+  <div class="admin-card">
+    <h3>🔒 Gestionar candidatura</h3>
+    <p>Aceptar, descartar o revertir el estado de un candidato requiere contraseña.</p>
+    <input type="password" class="admin-pw-input" id="adminPwInput" placeholder="Contraseña" autocomplete="off">
+    <div class="admin-pw-error" id="adminPwError">Contraseña incorrecta.</div>
+    <div class="admin-card-actions">
+      <button type="button" class="admin-btn-cancel" id="adminPwCancel">Cancelar</button>
+      <button type="button" class="admin-btn-confirm" id="adminPwConfirm">Desbloquear</button>
+    </div>
+  </div>
+</div>
+
+<div class="admin-overlay" id="adminConfirmOverlay">
+  <div class="admin-card">
+    <h3>Confirmar</h3>
+    <p id="adminConfirmText"></p>
+    <div class="admin-card-actions">
+      <button type="button" class="admin-btn-cancel" id="adminConfirmCancel">Cancelar</button>
+      <button type="button" class="admin-btn-confirm" id="adminConfirmBtn">Confirmar</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -422,6 +474,31 @@
     return out;
   }
 
+  function estadoBadgeHtml(c){
+    if(c.estado === 'aceptado') return '<span class="cand-estado-badge badge-aceptado">✓ Aceptado</span>';
+    if(c.estado === 'descartado') return '<span class="cand-estado-badge badge-descartado">✕ Descartado</span>';
+    return '';
+  }
+  function adminActionsHtml(c){
+    var id = esc(c.id), propiedad = esc(c.propiedad), nombre = esc(c.nombre_corto || c.nombre);
+    var attrs = ' data-id="' + id + '" data-propiedad="' + propiedad + '" data-nombre="' + nombre + '"';
+    if(c.estado === 'aceptado'){
+      return '<div class="cand-admin-row">' +
+        '<button type="button" class="cand-admin-btn btn-revertir" data-admin-action="revertir"' + attrs + '>↺ Revertir a pendiente</button>' +
+      '</div>';
+    }
+    if(c.estado === 'descartado'){
+      return '<div class="cand-admin-row">' +
+        '<button type="button" class="cand-admin-btn btn-aceptar" data-admin-action="aceptar"' + attrs + '>✓ Aceptar</button>' +
+        '<button type="button" class="cand-admin-btn btn-revertir" data-admin-action="revertir"' + attrs + '>↺ Revertir</button>' +
+      '</div>';
+    }
+    return '<div class="cand-admin-row">' +
+      '<button type="button" class="cand-admin-btn btn-aceptar" data-admin-action="aceptar"' + attrs + '>✓ Aceptar</button>' +
+      '<button type="button" class="cand-admin-btn btn-descartar" data-admin-action="descartar"' + attrs + '>✕ Descartar</button>' +
+    '</div>';
+  }
+
   function photoHtml(cand){
     var b64 = PHOTOS[cand.id];
     if(b64){
@@ -437,7 +514,8 @@
     for(var i=0;i<list.length;i++){
       var c = list[i];
       html += '' +
-        '<div class="cand-card">' +
+        '<div class="cand-card' + (c.estado === 'aceptado' ? ' estado-aceptado' : (c.estado === 'descartado' ? ' estado-descartado' : '')) + '">' +
+          estadoBadgeHtml(c) +
           '<div class="cand-top">' +
             photoHtml(c) +
             '<div>' +
@@ -460,6 +538,7 @@
             '<span class="flag-chip baja">' + esc(c.flags_baja) + ' baja</span>' +
           '</div>' +
           '<a class="cand-link" href="' + esc(c.url) + '" target="_blank" rel="noopener">Ver informe completo →</a>' +
+          adminActionsHtml(c) +
         '</div>';
     }
     grid.innerHTML = html;
@@ -659,6 +738,7 @@
   }
 
   function renderAll(list){
+    CURRENT_LIST = list;
     renderCards(list);
     renderTable(list);
     renderCharts(list);
@@ -682,6 +762,130 @@
       renderAll(mergeCandidatos(STATIC_FALLBACK, list || []));
     })
     .catch(function(){ /* sin conexión: se queda el contenido ya pintado con STATIC_FALLBACK */ });
+  var CURRENT_LIST = STATIC_FALLBACK;
+
+  // ---- Gestión de estado del candidato (aceptar / descartar / revertir) ----
+  // Se apoya en lo que ya existe en este archivo: SCRIPT_URL, PROPIEDAD_ID,
+  // renderAll y CURRENT_LIST (la última lista pintada, ver cambio en
+  // renderAll más arriba).
+  var ADMIN_PASSWORD = 'FER2030';
+  var ADMIN_UNLOCKED = false;
+  var pendingAdminAction = null;
+
+  var adminPwOverlay = document.getElementById('adminPwOverlay');
+  var adminPwInput = document.getElementById('adminPwInput');
+  var adminPwError = document.getElementById('adminPwError');
+  var adminPwConfirm = document.getElementById('adminPwConfirm');
+  var adminPwCancel = document.getElementById('adminPwCancel');
+  var adminConfirmOverlay = document.getElementById('adminConfirmOverlay');
+  var adminConfirmText = document.getElementById('adminConfirmText');
+  var adminConfirmBtn = document.getElementById('adminConfirmBtn');
+  var adminConfirmCancel = document.getElementById('adminConfirmCancel');
+
+  function openAdminConfirm(){
+    if(!pendingAdminAction || !adminConfirmOverlay) return;
+    adminConfirmText.textContent = pendingAdminAction.confirmText;
+    adminConfirmBtn.textContent = pendingAdminAction.confirmBtnLabel;
+    adminConfirmBtn.className = 'admin-btn-confirm' + (pendingAdminAction.danger ? ' danger' : '');
+    adminConfirmOverlay.classList.add('show');
+  }
+
+  function openAdminFlow(action){
+    pendingAdminAction = action;
+    if(ADMIN_UNLOCKED){
+      openAdminConfirm();
+    } else if(adminPwOverlay){
+      adminPwInput.value = '';
+      adminPwError.style.display = 'none';
+      adminPwOverlay.classList.add('show');
+      setTimeout(function(){ adminPwInput.focus(); }, 60);
+    }
+  }
+
+  if(adminPwConfirm){
+    adminPwConfirm.addEventListener('click', function(){
+      if(adminPwInput.value === ADMIN_PASSWORD){
+        ADMIN_UNLOCKED = true;
+        adminPwOverlay.classList.remove('show');
+        openAdminConfirm();
+      } else {
+        adminPwError.style.display = 'block';
+      }
+    });
+    adminPwInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') adminPwConfirm.click(); });
+    adminPwCancel.addEventListener('click', function(){ adminPwOverlay.classList.remove('show'); pendingAdminAction = null; });
+    adminPwOverlay.addEventListener('click', function(e){ if(e.target === adminPwOverlay){ adminPwOverlay.classList.remove('show'); pendingAdminAction = null; } });
+  }
+  if(adminConfirmCancel){
+    adminConfirmCancel.addEventListener('click', function(){ adminConfirmOverlay.classList.remove('show'); pendingAdminAction = null; });
+    adminConfirmOverlay.addEventListener('click', function(e){ if(e.target === adminConfirmOverlay){ adminConfirmOverlay.classList.remove('show'); pendingAdminAction = null; } });
+  }
+  if(adminConfirmBtn){
+    adminConfirmBtn.addEventListener('click', function(){
+      if(!pendingAdminAction) return;
+      applyEstadoCandidato(pendingAdminAction.id, pendingAdminAction.propiedad, pendingAdminAction.estado);
+      adminConfirmOverlay.classList.remove('show');
+      pendingAdminAction = null;
+    });
+  }
+
+  function applyEstadoCandidato(id, propiedad, estado){
+    // Optimista: se actualiza en memoria y se repinta ya, sin esperar la
+    // respuesta del servidor (igual que el resto de este archivo).
+    var next = CURRENT_LIST.map(function(c){
+      if(c.id === id){
+        var copy = {}; for(var k in c) copy[k] = c[k];
+        copy.estado = estado;
+        return copy;
+      }
+      if(estado === 'aceptado' && c.propiedad === propiedad && c.id !== id){
+        var copy2 = {}; for(var k2 in c) copy2[k2] = c[k2];
+        copy2.estado = 'descartado';
+        return copy2;
+      }
+      return c;
+    });
+    renderAll(next);
+    try{
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({ tipo: 'estado_candidato', id: id, propiedad: propiedad, estado: estado, pass: ADMIN_PASSWORD })
+      });
+    }catch(e){}
+  }
+
+  var candGridForAdmin = document.querySelector('.cand-grid');
+  if(candGridForAdmin){
+    candGridForAdmin.addEventListener('click', function(e){
+      var btn = e.target.closest ? e.target.closest('[data-admin-action]') : null;
+      if(!btn) return;
+      var id = btn.getAttribute('data-id');
+      var propiedad = btn.getAttribute('data-propiedad');
+      var nombre = btn.getAttribute('data-nombre');
+      var action = btn.getAttribute('data-admin-action');
+      if(action === 'aceptar'){
+        openAdminFlow({
+          id: id, propiedad: propiedad, estado: 'aceptado',
+          confirmText: 'Vas a aceptar a ' + nombre + '. El resto de candidaturas de esta propiedad se marcarán como descartadas automáticamente, y la propiedad pasará a "Operaciones cerradas". ¿Confirmas?',
+          confirmBtnLabel: '✓ Aceptar y cerrar', danger: false
+        });
+      } else if(action === 'descartar'){
+        openAdminFlow({
+          id: id, propiedad: propiedad, estado: 'descartado',
+          confirmText: '¿Descartar a ' + nombre + '? Podrás revertirlo después si hace falta.',
+          confirmBtnLabel: '✕ Descartar', danger: true
+        });
+      } else if(action === 'revertir'){
+        openAdminFlow({
+          id: id, propiedad: propiedad, estado: '',
+          confirmText: '¿Volver a dejar a ' + nombre + ' como pendiente?',
+          confirmBtnLabel: '↺ Revertir', danger: false
+        });
+      }
+    });
+  }
+
 })();
 
 </script>
