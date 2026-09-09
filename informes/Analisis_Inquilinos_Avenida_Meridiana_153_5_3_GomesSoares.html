@@ -913,7 +913,9 @@ Victoria es autonoma, y para asegurar la solvencia presenta su padre como fiador
     return '';
   }
 
-  function save(){
+  var saveDebounceTimer = null;
+
+  function doSave(){
     var payload = {
       level: currentLevel() || 'verde',
       title: titleEl.innerHTML,
@@ -927,6 +929,33 @@ Victoria es autonoma, y para asegurar la solvencia presenta su padre como fiador
         body: JSON.stringify({ id: HUMAN_ID, tipo: 'humano', level: payload.level, title: payload.title, desc: payload.desc, pass: PASSWORD })
       });
     }catch(e){}
+    // Propaga el nuevo nivel a la Comparativa sin esperar a recargar la página.
+    if(typeof window.__agRegistrarCandidato === 'function'){
+      try{ window.__agRegistrarCandidato(payload.level); }catch(e){}
+    }
+  }
+
+  // Se debe evitar disparar una petición de red por cada pulsación de tecla
+  // (esto era lo que producía filas duplicadas en la hoja de cálculo cuando
+  // dos guardados casi simultáneos llegaban al backend a la vez). Guardamos
+  // de inmediato en localStorage, pero al backend solo tras una breve pausa
+  // de escritura; save() fuerza el guardado inmediato (p.ej. al bloquear o
+  // al cambiar el nivel con un clic).
+  function save(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        level: currentLevel() || 'verde',
+        title: titleEl.innerHTML,
+        desc: descEl.innerHTML
+      }));
+    }catch(e){}
+    if(saveDebounceTimer) clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(doSave, 700);
+  }
+
+  function saveNow(){
+    if(saveDebounceTimer){ clearTimeout(saveDebounceTimer); saveDebounceTimer = null; }
+    doSave();
   }
 
   function load(){
@@ -967,7 +996,7 @@ Victoria es autonoma, y para asegurar la solvencia presenta su padre como fiador
     descEl.setAttribute('contenteditable','false');
     toolbar.classList.remove('show');
     editBtn.style.display = '';
-    save();
+    saveNow();
   }
 
   editBtn.addEventListener('click', function(){
@@ -991,7 +1020,7 @@ Victoria es autonoma, y para asegurar la solvencia presenta su padre como fiador
   pwInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') tryUnlock(); });
 
   levelBtns.forEach(function(b){
-    b.addEventListener('click', function(){ applyLevel(b.getAttribute('data-level')); save(); });
+    b.addEventListener('click', function(){ applyLevel(b.getAttribute('data-level')); saveNow(); });
   });
   lockBtn.addEventListener('click', lockEdit);
   titleEl.addEventListener('input', save);
@@ -1036,6 +1065,8 @@ Victoria es autonoma, y para asegurar la solvencia presenta su padre como fiador
       fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
     }catch(e){}
   }
+
+  window.__agRegistrarCandidato = registrar;
 
   fetch(SCRIPT_URL + '?id=' + encodeURIComponent(INFORME_ID + '-humano'))
     .then(function(r){ return r.json(); })
