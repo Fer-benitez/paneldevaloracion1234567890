@@ -158,7 +158,7 @@
     <div class="meta-band">
       <div>Renta objetivo: <b>600 €/mes</b></div>
       <div>Preparado por: <b>Fernando Benítez</b></div>
-      <div>Fecha: <b>13/09/2026</b></div>
+      <div>Fecha: <b>17/09/2026</b></div>
     </div>
   </header>
 
@@ -197,7 +197,7 @@
     </div>
 
     <h2 class="section">Lectura comparativa</h2>
-    <p class="lectura-intro">El único criterio de la comparativa, en un vistazo (se irá ampliando a medida que lleguen más candidaturas a Aragó 643): <span class="lg-dot" style="background:#2a78d6"></span> Abdelhakim Zaied.</p>
+    <p class="lectura-intro">Los cuatro criterios de la comparativa, en un vistazo. Cada candidatura mantiene su color en los cuatro gráficos: <span class="lg-dot" style="background:#2a78d6"></span> Rosa Soler · <span class="lg-dot" style="background:#eb6834"></span> Abdelhakim Zaied.</p>
     <div class="chart-grid">
       <div class="chart-card">
         <div class="chart-title">Esfuerzo (renta / ingresos)</div>
@@ -221,7 +221,7 @@
       </div>
     </div>
     <div class="lectura-note">
-      <p>Como primera candidatura de Aragó 643, esta comparativa parte de un único expediente: el de Abdelhakim Farid Zaied, con veredicto rojo por documentación insuficiente (nóminas de la fiadora en vez del titular, ingreso del titular verificado solo con una nómina parcial de un empleo de apenas un mes, y fiadora sin aval firmado). A medida que se registren más candidaturas para este piso, se irán añadiendo automáticamente a esta misma comparativa.</p>
+      <p>Las dos candidaturas de Aragó 643 registradas hasta ahora comparten veredicto rojo, aunque por motivos distintos. La de Rosa Soler Nebot presenta cero documentos de ingresos propios de la titular (todo lo aportado corresponde a su avaladora, Alejandra Rovira Soler) y una discrepancia de identidad sin aclarar entre el texto de presentación de la ficha y la documentación real. La de Abdelhakim Farid Zaied está marcada por documentación insuficiente: nóminas de la fiadora en vez del titular, ingreso del titular verificado solo con una nómina parcial de un empleo de apenas un mes, y fiadora sin aval firmado. A medida que se registren más candidaturas para este piso, se irán añadiendo automáticamente a esta misma comparativa.</p>
       <div class="disclaimer">Esta comparativa es un resumen económico y documental elaborado por Fernando Benítez (Ancor Investments / gestión AG Núñez) a partir de los informes individuales, para apoyar la revisión de un profesional del derecho. No constituye asesoramiento legal ni una recomendación de aceptación.</div>
     </div>
 
@@ -239,7 +239,7 @@
     <div class="foot-note">
       <p><b>Metodología:</b> los datos de esta comparativa proceden íntegramente de los informes individuales de solvencia, ya verificados a partir de nóminas, vida laboral, certificados de la Agencia Tributaria (IRPF) y documentos de identidad.</p>
       <p><b>Aviso:</b> este documento es un resumen comparativo elaborado por Fernando Benítez (Ancor Investments / gestión AG Núñez) para apoyar la revisión de un profesional del derecho. No constituye asesoramiento legal ni un informe de solvencia oficial.</p>
-      <p>Generado el 13/09/2026 · Caso: Aragó 643 · 1 candidatura comparada</p>
+      <p>Generado el 17/09/2026 · Caso: Aragó 643 · 1 candidatura comparada</p>
     </div>
   </footer>
 
@@ -278,6 +278,24 @@
   };
 
   var STATIC_FALLBACK = [
+    {
+      id: 'arago-643-soler',
+      propiedad: 'arago-643',
+      nombre: 'Rosa Soler Nebot',
+      nombre_corto: 'Rosa Soler',
+      url: 'Analisis_Inquilinos_Arago_643_Soler.html',
+      esfuerzo_display: '22 – 37,5 %',
+      esfuerzo_alto: 37.5,
+      antiguedad_display: '4 años 5 meses (avaladora)',
+      antiguedad_meses: 53,
+      ingresos_verificados_display: '1.467,90 € (avaladora; titular sin verificar)',
+      garantias_display: 'Avaladora, sin aval firmado',
+      garantias_class: 'bad',
+      coherencia_nivel: 'Baja',
+      flags_alta: 3, flags_media: 1, flags_baja: 1,
+      veredicto_nivel: 'rojo',
+      personas: 1, titulares_total: 1
+    },
     {
       id: 'arago-643',
       propiedad: 'arago-643',
@@ -647,7 +665,7 @@
     if(badge) badge.textContent = list.length + (list.length === 1 ? ' candidatura' : ' candidaturas');
     var footNote = document.querySelector('.foot-note p:last-child');
     if(footNote){
-      footNote.innerHTML = 'Generado el 13/09/2026 · Caso: Aragó 643 · ' + list.length + (list.length === 1 ? ' candidatura comparada' : ' candidaturas comparadas');
+      footNote.innerHTML = 'Generado el 17/09/2026 · Caso: Aragó 643 · ' + list.length + (list.length === 1 ? ' candidatura comparada' : ' candidaturas comparadas');
     }
   }
 
