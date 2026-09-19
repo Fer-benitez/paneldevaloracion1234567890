@@ -56,12 +56,6 @@
   .msg.err{background:var(--red-wash);color:var(--red-ink);display:block;}
   .msg.info{background:var(--navy-wash);color:var(--navy-darker);display:block;font-weight:500;}
 
-  #pwOverlay{position:fixed;inset:0;background:rgba(22,50,74,.55);display:flex;align-items:center;justify-content:center;z-index:50;}
-  #pwOverlay .box{background:#fff;border-radius:14px;padding:26px;max-width:320px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.25);}
-  #pwOverlay h3{font-family:'Montserrat',sans-serif;color:var(--navy-darker);margin-bottom:10px;font-size:16px;}
-  #pwOverlay input{margin-bottom:12px;}
-  #pwOverlay .row{grid-template-columns:1fr 1fr;}
-
   .toggle-group{display:flex;gap:8px;}
   .toggle-btn{flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:12.5px;font-weight:700;text-align:center;color:var(--navy-dark);}
   .toggle-btn.active{background:var(--navy-dark);color:#fff;border-color:var(--navy-dark);}
@@ -75,14 +69,6 @@
 </style>
 </head>
 <body>
-
-<div id="pwOverlay">
-  <div class="box">
-    <h3>Acceso administrador</h3>
-    <input type="text" id="adminPwInput" placeholder="Contraseña" autocomplete="off">
-    <div class="row"><button class="btn-navy" id="pwOkBtn" style="width:100%">Entrar</button></div>
-  </div>
-</div>
 
 <div class="sheet">
   <header>
@@ -101,8 +87,9 @@
       <div class="propiedad-bar">
         <div class="field">
           <label>Identificador de la propiedad</label>
-          <input type="text" id="propiedadInput" placeholder="ej: meridiana-153-5-3">
-          <div class="hint">El mismo slug que usas en Comparativa y en el formulario de Mandato/Ficha Técnica.</div>
+          <input type="text" id="propiedadInput" list="propiedadesList" placeholder="ej: meridiana-153-5-3" autocomplete="off">
+          <datalist id="propiedadesList"></datalist>
+          <div class="hint">El mismo slug que usas en Comparativa y en el formulario de Mandato/Ficha Técnica. Empieza a escribir para ver las propiedades que ya tienen mandato guardado.</div>
         </div>
         <button class="btn-navy" id="cargarBtn" type="button">Cargar candidato aceptado + mandato + ficha técnica</button>
       </div>
@@ -713,15 +700,27 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
 <script>
   var SCRIPT_URL_COMPARATIVA = 'https://script.google.com/macros/s/AKfycbxVz1wobYSJD4uN7irJMzrjOsle7qMrDPFces31LszXDdwrqahcjtEdvfD-n3wsstJM/exec';
   var SCRIPT_URL_GESTION = 'https://script.google.com/macros/s/AKfycbzwJe2nw_bpxIqsZKvW3mj1eMkG4OkTSPYjrkD6BvPbXze5Q1z0e90kUMqcsB-k-hlgMw/exec';
-  var ADMIN_PASSWORD = 'FER2030';
-  var adminOk = false;
-
-  document.getElementById('pwOkBtn').addEventListener('click', function(){
-    var val = document.getElementById('adminPwInput').value;
-    if (val === ADMIN_PASSWORD) { adminOk = true; document.getElementById('pwOverlay').style.display = 'none'; }
-    else { alert('Contraseña incorrecta.'); }
-  });
-  document.getElementById('adminPwInput').addEventListener('keydown', function(e){ if (e.key === 'Enter') document.getElementById('pwOkBtn').click(); });
+  // Rellena el desplegable de "Identificador de la propiedad" con las
+  // propiedades que ya tienen Mandato guardado (acción list_mandatos).
+  (function cargarPropiedadesConMandato(){
+    var datalist = document.getElementById('propiedadesList');
+    if (!datalist) return;
+    fetch(SCRIPT_URL_COMPARATIVA + '?action=list_mandatos')
+      .then(function(r){ return r.json(); })
+      .then(function(list){
+        if (!Array.isArray(list)) return;
+        datalist.innerHTML = '';
+        list.forEach(function(m){
+          if (!m.propiedad) return;
+          var opt = document.createElement('option');
+          opt.value = m.propiedad;
+          var extra = [m.propietario_nombre, m.direccion].filter(Boolean).join(' · ');
+          if (extra) opt.label = extra;
+          datalist.appendChild(opt);
+        });
+      })
+      .catch(function(){ /* si falla, el campo se sigue rellenando a mano */ });
+  })();
 
   function showMsg(text, type) {
     var box = document.getElementById('msgBox');
@@ -1035,11 +1034,6 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
 
   // ---------- Generar contrato ----------
   document.getElementById('generarBtn').addEventListener('click', function(){
-    if (!adminOk) {
-      document.getElementById('pwOverlay').style.display = 'flex';
-      var check = setInterval(function(){ if (adminOk) { clearInterval(check); generarContrato(); } }, 300);
-      return;
-    }
     generarContrato();
   });
 
