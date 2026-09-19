@@ -1488,13 +1488,29 @@
       const solvenciaVal = parseFloat(c['% Solvencia']);
       const solvenciaClass = (!isNaN(solvenciaVal) && solvenciaVal <= 30) ? 'ok' : 'warn';
 
-      const docs = (c['Documentos'] || '').split('|').map(d=>d.trim()).filter(Boolean);
+      const docs = parseDocList(c['Documentos']);
       const docsHtml = docs.map(d=>{
         const parts = d.split(': ');
         const name = parts[0] || 'archivo';
         const url = toDownloadUrl(parts[1] || parts[0]);
         return `<a href="${url}" target="_blank" rel="noopener">⬇ ${name}</a>`;
       }).join('');
+
+      const docsAvalista = parseDocList(docsAvalistaOf(c));
+      const docsAvalistaHtml = docsAvalista.map(d=>{
+        const parts = d.split(': ');
+        const name = parts[0] || 'archivo';
+        const url = toDownloadUrl(parts[1] || parts[0]);
+        return `<a href="${url}" target="_blank" rel="noopener">⬇ ${name}</a>`;
+      }).join('');
+
+      const avalBancarioRaw = avalBancarioOf(c);
+      const docsAvalHtml = avalBancarioRaw ? (()=>{
+        const parts = avalBancarioRaw.split(': ');
+        const name = parts.length > 1 ? parts[0] : 'Aval bancario';
+        const url = toDownloadUrl(parts.length > 1 ? parts[1] : avalBancarioRaw);
+        return `<a href="${url}" target="_blank" rel="noopener">⬇ ${name}</a>`;
+      })() : '';
 
       const card = document.createElement('div');
       card.className = 'card ' + statusClass;
@@ -1520,6 +1536,9 @@
             ${c['Presentación'] ? `<div class="data-row" style="display:block;margin-top:8px;"><span style="display:block;margin-bottom:4px;">Presentación</span><span style="text-align:left;font-weight:400;display:block;">${c['Presentación']}</span></div>` : ''}
             ${checklistHtml(c['Checklist documentos'])}
             ${docsHtml ? `<div class="docs-links">${docsHtml}</div>` : ''}
+            ${checklistAvalistaOf(c) ? checklistHtml(checklistAvalistaOf(c), 'Documentos del avalista/fiador') : ''}
+            ${docsAvalistaHtml ? `<div class="docs-links">${docsAvalistaHtml}</div>` : ''}
+            ${docsAvalHtml ? `<div class="docs-links">${docsAvalHtml}</div>` : ''}
             <button class="zip-btn">⬇ Descargar ficha (ZIP)</button>
             ${notesPreview(c['Semáforo'], c['Notas Fernando'])}
           </div>
@@ -1623,7 +1642,7 @@
     return `<div class="notes-preview ${cls}"><span class="notes-label">Valoración de Fernando</span>${notas}</div>`;
   }
 
-  function checklistHtml(raw){
+  function checklistHtml(raw, titulo){
     if(!raw) return '';
     const items = raw.split('|').map(pair=>{
       const idx = pair.lastIndexOf(':');
@@ -1633,7 +1652,29 @@
     const chips = items.map(item=>
       `<span class="checklist-chip ${item.checked ? 'yes' : 'no'}"><span class="mark">${item.checked ? '✓' : '✕'}</span>${item.label}</span>`
     ).join('');
-    return `<div class="checklist-section"><span class="checklist-title">Documentos que dice tener listos</span><div class="checklist-grid">${chips}</div></div>`;
+    return `<div class="checklist-section"><span class="checklist-title">${titulo || 'Documentos que dice tener listos'}</span><div class="checklist-grid">${chips}</div></div>`;
+  }
+
+  // Nombres de columna que puede usar la hoja "Interesados" para los datos
+  // del avalista/fiador y el aval bancario, añadidos con el rediseño de
+  // Garantías. Como distintas fichas (según cuándo se crearon) pueden mandar
+  // esto con nombres de campo ligeramente distintos, probamos varias
+  // variantes por si la hoja/Apps Script usa una u otra.
+  function firstNonEmpty(c, keys){
+    for(const k of keys){ if(c[k]) return c[k]; }
+    return '';
+  }
+  function docsAvalistaOf(c){
+    return firstNonEmpty(c, ['Documentos avalista', 'Documentos avalista (enlaces)', 'documentosAvalista']);
+  }
+  function checklistAvalistaOf(c){
+    return firstNonEmpty(c, ['Checklist documentos avalista', 'checklistAvalista']);
+  }
+  function avalBancarioOf(c){
+    return firstNonEmpty(c, ['Aval bancario', 'Aval bancario (enlace)', 'avalBancario']);
+  }
+  function parseDocList(raw){
+    return (raw || '').split('|').map(d=>d.trim()).filter(Boolean);
   }
 
   document.querySelectorAll('.filter-btn').forEach(btn=>{
@@ -1726,13 +1767,17 @@
       texto += 'Renta: ' + (c['Renta'] || '') + '€\n';
       texto += 'Solvencia: ' + (c['% Solvencia'] || '') + '\n\n';
       texto += 'Checklist documentos: ' + (c['Checklist documentos'] || '') + '\n';
+      if(checklistAvalistaOf(c)) texto += 'Checklist documentos avalista/fiador: ' + checklistAvalistaOf(c) + '\n';
       texto += 'Consentimiento RGPD: ' + (c['Consentimiento RGPD'] || '') + (c['Fecha consentimiento'] ? ' (' + c['Fecha consentimiento'] + ')' : '') + '\n\n';
       texto += 'Presentación:\n' + (c['Presentación'] || '') + '\n\n';
       texto += 'Valoración de Fernando: ' + (c['Semáforo'] || '') + '\n';
       texto += 'Notas: ' + (c['Notas Fernando'] || '') + '\n';
       zip.file('Ficha - ' + (c['Nombre'] || 'interesado') + '.txt', texto);
 
-      const docs = (c['Documentos'] || '').split('|').map(d=>d.trim()).filter(Boolean);
+      // Documentos del propio candidato, del avalista/fiador y el aval
+      // bancario van todos al mismo ZIP; los del avalista/aval se meten en
+      // una subcarpeta "Avalista" para no mezclarlos con los del candidato.
+      const docs = parseDocList(c['Documentos']);
       for(const d of docs){
         const idx = d.indexOf(':');
         if(idx === -1) continue;
@@ -1744,6 +1789,34 @@
           const blob = await res.blob();
           zip.file(name, blob);
         } catch(err){ /* si un documento falla, seguimos con el resto */ }
+      }
+
+      const docsAvalista = parseDocList(docsAvalistaOf(c));
+      for(const d of docsAvalista){
+        const idx = d.indexOf(':');
+        if(idx === -1) continue;
+        const name = d.slice(0, idx).trim();
+        const url = d.slice(idx + 1).trim();
+        if(!url) continue;
+        try{
+          const res = await fetch(url);
+          const blob = await res.blob();
+          zip.file('Avalista/' + name, blob);
+        } catch(err){ /* si un documento falla, seguimos con el resto */ }
+      }
+
+      const avalBancarioRawZip = avalBancarioOf(c);
+      if(avalBancarioRawZip){
+        const parts = avalBancarioRawZip.split(': ');
+        const name = parts.length > 1 ? parts[0].trim() : 'Aval bancario';
+        const url = (parts.length > 1 ? parts[1] : avalBancarioRawZip).trim();
+        if(url){
+          try{
+            const res = await fetch(url);
+            const blob = await res.blob();
+            zip.file('Avalista/' + name, blob);
+          } catch(err){ /* si falla, seguimos igualmente */ }
+        }
       }
 
       const blob = await zip.generateAsync({ type:'blob' });
@@ -3000,6 +3073,35 @@
     return d.innerHTML;
   }
 
+  // Normaliza un identificador de propiedad para comparar de forma
+  // tolerante (el candidato aceptado en Comparativa y la tarjeta de
+  // index.html a veces llevan variantes del mismo identificador: con o
+  // sin "avenida-"/"carrer-", mayúsculas distintas, guiones vs espacios).
+  function normalizarPropiedadId(s){
+    var n = (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    n = n.replace(/^(avenida|av|carrer|calle|c|paseo|passeig)-/, '');
+    return n;
+  }
+
+  // Busca la tarjeta de un piso a partir del identificador de propiedad
+  // del candidato aceptado: primero coincidencia exacta, y si no la hay,
+  // coincidencia normalizada (tolerante a variantes del identificador).
+  function encontrarTarjetaPropiedad(propiedad){
+    var exacta = document.querySelector('.activo-card[data-propiedad="' + propiedad + '"]');
+    if(exacta) return exacta;
+    var objetivo = normalizarPropiedadId(propiedad);
+    if(!objetivo) return null;
+    var cards = document.querySelectorAll('.activo-card[data-propiedad]');
+    for(var i=0;i<cards.length;i++){
+      var idNorm = normalizarPropiedadId(cards[i].getAttribute('data-propiedad'));
+      if(idNorm === objetivo || (idNorm && objetivo.indexOf(idNorm) !== -1) || (objetivo && idNorm.indexOf(objetivo) !== -1)){
+        return cards[i];
+      }
+    }
+    return null;
+  }
+
   function marcarCerrado(card, aceptado){
     if(!card || card.classList.contains('cerrado')) return;
     card.classList.add('cerrado');
@@ -3049,7 +3151,7 @@
           if(porPropiedad[propiedad][i].estado === 'aceptado'){ aceptado = porPropiedad[propiedad][i]; break; }
         }
         if(!aceptado) return;
-        var card = document.querySelector('.activo-card[data-propiedad="' + propiedad + '"]');
+        var card = encontrarTarjetaPropiedad(propiedad);
         if(!card) return;
         marcarCerrado(card, { nombre: aceptado.nombre_corto || aceptado.nombre || '', url: aceptado.url || '' });
       });
