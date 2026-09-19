@@ -890,6 +890,37 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
   // ---------- Carga desde backend ----------
   var GESTION_ROWS = [];
 
+  // Normaliza un nombre para comparar (sin acentos, minúsculas, un solo
+  // espacio entre palabras) — usado para emparejar el candidato aceptado
+  // en Comparativa con su fila de interesado en GESTION (no comparten ID).
+  function normalizarNombre(s) {
+    return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+  }
+  function nombresCoinciden(a, b) {
+    var na = normalizarNombre(a), nb = normalizarNombre(b);
+    if (!na || !nb) return false;
+    if (na === nb) return true;
+    var wa = na.split(' '), wb = nb.split(' ');
+    var corta = wa.length <= wb.length ? wa : wb;
+    var larga = wa.length <= wb.length ? nb : na;
+    // Todas las palabras del nombre más corto aparecen en el más largo
+    // (cubre "Abdelhakim Zaied" vs "Abdelhakim Farid Zaied").
+    return corta.length > 0 && corta.every(function(w){ return w.length > 1 && larga.indexOf(w) !== -1; });
+  }
+
+  // Rellena el/los arrendatario(s) a partir de una fila de GESTION —
+  // compartido entre el auto-relleno y el botón manual "Usar estos datos".
+  function aplicarDatosGestion(row) {
+    document.getElementById('arrendList').innerHTML = '';
+    arrendCount = 0;
+    addArrendatario({ trat: 'D.', nombre: row['Nombre'] || '', dni: row['DNI/NIE'] || '', tel: row['Teléfono'] || '', email: row['Email'] || '' });
+    if (row['Nombre completo 2'] || row['DNI/NIE 2']) {
+      addArrendatario({ trat: 'D.', nombre: row['Nombre completo 2'] || '', dni: row['DNI/NIE 2'] || '', tel: row['Teléfono'] || '', email: row['Email'] || '' });
+    }
+    document.getElementById('tagArr').style.display = 'inline-block';
+  }
+
   document.getElementById('cargarBtn').addEventListener('click', function(){
     var propiedad = document.getElementById('propiedadInput').value.trim();
     if (!propiedad) { showMsg('Escribe primero el identificador de la propiedad.', 'err'); return; }
@@ -981,7 +1012,31 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
       });
       document.getElementById('gestionMatchBox').style.display = GESTION_ROWS.length ? 'block' : 'none';
 
-      showMsg(partes.join('<br>') + (mandato.propietario_nombre ? '<br>✅ Mandato cargado.' : '<br>⚠️ No hay mandato guardado para esta propiedad todavía.') + (ficha.ref_catastral !== undefined ? '<br>✅ Ficha técnica cargada.' : '<br>⚠️ No hay ficha técnica guardada para esta propiedad todavía.') + '<br>Ahora confirma el arrendatario en el desplegable de GESTION (abajo) y revisa todos los campos antes de generar.', 'ok');
+      // --- Auto-emparejar el candidato aceptado con su fila en GESTION ---
+      // (por nombre, ya que Comparativa y GESTION no comparten ID) y
+      // autocompletar el/los arrendatario(s) directamente si hay un único
+      // candidato claro. El desplegable de abajo sigue disponible para
+      // corregir o elegir a mano si algo no cuadra.
+      var arrMsg = '';
+      if (aceptado) {
+        var matchIndex = -1, matchCount = 0;
+        GESTION_ROWS.forEach(function(row, i){
+          if (nombresCoinciden(aceptado.nombre, row['Nombre']) || (aceptado.nombre_corto && nombresCoinciden(aceptado.nombre_corto, row['Nombre']))) {
+            matchIndex = i; matchCount++;
+          }
+        });
+        if (matchCount === 1) {
+          sel.value = matchIndex;
+          aplicarDatosGestion(GESTION_ROWS[matchIndex]);
+          arrMsg = '<br>✅ Arrendatario autocompletado desde GESTION (coincide con el candidato aceptado). Revisa los datos igualmente.';
+        } else if (matchCount > 1) {
+          arrMsg = '<br>⚠️ Hay más de un interesado en GESTION con un nombre parecido a "' + aceptado.nombre + '" — elige el correcto en el desplegable de abajo.';
+        } else {
+          arrMsg = '<br>⚠️ No encontré en GESTION ningún interesado con el mismo nombre que el candidato aceptado ("' + aceptado.nombre + '") — selecciónalo a mano en el desplegable de abajo.';
+        }
+      }
+
+      showMsg(partes.join('<br>') + (mandato.propietario_nombre ? '<br>✅ Mandato cargado.' : '<br>⚠️ No hay mandato guardado para esta propiedad todavía.') + (ficha.ref_catastral !== undefined ? '<br>✅ Ficha técnica cargada.' : '<br>⚠️ No hay ficha técnica guardada para esta propiedad todavía.') + arrMsg + '<br>Revisa todos los campos antes de generar.', 'ok');
     }).catch(function(err){
       showMsg('Hubo un problema al conectar con el sistema. Inténtalo de nuevo.', 'err');
     });
@@ -991,13 +1046,7 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
     var sel = document.getElementById('gestionSelect');
     if (!sel.value) { showMsg('Selecciona primero un interesado de la lista.', 'err'); return; }
     var row = GESTION_ROWS[parseInt(sel.value, 10)];
-    document.getElementById('arrendList').innerHTML = '';
-    arrendCount = 0;
-    addArrendatario({ trat: 'D.', nombre: row['Nombre'] || '', dni: row['DNI/NIE'] || '', tel: row['Teléfono'] || '', email: row['Email'] || '' });
-    if (row['Nombre completo 2'] || row['DNI/NIE 2']) {
-      addArrendatario({ trat: 'D.', nombre: row['Nombre completo 2'] || '', dni: row['DNI/NIE 2'] || '', tel: row['Teléfono'] || '', email: row['Email'] || '' });
-    }
-    document.getElementById('tagArr').style.display = 'inline-block';
+    aplicarDatosGestion(row);
     showMsg('Datos del arrendatario cargados desde GESTION. Revisa teléfono/email de cada titular — en GESTION solo se guarda uno por familia.', 'ok');
   });
 
