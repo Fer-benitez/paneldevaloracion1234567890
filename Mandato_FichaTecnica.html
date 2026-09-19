@@ -70,6 +70,24 @@
   </header>
 
   <main>
+    <div class="card" id="autoCard">
+      <h2 class="section"><span class="n">⚡</span>Detección automática (Mandato + Ficha Técnica)</h2>
+      <div class="hint" style="margin-bottom:12px;">
+        Sube aquí la <strong>nota de encargo (mandato)</strong>, la <strong>nota catastral</strong>, el <strong>informe SERPAVI</strong> y/o el <strong>certificado del índice de referencia del alquiler</strong> — en <strong>PDF o Word (.docx)</strong>. El tipo de documento se detecta solo y se rellenan los campos correspondientes de más abajo (en amarillo, para que los revises). Puedes subir varios a la vez.
+        <br><br>
+        <strong>Los cuadros de "SI / NO"</strong> del mandato (¿Gran Tenedor?, ¿Se encarga la administración?) no se pueden leer automáticamente — se marcan a mano.<br>
+        La <strong>cédula de habitabilidad</strong> y el <strong>certificado de eficiencia energética</strong> son documentos escaneados / con sello y, por ahora, también hay que rellenarlos a mano.<br>
+        Los mandatos en <strong>.doc antiguo</strong> no se pueden leer automáticamente — ábrelos en Word y usa "Guardar como" → PDF o Word (.docx), y sube ese archivo.
+      </div>
+      <div class="propiedad-bar">
+        <div class="field">
+          <input type="file" id="pdfInput" accept="application/pdf,.docx" multiple>
+        </div>
+        <button class="btn-navy" id="analizarBtn" type="button">Analizar documentos</button>
+      </div>
+      <div id="autoResult" style="margin-top:14px;font-size:12.5px;line-height:1.7;color:var(--text);"></div>
+    </div>
+
     <div class="card">
       <h2 class="section"><span class="n">·</span>Propiedad</h2>
       <div class="propiedad-bar">
@@ -116,24 +134,6 @@
       <div class="row wide">
         <div><label>Duración propuesta</label><input type="text" id="duracion_propuesta" placeholder="ej: 5 años"></div>
       </div>
-    </div>
-
-    <div class="card" id="autoCard">
-      <h2 class="section"><span class="n">⚡</span>Detección automática (Mandato + Ficha Técnica)</h2>
-      <div class="hint" style="margin-bottom:12px;">
-        Sube aquí la <strong>nota de encargo (mandato)</strong>, la <strong>nota catastral</strong>, el <strong>informe SERPAVI</strong> y/o el <strong>certificado del índice de referencia del alquiler</strong> — en <strong>PDF o Word (.docx)</strong>. El tipo de documento se detecta solo y se rellenan los campos correspondientes de más abajo (en amarillo, para que los revises). Puedes subir varios a la vez.
-        <br><br>
-        <strong>Los cuadros de "SI / NO"</strong> del mandato (¿Gran Tenedor?, ¿Se encarga la administración?) no se pueden leer automáticamente — se marcan a mano.<br>
-        La <strong>cédula de habitabilidad</strong> y el <strong>certificado de eficiencia energética</strong> son documentos escaneados / con sello y, por ahora, también hay que rellenarlos a mano.<br>
-        Los mandatos en <strong>.doc antiguo</strong> no se pueden leer automáticamente — ábrelos en Word y usa "Guardar como" → PDF o Word (.docx), y sube ese archivo.
-      </div>
-      <div class="propiedad-bar">
-        <div class="field">
-          <input type="file" id="pdfInput" accept="application/pdf,.docx" multiple>
-        </div>
-        <button class="btn-navy" id="analizarBtn" type="button">Analizar documentos</button>
-      </div>
-      <div id="autoResult" style="margin-top:14px;font-size:12.5px;line-height:1.7;color:var(--text);"></div>
     </div>
 
     <div class="card">
