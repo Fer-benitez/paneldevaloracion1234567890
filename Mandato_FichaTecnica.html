@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mandato y Ficha Técnica — AG Núñez</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+  :root{
+    --navy:#346B93; --navy-dark:#1F4460; --navy-darker:#16324a;
+    --orange:#F5A623; --white:#ffffff; --bg:#f2f5f8; --card:#ffffff; --border:#dde4ea;
+    --muted:#64758a; --text:#1f2d3a;
+    --green:#2e8b57; --green-wash:#e5f3ec; --green-ink:#1d5c3c;
+    --red:#d64545; --red-wash:#fbeaea; --red-ink:#8c2b2b;
+    --navy-wash:#eaf1f6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:60px;}
+  .sheet{max-width:900px;margin:0 auto;}
+  header{margin:16px 16px 0;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(22,50,74,0.14);}
+  .logo-bar{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);padding:20px 26px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+  .head-titles{flex:1;min-width:220px;}
+  .head-titles .eyebrow{color:#cfe0ee;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;margin-bottom:3px;}
+  .head-titles h1{color:#fff;font-family:'Montserrat',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.01em;}
+
+  main{padding:22px 16px 10px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;box-shadow:0 2px 8px rgba(31,68,96,0.05);margin-bottom:20px;}
+  h2.section{font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;color:var(--navy-darker);margin:0 0 16px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;}
+  h2.section .n{background:var(--navy);color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;}
+
+  .row{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:14px;}
+  .row.wide{grid-template-columns:1fr;}
+  .row.three{grid-template-columns:repeat(3,1fr);}
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  input[type=text], input[type=date], input[type=email], select{
+    width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;color:var(--text);background:#fff;
+  }
+  input:focus, select:focus{outline:2px solid var(--navy);outline-offset:1px;}
+
+  .propiedad-bar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+  .propiedad-bar .field{flex:1;min-width:200px;}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
+
+  button{cursor:pointer;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;padding:10px 18px;transition:transform .1s;}
+  button:active{transform:scale(.97);}
+  .btn-navy{background:var(--navy-dark);color:#fff;}
+  .btn-orange{background:var(--orange);color:#5a3a06;}
+  .btn-ghost{background:#fff;border:1px solid var(--border);color:var(--navy-dark);}
+
+  .save-bar{position:sticky;bottom:0;background:rgba(242,245,248,.96);backdrop-filter:blur(4px);padding:14px 16px;display:flex;justify-content:center;gap:12px;border-top:1px solid var(--border);margin-top:10px;}
+  .msg{max-width:900px;margin:0 auto 14px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;}
+  .msg.ok{background:var(--green-wash);color:var(--green-ink);display:block;}
+  .msg.err{background:var(--red-wash);color:var(--red-ink);display:block;}
+
+  #pwOverlay{position:fixed;inset:0;background:rgba(22,50,74,.55);display:flex;align-items:center;justify-content:center;z-index:50;}
+  #pwOverlay .box{background:#fff;border-radius:14px;padding:26px;max-width:320px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.25);}
+  #pwOverlay h3{font-family:'Montserrat',sans-serif;color:var(--navy-darker);margin-bottom:10px;font-size:16px;}
+  #pwOverlay input{margin-bottom:12px;}
+  #pwOverlay .row{grid-template-columns:1fr 1fr;}
+</style>
+</head>
+<body>
+
+<div id="pwOverlay">
+  <div class="box">
+    <h3>Acceso administrador</h3>
+    <input type="text" id="adminPwInput" placeholder="Contraseña" autocomplete="off">
+    <div class="row"><button class="btn-navy" id="pwOkBtn" style="width:100%">Entrar</button></div>
+  </div>
+</div>
+
+<div class="sheet">
+  <header>
+    <div class="logo-bar">
+      <div class="head-titles">
+        <div class="eyebrow">AG Núñez · Motor de contrato</div>
+        <h1>Mandato y Ficha Técnica del inmueble</h1>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2 class="section"><span class="n">·</span>Propiedad</h2>
+      <div class="propiedad-bar">
+        <div class="field">
+          <label>Identificador de la propiedad (el mismo slug que usa Comparativa_&lt;piso&gt;.html)</label>
+          <input type="text" id="propiedadInput" placeholder="ej: arago-643">
+          <div class="hint">Este identificador es lo que enlaza el mandato con los candidatos de esa propiedad. Cópialo tal cual de PROPIEDAD_ID en el archivo Comparativa correspondiente.</div>
+        </div>
+        <button class="btn-ghost" id="cargarBtn">Cargar datos existentes</button>
+      </div>
+    </div>
+
+    <div id="msgBox" class="msg"></div>
+
+    <div class="card">
+      <h2 class="section"><span class="n">1</span>Mandato / Encargo</h2>
+
+      <div class="row three">
+        <div><label>Nombre del propietario</label><input type="text" id="propietario_nombre"></div>
+        <div><label>DNI / NIE</label><input type="text" id="propietario_dni"></div>
+        <div><label>Teléfono</label><input type="text" id="propietario_telefono"></div>
+      </div>
+      <div class="row">
+        <div><label>Domicilio a efectos de notificaciones</label><input type="text" id="propietario_domicilio"></div>
+        <div><label>Email</label><input type="email" id="propietario_email"></div>
+      </div>
+      <div class="row three">
+        <div>
+          <label>¿Gran Tenedor?</label>
+          <select id="gran_tenedor"><option value="NO">NO</option><option value="SI">SÍ</option></select>
+        </div>
+        <div><label>% Administración</label><input type="text" id="porcentaje_administracion" placeholder="ej: 5"></div>
+        <div><label>Fecha del encargo</label><input type="date" id="fecha_encargo"></div>
+      </div>
+      <div class="row three">
+        <div><label>Dirección del inmueble</label><input type="text" id="direccion"></div>
+        <div><label>Localidad</label><input type="text" id="localidad" value="Barcelona"></div>
+        <div><label>C.P.</label><input type="text" id="cp"></div>
+      </div>
+      <div class="row">
+        <div><label>Provincia</label><input type="text" id="provincia" value="Barcelona"></div>
+        <div><label>Renta propuesta (€/mes)</label><input type="text" id="renta_propuesta"></div>
+      </div>
+      <div class="row wide">
+        <div><label>Duración propuesta</label><input type="text" id="duracion_propuesta" placeholder="ej: 5 años"></div>
+      </div>
+    </div>
+
+    <div class="card" id="autoCard">
+      <h2 class="section"><span class="n">⚡</span>Detección automática (Mandato + Ficha Técnica)</h2>
+      <div class="hint" style="margin-bottom:12px;">
+        Sube aquí la <strong>nota de encargo (mandato)</strong>, la <strong>nota catastral</strong>, el <strong>informe SERPAVI</strong> y/o el <strong>certificado del índice de referencia del alquiler</strong> — en <strong>PDF o Word (.docx)</strong>. El tipo de documento se detecta solo y se rellenan los campos correspondientes de más abajo (en amarillo, para que los revises). Puedes subir varios a la vez.
+        <br><br>
+        <strong>Los cuadros de "SI / NO"</strong> del mandato (¿Gran Tenedor?, ¿Se encarga la administración?) no se pueden leer automáticamente — se marcan a mano.<br>
+        La <strong>cédula de habitabilidad</strong> y el <strong>certificado de eficiencia energética</strong> son documentos escaneados / con sello y, por ahora, también hay que rellenarlos a mano.<br>
+        Los mandatos en <strong>.doc antiguo</strong> no se pueden leer automáticamente — ábrelos en Word y usa "Guardar como" → PDF o Word (.docx), y sube ese archivo.
+      </div>
+      <div class="propiedad-bar">
+        <div class="field">
+          <input type="file" id="pdfInput" accept="application/pdf,.docx" multiple>
+        </div>
+        <button class="btn-navy" id="analizarBtn" type="button">Analizar documentos</button>
+      </div>
+      <div id="autoResult" style="margin-top:14px;font-size:12.5px;line-height:1.7;color:var(--text);"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="section"><span class="n">2</span>Ficha Técnica del inmueble</h2>
+
+      <div class="row three">
+        <div><label>Referencia catastral</label><input type="text" id="ref_catastral"></div>
+        <div><label>Superficie construida</label><input type="text" id="sup_construida" placeholder="ej: 54 m²"></div>
+        <div><label>Superficie útil</label><input type="text" id="sup_util" placeholder="ej: 51,46 m²"></div>
+      </div>
+      <div class="row three">
+        <div><label>Sup. construida + elementos comunes</label><input type="text" id="sup_comunes" placeholder="ej: 55 m²"></div>
+        <div><label>Año de edificación</label><input type="text" id="anio_edificacion"></div>
+        <div></div>
+      </div>
+
+      <div class="row three">
+        <div><label>Nº cédula de habitabilidad</label><input type="text" id="cedula_numero"></div>
+        <div><label>Vigente hasta</label><input type="date" id="cedula_vigencia"></div>
+        <div></div>
+      </div>
+
+      <div class="row three">
+        <div><label>Eficiencia — consumo (letra)</label><input type="text" id="energia_consumo" placeholder="ej: C"></div>
+        <div><label>Eficiencia — emisiones (letra)</label><input type="text" id="energia_emisiones" placeholder="ej: D"></div>
+        <div><label>Nº registro etiqueta</label><input type="text" id="energia_registro"></div>
+      </div>
+      <div class="row">
+        <div><label>Etiqueta vigente hasta</label><input type="date" id="energia_vigencia"></div>
+        <div></div>
+      </div>
+
+      <div class="row three">
+        <div><label>Índice lloguer — inferior (€/m²)</label><input type="text" id="idx_inferior"></div>
+        <div><label>Índice lloguer — media (€/m²)</label><input type="text" id="idx_media"></div>
+        <div><label>Índice lloguer — superior (€/m²)</label><input type="text" id="idx_superior"></div>
+      </div>
+      <div class="row">
+        <div><label>SERPAVI — mínimo (€/mes)</label><input type="text" id="serpavi_min"></div>
+        <div><label>SERPAVI — máximo (€/mes)</label><input type="text" id="serpavi_max"></div>
+      </div>
+
+      <div class="row three">
+        <div>
+          <label>¿Zona de mercado tensionado?</label>
+          <select id="zona_tensionada"><option value="NO">NO</option><option value="SI">SÍ</option></select>
+        </div>
+        <div>
+          <label>¿Alquilada en los últimos 5 años?</label>
+          <select id="alquilada_antes"><option value="NO">NO</option><option value="SI">SÍ</option></select>
+        </div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div><label>Fechas del contrato anterior</label><input type="text" id="alquilada_antes_fechas" placeholder="ej: 08.10.2024 a 07.09.2026"></div>
+        <div><label>Última renta mensual (tras actualización)</label><input type="text" id="alquilada_antes_renta" placeholder="ej: 980,58 €"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="save-bar">
+    <button class="btn-orange" id="guardarBtn">Guardar mandato + ficha técnica</button>
+  </div>
+</div>
+
+<script>
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVz1wobYSJD4uN7irJMzrjOsle7qMrDPFces31LszXDdwrqahcjtEdvfD-n3wsstJM/exec';
+  var ADMIN_PASSWORD = 'FER2030';
+  var adminOk = false;
+
+  var MANDATO_FIELDS = ['propietario_nombre','propietario_dni','propietario_domicilio','propietario_telefono','propietario_email','gran_tenedor','porcentaje_administracion','direccion','localidad','cp','provincia','renta_propuesta','duracion_propuesta','fecha_encargo'];
+  var FICHA_FIELDS = ['ref_catastral','sup_construida','sup_util','sup_comunes','anio_edificacion','cedula_numero','cedula_vigencia','energia_consumo','energia_emisiones','energia_registro','energia_vigencia','idx_inferior','idx_media','idx_superior','serpavi_min','serpavi_max','zona_tensionada','alquilada_antes','alquilada_antes_fechas','alquilada_antes_renta'];
+
+  // ---------- Detección automática desde PDF ----------
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  var CAMPO_LABEL = {
+    ref_catastral: 'Referencia catastral', sup_construida: 'Superficie construida', sup_util: 'Superficie útil',
+    anio_edificacion: 'Año de edificación', cedula_numero: 'Nº cédula', energia_consumo: 'Eficiencia (consumo)',
+    idx_inferior: 'Índice — inferior', idx_media: 'Índice — media', idx_superior: 'Índice — superior',
+    serpavi_min: 'SERPAVI — mínimo', serpavi_max: 'SERPAVI — máximo', zona_tensionada: 'Zona tensionada',
+    propietario_nombre: 'Nombre del propietario', propietario_dni: 'DNI / NIE', propietario_domicilio: 'Domicilio de notificaciones',
+    propietario_telefono: 'Teléfono', propietario_email: 'Email', porcentaje_administracion: '% Administración',
+    direccion: 'Dirección del inmueble', localidad: 'Localidad', cp: 'C.P.', renta_propuesta: 'Renta propuesta',
+    duracion_propuesta: 'Duración propuesta', fecha_encargo: 'Fecha del encargo'
+  };
+
+  var MESES_ES = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,setiembre:9,octubre:10,noviembre:11,diciembre:12};
+  function parseFechaTextoEs(str) {
+    var m = str.match(/(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+del?\s+(\d{4})/i);
+    if (!m) return null;
+    var dia = parseInt(m[1], 10), mes = MESES_ES[m[2].toLowerCase()], anio = parseInt(m[3], 10);
+    if (!mes) return null;
+    return anio + '-' + (mes < 10 ? '0' + mes : mes) + '-' + (dia < 10 ? '0' + dia : dia);
+  }
+
+  function extraerTextoPDF(file) {
+    return file.arrayBuffer().then(function(buf){
+      return pdfjsLib.getDocument({ data: buf }).promise;
+    }).then(function(pdf){
+      var paginas = [];
+      for (var i = 1; i <= pdf.numPages; i++) paginas.push(i);
+      return paginas.reduce(function(prev, num){
+        return prev.then(function(acc){
+          return pdf.getPage(num).then(function(page){
+            return page.getTextContent();
+          }).then(function(content){
+            var linea = content.items.map(function(it){ return it.str; }).join(' ');
+            return acc + linea + '\n';
+          });
+        });
+      }, Promise.resolve(''));
+    });
+  }
+
+  function extraerTextoDOCX(file) {
+    return file.arrayBuffer().then(function(buf){
+      return mammoth.extractRawText({ arrayBuffer: buf });
+    }).then(function(res){ return res.value; });
+  }
+
+  function detectarYExtraer(texto) {
+    var out = { tipo: null, campos: {}, direccion: null };
+    var m;
+
+    if (/NOTA DE ENCARGO ALQUILER/i.test(texto) || /ENCARGA en las condiciones expresadas/i.test(texto)) {
+      out.tipo = 'Nota de encargo (Mandato)';
+      m = texto.match(/Sr\.?a?\.?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{4,60}?)\s+con\s+DNI/i);
+      if (m) out.campos.propietario_nombre = m[1].trim();
+      m = texto.match(/DNI:?\s*([0-9XYZxyz][0-9]{6,7}[-\s]?[A-Za-z])/i);
+      if (m) out.campos.propietario_dni = m[1].replace(/\s+/g, '').toUpperCase();
+      m = texto.match(/domicilio a efectos? de notificaciones en\s+(?:[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+,\s*en\s+)?(.*?)\s*;\s*ACT/i);
+      if (m) out.campos.propietario_domicilio = m[1].trim();
+      m = texto.match(/Tel[ée]fono de contacto:?\s*([\d\s]{6,15})/i);
+      if (m) out.campos.propietario_telefono = m[1].replace(/\s+/g, '').trim();
+      m = texto.match(/Correo electr[óo]nico:?\s*(\S+@\S+?)(?:\s|$)/i);
+      if (m) out.campos.propietario_email = m[1].trim();
+      m = texto.match(/Identificaci[óo]n\s+Finca:?\s*(.+?)\s*[-–]?\s*C\.?\s?P\.?\s*(\d{5})\s*(?:de\s+([^\n.]+))?/i);
+      if (m) {
+        out.campos.direccion = m[1].trim();
+        out.campos.cp = m[2].trim();
+        if (m[3]) out.campos.localidad = m[3].replace(/\.$/, '').trim();
+      } else {
+        m = texto.match(/IDENTIFICACI[ÓO]N DE LA FINCA:?\s*(.*?)\.\s*(?:\n|El Agente)/is);
+        if (m) out.campos.direccion = m[1].trim();
+      }
+      m = texto.match(/coste es del\s*([\d.,]+)\s*%/i);
+      if (m) out.campos.porcentaje_administracion = m[1].trim();
+      m = texto.match(/Renta mensual:?\s*([\d.,]+)/i);
+      if (m) out.campos.renta_propuesta = m[1].trim();
+      m = texto.match(/Duraci[óo]n del arrendamiento:?\s*([^\n]+?)(?:\s{2,}|SERVICIOS|\n)/i);
+      if (m) out.campos.duracion_propuesta = m[1].trim();
+      m = texto.match(/En\s+\S+\s+a\s+(\d{1,2}\s+de\s+[a-záéíóúñ]+\s+del?\s+\d{4})/i);
+      if (m) {
+        var f = parseFechaTextoEs(m[1]);
+        if (f) out.campos.fecha_encargo = f;
+      }
+    }
+    else if (/DATOS CATASTRALES DE BIEN INMUEBLE/i.test(texto) || /CONSULTA DESCRIPTIVA Y GR[ÁA]FICA/i.test(texto)) {
+      out.tipo = 'Nota catastral';
+      m = texto.match(/Referencia catastral:?\s*([0-9A-Z]{14,20})/i);
+      if (m) out.campos.ref_catastral = m[1].trim();
+      m = texto.match(/Superficie construida:?\s*([\d.,]+)\s*m[²2]/i);
+      if (m) out.campos.sup_construida = m[1].trim() + ' m²';
+      m = texto.match(/A[ñn]o construcci[óo]n:?\s*(\d{4})/i);
+      if (m) out.campos.anio_edificacion = m[1].trim();
+      m = texto.match(/Localizaci[óo]n:?\s*(.*?)\s*(?:Escalera|Superficie m2|CONSTRUCCI[ÓO]N|Clase:)/is);
+      if (m && m[1].trim()) out.direccion = m[1].trim();
+    }
+    else if (/CERTIFICADO INFORMATIVO DE REFERENCIA DE PRECIOS DE ALQUILER/i.test(texto)) {
+      out.tipo = 'Informe SERPAVI';
+      m = texto.match(/Direcci[óo]n:?\s*(.*?)\s*Coordenadas/is);
+      if (m) out.direccion = m[1].trim();
+      m = texto.match(/Referencia catastral:?\s*([0-9A-Za-z]{14,20})/i);
+      if (m) out.campos.ref_catastral = m[1].trim();
+      m = texto.match(/Superficie construida:?\s*([\d.,]+)\s*m[²2]/i);
+      if (m) out.campos.sup_construida = m[1].trim() + ' m²';
+      m = texto.match(/A[ñn]o de construcci[óo]n:?\s*([^.\n]+)\./i);
+      if (m) out.campos.anio_edificacion = m[1].trim();
+      m = texto.match(/Certificado energ[ée]tico:?\s*([A-G])\.?/i);
+      if (m) out.campos.energia_consumo = m[1].trim();
+      m = texto.match(/entre\s+([\d.,]+)\s+y\s+([\d.,]+)\s+euros mensuales/i);
+      if (m) { out.campos.serpavi_min = m[1].trim(); out.campos.serpavi_max = m[2].trim(); }
+      m = texto.match(/Zona de mercado residencial tensionado:?\s*(S[íi]|No)/i);
+      if (m) out.campos.zona_tensionada = /^s/i.test(m[1]) ? 'SI' : 'NO';
+    }
+    else if (/[ÍI]ndex de refer[èe]ncia de preus de lloguer/i.test(texto) || /Ag[èe]ncia de l.Habitatge/i.test(texto)) {
+      out.tipo = 'Índex de referència de lloguer';
+      m = texto.match(/[ÀA]rea inferior\D{0,20}?([\d.,]+)\s*€\s*\/\s*m[²2]/i);
+      if (m) out.campos.idx_inferior = m[1].trim();
+      m = texto.match(/[ÍI]ndex\s+([\d.,]+)\s*€\s*\/\s*m[²2]/i);
+      if (m) out.campos.idx_media = m[1].trim();
+      m = texto.match(/[ÀA]rea superior\D{0,20}?([\d.,]+)\s*€\s*\/\s*m[²2]/i);
+      if (m) out.campos.idx_superior = m[1].trim();
+      m = texto.match(/Superf[íi]cie [úu]til:?\s*([\d.,]+)\s*m[²2]/i);
+      if (m) out.campos.sup_util = m[1].trim() + ' m²';
+      m = texto.match(/N[úu]mero c[èe]dula:?\s*(\S+)/i);
+      if (m) out.campos.cedula_numero = m[1].trim();
+      m = texto.match(/Certificat energ[èe]tic:?\s*([A-G])/i);
+      if (m) out.campos.energia_consumo = m[1].trim();
+      m = texto.match(/Any de construcci[óo]:?\s*([\d\-]+)/i);
+      if (m) out.campos.anio_edificacion = m[1].trim();
+      m = texto.match(/Adre[çc]a:?\s*(.*?)\s*(?:Latitud|Radi)/is);
+      if (m) out.direccion = m[1].trim();
+    }
+    return out;
+  }
+
+  function pintarAuto(html) {
+    document.getElementById('autoResult').innerHTML = html;
+  }
+
+  document.getElementById('analizarBtn').addEventListener('click', function(){
+    var files = document.getElementById('pdfInput').files;
+    if (!files.length) { pintarAuto('<span style="color:var(--red-ink)">Selecciona al menos un PDF primero.</span>'); return; }
+    if (!window.pdfjsLib) { pintarAuto('<span style="color:var(--red-ink)">No se pudo cargar el lector de PDF. Comprueba la conexión e inténtalo de nuevo.</span>'); return; }
+
+    pintarAuto('Analizando ' + files.length + ' documento(s)…');
+
+    var resumen = [];
+    var camposDetectados = {};
+    var direcciones = [];
+
+    var cadena = Promise.resolve();
+    Array.prototype.forEach.call(files, function(file){
+      cadena = cadena.then(function(){
+        var ext = (file.name.split('.').pop() || '').toLowerCase();
+        var lector;
+        if (ext === 'pdf') {
+          lector = extraerTextoPDF(file);
+        } else if (ext === 'docx') {
+          if (!window.mammoth) {
+            resumen.push('❌ <strong>' + file.name + '</strong>: no se pudo cargar el lector de Word. Comprueba la conexión e inténtalo de nuevo.');
+            return;
+          }
+          lector = extraerTextoDOCX(file);
+        } else if (ext === 'doc') {
+          resumen.push('⚠️ <strong>' + file.name + '</strong>: formato .doc antiguo — no se puede leer automáticamente. Ábrelo en Word, usa "Guardar como" → PDF o Word (.docx), y sube ese archivo.');
+          return;
+        } else {
+          resumen.push('❌ <strong>' + file.name + '</strong>: formato no soportado (solo PDF y DOCX).');
+          return;
+        }
+        return lector.then(function(texto){
+          var resultado = detectarYExtraer(texto);
+          if (!resultado.tipo) {
+            resumen.push('❌ <strong>' + file.name + '</strong>: no reconocido. Puede ser un documento escaneado/imagen (como la cédula o el certificado energético) — esos hay que rellenarlos a mano.');
+            return;
+          }
+          var claves = Object.keys(resultado.campos);
+          if (!claves.length) {
+            resumen.push('⚠️ <strong>' + file.name + '</strong>: identificado como "' + resultado.tipo + '" pero no se pudo leer ningún dato de dentro. Revísalo a mano.');
+            return;
+          }
+          claves.forEach(function(k){ camposDetectados[k] = resultado.campos[k]; });
+          if (resultado.direccion) direcciones.push(resultado.direccion);
+          var lista = claves.map(function(k){ return (CAMPO_LABEL[k] || k) + ' = "' + resultado.campos[k] + '"'; }).join(', ');
+          resumen.push('✅ <strong>' + file.name + '</strong> → identificado como <strong>' + resultado.tipo + '</strong>. Detectado: ' + lista + '.');
+        }).catch(function(err){
+          resumen.push('❌ <strong>' + file.name + '</strong>: error al leer el PDF (' + (err && err.message ? err.message : err) + ').');
+        });
+      });
+    });
+
+    cadena.then(function(){
+      Object.keys(camposDetectados).forEach(function(key){
+        var el = document.getElementById(key);
+        if (el) { el.value = camposDetectados[key]; el.style.background = '#fff6df'; }
+      });
+
+      var html = resumen.map(function(l){ return '<div>' + l + '</div>'; }).join('');
+      if (Object.keys(camposDetectados).length) {
+        html += '<div style="margin-top:10px;font-weight:700;color:var(--navy-darker)">Revisa los campos resaltados en amarillo antes de guardar — la lectura automática puede equivocarse.</div>';
+      }
+      if (direcciones.length) {
+        var dirActual = document.getElementById('direccion').value.trim();
+        html += '<div style="margin-top:6px;">Dirección leída en el/los documento(s): ' + direcciones.map(function(d){ return '"' + d + '"'; }).join(' · ') + '.';
+        if (dirActual) html += ' Compárala con la que pusiste arriba: "' + dirActual + '".';
+        else { document.getElementById('direccion').value = direcciones[0]; }
+        html += '</div>';
+      }
+      pintarAuto(html);
+    });
+  });
+
+  document.getElementById('pwOkBtn').addEventListener('click', function(){
+    var val = document.getElementById('adminPwInput').value;
+    if (val === ADMIN_PASSWORD) {
+      adminOk = true;
+      document.getElementById('pwOverlay').style.display = 'none';
+    } else {
+      alert('Contraseña incorrecta.');
+    }
+  });
+  document.getElementById('adminPwInput').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') document.getElementById('pwOkBtn').click();
+  });
+
+  function showMsg(text, ok) {
+    var box = document.getElementById('msgBox');
+    box.textContent = text;
+    box.className = 'msg ' + (ok ? 'ok' : 'err');
+    box.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  function getPropiedad() {
+    return document.getElementById('propiedadInput').value.trim();
+  }
+
+  document.getElementById('cargarBtn').addEventListener('click', function(){
+    var propiedad = getPropiedad();
+    if (!propiedad) { showMsg('Escribe primero el identificador de la propiedad.', false); return; }
+
+    Promise.all([
+      fetch(SCRIPT_URL + '?action=get_mandato&propiedad=' + encodeURIComponent(propiedad)).then(function(r){return r.json();}),
+      fetch(SCRIPT_URL + '?action=get_ficha_tecnica&propiedad=' + encodeURIComponent(propiedad)).then(function(r){return r.json();})
+    ]).then(function(results){
+      var mandato = results[0] || {};
+      var ficha = results[1] || {};
+      var huboAlgo = false;
+      MANDATO_FIELDS.concat(FICHA_FIELDS).forEach(function(key){
+        var el = document.getElementById(key);
+        if (!el) return;
+        var val = mandato[key] !== undefined ? mandato[key] : ficha[key];
+        if (val !== undefined && val !== null && val !== '') {
+          el.value = val;
+          huboAlgo = true;
+        }
+      });
+      showMsg(huboAlgo ? 'Datos cargados para "' + propiedad + '".' : 'Todavía no hay nada guardado para "' + propiedad + '" — puedes rellenar desde cero.', true);
+    }).catch(function(err){
+      showMsg('No se pudo conectar para cargar los datos. Inténtalo de nuevo.', false);
+    });
+  });
+
+  document.getElementById('guardarBtn').addEventListener('click', function(){
+    var propiedad = getPropiedad();
+    if (!propiedad) { showMsg('Escribe primero el identificador de la propiedad.', false); return; }
+
+    if (!adminOk) {
+      document.getElementById('pwOverlay').style.display = 'flex';
+      var check = setInterval(function(){
+        if (adminOk) { clearInterval(check); guardarDatos(propiedad); }
+      }, 300);
+      return;
+    }
+    guardarDatos(propiedad);
+  });
+
+  function guardarDatos(propiedad) {
+    var mandatoBody = { tipo: 'guardar_mandato', propiedad: propiedad, pass: ADMIN_PASSWORD };
+    MANDATO_FIELDS.forEach(function(key){
+      var el = document.getElementById(key);
+      if (el) mandatoBody[key] = el.value;
+    });
+    var fichaBody = { tipo: 'guardar_ficha_tecnica', propiedad: propiedad, pass: ADMIN_PASSWORD };
+    FICHA_FIELDS.forEach(function(key){
+      var el = document.getElementById(key);
+      if (el) fichaBody[key] = el.value;
+    });
+
+    showMsg('Guardando…', true);
+
+    fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(mandatoBody) })
+      .then(function(){
+        return fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(fichaBody) });
+      })
+      .then(function(){
+        showMsg('Guardado correctamente para "' + propiedad + '".', true);
+      })
+      .catch(function(err){
+        showMsg('Hubo un problema al guardar. Vuelve a intentarlo.', false);
+      });
+  }
+</script>
+
+</body>
+</html>
