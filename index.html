@@ -719,19 +719,17 @@
         <div class="informes-panel proceso-panel" id="procesoPanel">
           <div class="panel-eyebrow">Flujo de trabajo</div>
           <div class="panel-title">Del mandato al contrato</div>
-          <a class="proceso-row" href="Mandato_FichaTecnica.html" target="_blank" rel="noopener">
+          <a class="proceso-row" href="Mandato_FichaTecnica.html">
             <div class="proceso-num">1</div>
-            <div class="proceso-label"><b>Mandato + Ficha técnica</b><span>Sube los 6 documentos del encargo</span></div>
+            <div class="proceso-label"><b>Lector de documentos</b><span>Sube los 6 documentos del encargo</span></div>
           </a>
 
-          <div class="proceso-row proceso-row-static">
+          <a class="proceso-row" href="Mandatos_Guardados.html">
             <div class="proceso-num">2</div>
-            <div class="proceso-label"><b>Mandatos + Fichas técnicas</b><span>Lo que se va guardando en el paso 1</span></div>
-          </div>
-          <div class="proceso-sublist" id="mandatosList"></div>
-          <div class="proceso-empty" id="mandatosEmpty">Todavía no hay ningún mandato guardado.</div>
+            <div class="proceso-label"><b>Mandatos + Fichas técnicas</b><span>Consulta y edita lo guardado en el paso 1</span></div>
+          </a>
 
-          <a class="proceso-row" href="Crear_Propiedad.html" target="_blank" rel="noopener">
+          <a class="proceso-row" href="Crear_Propiedad.html">
             <div class="proceso-num">3</div>
             <div class="proceso-label"><b>Crear página de propiedad</b><span>Genera la Comparativa en blanco</span></div>
           </a>
@@ -739,7 +737,7 @@
             <div class="proceso-num">4</div>
             <div class="proceso-label"><b>Informes · Aceptar candidato</b><span>Compara y acepta desde el panel Informes</span></div>
           </a>
-          <a class="proceso-row" href="CONTRATO/Motor_Contrato_Final.html" target="_blank" rel="noopener">
+          <a class="proceso-row" href="CONTRATO/Motor_Contrato_Final.html">
             <div class="proceso-num">5</div>
             <div class="proceso-label"><b>Motor de Contrato</b><span>Completa lo que falte y genera el .docx</span></div>
           </a>
@@ -3107,6 +3105,12 @@
       });
     }
 
+    // Si se llega desde otra página del flujo (paso 4, enlace a
+    // index.html#informes), abre el panel de Informes directamente.
+    if(location.hash === '#informes' && informesDD){
+      informesDD.open();
+    }
+
     document.querySelectorAll('.activo-card:not(.disabled)').forEach((card)=>{
       const head = card.querySelector('.activo-card-head');
       if(head){
@@ -3179,161 +3183,10 @@
     return null;
   }
 
-  // ---- Paso 2: lista de propiedades con mandato guardado (se llena sola
-  // a medida que se van guardando mandatos en el paso 1), editable en línea
-  // — "Editar" despliega todos los campos del Mandato y la Ficha Técnica de
-  // esa propiedad y permite guardarlos sin salir de aquí — además del
-  // nombre/dirección del propietario debajo de cada tarjeta en Informes. ----
-  var mandatosList = document.getElementById('mandatosList');
-  var mandatosEmpty = document.getElementById('mandatosEmpty');
-  var ADMIN_PASSWORD_INDEX = 'FER2030'; // igual que en Mandato_FichaTecnica.html: el backend sigue exigiéndola, aunque ya no se pida en pantalla.
-
-  // Mismos campos que maneja Mandato_FichaTecnica.html, con etiqueta en
-  // español para poder generar el formulario de edición aquí.
-  var MANDATO_EDIT_FIELDS = [
-    ['propietario_nombre', 'Nombre del propietario'],
-    ['propietario_dni', 'DNI/NIE del propietario'],
-    ['propietario_domicilio', 'Domicilio del propietario'],
-    ['propietario_telefono', 'Teléfono del propietario'],
-    ['propietario_email', 'Email del propietario'],
-    ['gran_tenedor', 'Gran tenedor (SI/NO)'],
-    ['porcentaje_administracion', '% de administración'],
-    ['direccion', 'Dirección del inmueble'],
-    ['localidad', 'Localidad'],
-    ['cp', 'Código postal'],
-    ['provincia', 'Provincia'],
-    ['renta_propuesta', 'Renta propuesta'],
-    ['duracion_propuesta', 'Duración propuesta'],
-    ['fecha_encargo', 'Fecha del encargo']
-  ];
-  var FICHA_EDIT_FIELDS = [
-    ['ref_catastral', 'Referencia catastral'],
-    ['sup_construida', 'Superficie construida'],
-    ['sup_util', 'Superficie útil'],
-    ['sup_comunes', 'Superficie de zonas comunes'],
-    ['anio_edificacion', 'Año de edificación'],
-    ['cedula_numero', 'Número de cédula de habitabilidad'],
-    ['cedula_vigencia', 'Vigencia de la cédula'],
-    ['energia_consumo', 'Consumo energético'],
-    ['energia_emisiones', 'Emisiones'],
-    ['energia_registro', 'Nº de registro certificado energético'],
-    ['energia_vigencia', 'Vigencia certificado energético'],
-    ['idx_inferior', 'Índice de referencia — inferior'],
-    ['idx_media', 'Índice de referencia — media'],
-    ['idx_superior', 'Índice de referencia — superior'],
-    ['serpavi_min', 'SERPAVI mínimo'],
-    ['serpavi_max', 'SERPAVI máximo'],
-    ['zona_tensionada', 'Zona tensionada (SI/NO)'],
-    ['alquilada_antes', 'Alquilada anteriormente (SI/NO)'],
-    ['alquilada_antes_fechas', 'Fechas alquiler anterior'],
-    ['alquilada_antes_renta', 'Renta alquiler anterior']
-  ];
-
-  function campoHtml(key, label, val){
-    return '<div class="mandato-field"><label>' + esc(label) + '</label>' +
-      '<input type="text" data-key="' + esc(key) + '" value="' + esc(val === undefined || val === null ? '' : val) + '"></div>';
-  }
-
-  function construirFormularioEdicion(item, mandato, ficha){
-    var body = item.querySelector('.mandato-item-body');
-    var html = '<div class="mandato-fields-eyebrow">Mandato</div>';
-    MANDATO_EDIT_FIELDS.forEach(function(f){ html += campoHtml(f[0], f[1], mandato[f[0]]); });
-    html += '<div class="mandato-fields-eyebrow">Ficha técnica</div>';
-    FICHA_EDIT_FIELDS.forEach(function(f){ html += campoHtml(f[0], f[1], ficha[f[0]]); });
-    html += '<div class="mandato-item-actions"><button type="button" class="mandato-save-btn">Guardar cambios</button><span class="mandato-save-msg"></span></div>';
-    body.innerHTML = html;
-
-    var saveBtn = body.querySelector('.mandato-save-btn');
-    var msg = body.querySelector('.mandato-save-msg');
-    saveBtn.addEventListener('click', function(){
-      var mandatoBody = { tipo: 'guardar_mandato', pass: ADMIN_PASSWORD_INDEX, propiedad: mandato.propiedad };
-      var fichaBody = { tipo: 'guardar_ficha_tecnica', pass: ADMIN_PASSWORD_INDEX, propiedad: mandato.propiedad };
-      body.querySelectorAll('input[data-key]').forEach(function(inp){
-        var key = inp.getAttribute('data-key');
-        var esMandato = MANDATO_EDIT_FIELDS.some(function(f){ return f[0] === key; });
-        (esMandato ? mandatoBody : fichaBody)[key] = inp.value;
-      });
-      saveBtn.disabled = true;
-      msg.className = 'mandato-save-msg';
-      msg.textContent = 'Guardando…';
-      Promise.all([
-        fetch(INFORMES_SCRIPT_URL, { method: 'POST', body: JSON.stringify(mandatoBody) }).then(function(r){ return r.json(); }),
-        fetch(INFORMES_SCRIPT_URL, { method: 'POST', body: JSON.stringify(fichaBody) }).then(function(r){ return r.json(); })
-      ]).then(function(results){
-        var ok = results.every(function(r){ return r && r.ok; });
-        saveBtn.disabled = false;
-        if(ok){
-          msg.className = 'mandato-save-msg ok';
-          msg.textContent = '✅ Guardado.';
-          // Refresca el título de la tarjeta por si cambió la dirección.
-          var dirInput = body.querySelector('input[data-key="direccion"]');
-          var nombreInput = body.querySelector('input[data-key="propietario_nombre"]');
-          var titleB = item.querySelector('.mandato-item-title b');
-          var titleSpan = item.querySelector('.mandato-item-title span');
-          if(dirInput && titleB) titleB.textContent = dirInput.value || mandato.propiedad;
-          if(nombreInput && titleSpan) titleSpan.textContent = nombreInput.value || '';
-        } else {
-          msg.className = 'mandato-save-msg err';
-          msg.textContent = '❌ No se pudo guardar. Inténtalo de nuevo.';
-        }
-      }).catch(function(){
-        saveBtn.disabled = false;
-        msg.className = 'mandato-save-msg err';
-        msg.textContent = '❌ Hubo un problema al conectar con el sistema.';
-      });
-    });
-  }
-
-  function toggleEditarMandato(item, mandato, btn){
-    var body = item.querySelector('.mandato-item-body');
-    var yaAbierto = body.classList.contains('open');
-    if(yaAbierto){
-      body.classList.remove('open');
-      btn.classList.remove('open');
-      btn.textContent = 'Editar';
-      return;
-    }
-    btn.classList.add('open');
-    btn.textContent = 'Cerrar';
-    body.classList.add('open');
-    if(body.getAttribute('data-cargado') === '1') return; // ya se construyó antes, no hace falta volver a pedir la ficha técnica.
-    body.innerHTML = '<div class="mandato-loading">Cargando ficha técnica…</div>';
-    fetch(INFORMES_SCRIPT_URL + '?action=get_ficha_tecnica&propiedad=' + encodeURIComponent(mandato.propiedad))
-      .then(function(r){ return r.json(); })
-      .then(function(ficha){
-        body.setAttribute('data-cargado', '1');
-        construirFormularioEdicion(item, mandato, ficha || {});
-      })
-      .catch(function(){
-        body.innerHTML = '<div class="mandato-loading">No se pudo cargar la ficha técnica. Inténtalo de nuevo.</div>';
-      });
-  }
-
-  function renderMandatosList(list){
-    if(!mandatosList) return;
-    mandatosList.innerHTML = '';
-    if(!list.length){
-      if(mandatosEmpty) mandatosEmpty.style.display = 'block';
-      return;
-    }
-    if(mandatosEmpty) mandatosEmpty.style.display = 'none';
-    list.forEach(function(m){
-      var item = document.createElement('div');
-      item.className = 'mandato-item';
-      var titulo = m.direccion || m.propiedad || '(sin dirección)'; // el "nombre" de la propiedad es su dirección.
-      var sub = m.propietario_nombre || '';
-      item.innerHTML =
-        '<div class="mandato-item-head">' +
-          '<div class="mandato-item-title"><b>' + esc(titulo) + '</b><span>' + esc(sub) + '</span></div>' +
-          '<button type="button" class="mandato-edit-btn">Editar</button>' +
-        '</div>' +
-        '<div class="mandato-item-body"></div>';
-      var editBtn = item.querySelector('.mandato-edit-btn');
-      editBtn.addEventListener('click', function(){ toggleEditarMandato(item, m, editBtn); });
-      mandatosList.appendChild(item);
-    });
-  }
-
+  // ---- Nombre/dirección del propietario debajo de cada tarjeta en
+  // Informes, a partir de los mandatos guardados. La lista y edición en
+  // detalle de los mandatos vive en su propia página: Mandatos_Guardados.html
+  // (paso 2 del menú Proceso). ----
   function aplicarInfoMandato(card, m){
     if(!card || !m) return;
     var info = card.querySelector('.activo-info');
@@ -3353,15 +3206,14 @@
   fetch(INFORMES_SCRIPT_URL + '?action=list_mandatos')
     .then(function(r){ return r.json(); })
     .then(function(list){
-      if(!Array.isArray(list)) list = [];
-      renderMandatosList(list);
+      if(!Array.isArray(list)) return;
       list.forEach(function(m){
         if(!m.propiedad) return;
         var card = encontrarTarjetaPropiedad(m.propiedad);
         aplicarInfoMandato(card, m);
       });
     })
-    .catch(function(){ renderMandatosList([]); /* backend inalcanzable — el paso 2 se queda vacío */ });
+    .catch(function(){ /* backend inalcanzable — no pasa nada, simplemente no se muestran los subtítulos */ });
 
   function marcarCerrado(card, aceptado){
     if(!card || card.classList.contains('cerrado')) return;

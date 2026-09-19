@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mandatos y Fichas técnicas — AG Núñez</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#346B93; --navy-dark:#1F4460; --navy-darker:#16324a;
+    --orange:#F5A623; --white:#ffffff; --bg:#f2f5f8; --card:#ffffff; --border:#dde4ea;
+    --muted:#64758a; --text:#1f2d3a;
+    --green:#2e8b57; --green-wash:#e5f3ec; --green-ink:#1d5c3c;
+    --red:#d64545; --red-wash:#fbeaea; --red-ink:#8c2b2b;
+    --navy-wash:#eaf1f6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:60px;}
+  .sheet{max-width:900px;margin:0 auto;}
+  header{margin:16px 16px 0;border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(22,50,74,0.14);}
+  .logo-bar{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);padding:20px 26px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+  .head-titles{flex:1;min-width:220px;}
+  .head-titles .eyebrow{color:#cfe0ee;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;margin-bottom:3px;}
+  .head-titles h1{color:#fff;font-family:'Montserrat',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.01em;}
+  .btn-back{background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.32);color:#fff;font-family:'Inter',sans-serif;font-weight:700;font-size:12.5px;padding:9px 15px;border-radius:999px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;transition:background .15s;}
+  .btn-back:hover{background:rgba(255,255,255,0.24);}
+
+  main{padding:22px 16px 10px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;box-shadow:0 2px 8px rgba(31,68,96,0.05);margin-bottom:16px;}
+  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+  .card-title h2{font-family:'Montserrat',sans-serif;font-size:16px;font-weight:800;color:var(--navy-darker);letter-spacing:-.01em;}
+  .card-title span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .btn-edit{flex-shrink:0;}
+  .btn-edit.open{background:var(--navy-dark);color:#fff;border-color:var(--navy-dark);}
+
+  .row{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:14px;}
+  @media(max-width:640px){.row{grid-template-columns:1fr;}}
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  input[type=text]{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;color:var(--text);background:#fff;}
+  input:focus{outline:2px solid var(--navy);outline-offset:1px;}
+
+  h3.subsection{font-family:'Montserrat',sans-serif;font-size:12.5px;font-weight:800;color:var(--navy-darker);margin:0 0 12px;text-transform:uppercase;letter-spacing:.05em;}
+  h3.subsection.second{margin-top:22px;}
+
+  .card-body{display:none;margin-top:18px;padding-top:18px;border-top:1px solid var(--border);}
+  .card-body.open{display:block;}
+
+  button{cursor:pointer;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:13px;padding:10px 18px;transition:transform .1s;}
+  button:active{transform:scale(.97);}
+  .btn-navy{background:var(--navy-dark);color:#fff;}
+  .btn-navy:disabled{opacity:.6;cursor:default;}
+  .btn-ghost{background:#fff;border:1px solid var(--border);color:var(--navy-dark);}
+  .btn-ghost:hover{background:var(--bg);}
+
+  .save-row{display:flex;align-items:center;gap:12px;margin-top:6px;}
+  .save-msg{font-size:12.5px;font-weight:700;color:var(--muted);}
+  .save-msg.ok{color:var(--green-ink);}
+  .save-msg.err{color:var(--red-ink);}
+
+  .empty-state, .loading-state{text-align:center;color:var(--muted);font-size:13.5px;padding:40px 20px;}
+  .empty-state a{color:var(--navy);font-weight:700;}
+
+  /* ---- Navegación entre las 5 páginas del flujo ---- */
+  .stepnav{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);padding:12px 18px;}
+  .stepnav-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;}
+  .stepnav-back{flex-shrink:0;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.32);color:#fff;font-family:'Inter',sans-serif;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:999px;text-decoration:none;white-space:nowrap;transition:background .15s;}
+  .stepnav-back:hover{background:rgba(255,255,255,0.24);}
+  .stepnav-steps{display:flex;flex-wrap:wrap;gap:6px;}
+  .stepnav-step{color:#dbe8f2;font-family:'Inter',sans-serif;font-weight:700;font-size:11.5px;padding:7px 11px;border-radius:999px;text-decoration:none;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18);white-space:nowrap;transition:background .15s;}
+  .stepnav-step:hover{background:rgba(255,255,255,0.18);}
+  .stepnav-step.current{background:#fff;color:var(--navy-darker);pointer-events:none;}
+  @media(max-width:680px){.stepnav-wrap{justify-content:center;}.stepnav-steps{justify-content:center;width:100%;}}
+</style>
+</head>
+<body>
+
+<div class="sheet">
+  <header>
+    <div class="stepnav">
+      <div class="stepnav-wrap">
+        <a class="stepnav-back" href="index.html">← Volver a Gestión</a>
+        <div class="stepnav-steps">
+          <a class="stepnav-step" href="Mandato_FichaTecnica.html">1 · Lector de documentos</a>
+          <a class="stepnav-step current" href="Mandatos_Guardados.html">2 · Mandatos + Fichas técnicas</a>
+          <a class="stepnav-step" href="Crear_Propiedad.html">3 · Crear página</a>
+          <a class="stepnav-step" href="index.html#informes">4 · Informes</a>
+          <a class="stepnav-step" href="CONTRATO/Motor_Contrato_Final.html">5 · Motor de Contrato</a>
+        </div>
+      </div>
+    </div>
+    <div class="logo-bar">
+      <div class="head-titles">
+        <div class="eyebrow">AG Núñez · Paso 2 de 5</div>
+        <h1>Mandatos y Fichas técnicas guardados</h1>
+      </div>
+      <a class="btn-back" href="index.html">← Volver a Gestión</a>
+    </div>
+  </header>
+
+  <main>
+    <div id="listado">
+      <div class="loading-state" id="loadingState">Cargando mandatos guardados…</div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  var INFORMES_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVz1wobYSJD4uN7irJMzrjOsle7qMrDPFces31LszXDdwrqahcjtEdvfD-n3wsstJM/exec';
+  var ADMIN_PASSWORD = 'FER2030'; // el backend la sigue exigiendo, aunque aquí no se pide en pantalla (igual que en Mandato_FichaTecnica.html).
+
+  // Mismos campos que maneja Mandato_FichaTecnica.html.
+  var MANDATO_EDIT_FIELDS = [
+    ['propietario_nombre', 'Nombre del propietario'],
+    ['propietario_dni', 'DNI/NIE del propietario'],
+    ['propietario_domicilio', 'Domicilio del propietario'],
+    ['propietario_telefono', 'Teléfono del propietario'],
+    ['propietario_email', 'Email del propietario'],
+    ['gran_tenedor', 'Gran tenedor (SI/NO)'],
+    ['porcentaje_administracion', '% de administración'],
+    ['direccion', 'Dirección del inmueble'],
+    ['localidad', 'Localidad'],
+    ['cp', 'Código postal'],
+    ['provincia', 'Provincia'],
+    ['renta_propuesta', 'Renta propuesta'],
+    ['duracion_propuesta', 'Duración propuesta'],
+    ['fecha_encargo', 'Fecha del encargo']
+  ];
+  var FICHA_EDIT_FIELDS = [
+    ['ref_catastral', 'Referencia catastral'],
+    ['sup_construida', 'Superficie construida'],
+    ['sup_util', 'Superficie útil'],
+    ['sup_comunes', 'Superficie de zonas comunes'],
+    ['anio_edificacion', 'Año de edificación'],
+    ['cedula_numero', 'Número de cédula de habitabilidad'],
+    ['cedula_vigencia', 'Vigencia de la cédula'],
+    ['energia_consumo', 'Consumo energético'],
+    ['energia_emisiones', 'Emisiones'],
+    ['energia_registro', 'Nº de registro certificado energético'],
+    ['energia_vigencia', 'Vigencia certificado energético'],
+    ['idx_inferior', 'Índice de referencia — inferior'],
+    ['idx_media', 'Índice de referencia — media'],
+    ['idx_superior', 'Índice de referencia — superior'],
+    ['serpavi_min', 'SERPAVI mínimo'],
+    ['serpavi_max', 'SERPAVI máximo'],
+    ['zona_tensionada', 'Zona tensionada (SI/NO)'],
+    ['alquilada_antes', 'Alquilada anteriormente (SI/NO)'],
+    ['alquilada_antes_fechas', 'Fechas alquiler anterior'],
+    ['alquilada_antes_renta', 'Renta alquiler anterior']
+  ];
+
+  function esc(s){
+    var d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+
+  function campoHtml(key, label, val){
+    return '<div><label>' + esc(label) + '</label>' +
+      '<input type="text" data-key="' + esc(key) + '" value="' + esc(val === undefined || val === null ? '' : val) + '"></div>';
+  }
+
+  function construirFilas(fields, obj){
+    var html = '';
+    for(var i = 0; i < fields.length; i += 2){
+      html += '<div class="row">';
+      html += campoHtml(fields[i][0], fields[i][1], obj[fields[i][0]]);
+      if(fields[i+1]) html += campoHtml(fields[i+1][0], fields[i+1][1], obj[fields[i+1][0]]);
+      html += '</div>';
+    }
+    return html;
+  }
+
+  function construirFormulario(card, mandato, ficha){
+    var body = card.querySelector('.card-body');
+    var html = '<h3 class="subsection">Mandato</h3>' + construirFilas(MANDATO_EDIT_FIELDS, mandato);
+    html += '<h3 class="subsection second">Ficha técnica</h3>' + construirFilas(FICHA_EDIT_FIELDS, ficha);
+    html += '<div class="save-row"><button type="button" class="btn-navy save-btn">Guardar cambios</button><span class="save-msg"></span></div>';
+    body.innerHTML = html;
+
+    var saveBtn = body.querySelector('.save-btn');
+    var msg = body.querySelector('.save-msg');
+    saveBtn.addEventListener('click', function(){
+      var mandatoBody = { tipo: 'guardar_mandato', pass: ADMIN_PASSWORD, propiedad: mandato.propiedad };
+      var fichaBody = { tipo: 'guardar_ficha_tecnica', pass: ADMIN_PASSWORD, propiedad: mandato.propiedad };
+      body.querySelectorAll('input[data-key]').forEach(function(inp){
+        var key = inp.getAttribute('data-key');
+        var esMandato = MANDATO_EDIT_FIELDS.some(function(f){ return f[0] === key; });
+        (esMandato ? mandatoBody : fichaBody)[key] = inp.value;
+      });
+      saveBtn.disabled = true;
+      msg.className = 'save-msg';
+      msg.textContent = 'Guardando…';
+      Promise.all([
+        fetch(INFORMES_SCRIPT_URL, { method: 'POST', body: JSON.stringify(mandatoBody) }).then(function(r){ return r.json(); }),
+        fetch(INFORMES_SCRIPT_URL, { method: 'POST', body: JSON.stringify(fichaBody) }).then(function(r){ return r.json(); })
+      ]).then(function(results){
+        var ok = results.every(function(r){ return r && r.ok; });
+        saveBtn.disabled = false;
+        if(ok){
+          msg.className = 'save-msg ok';
+          msg.textContent = '✅ Guardado.';
+          var dirInput = body.querySelector('input[data-key="direccion"]');
+          var nombreInput = body.querySelector('input[data-key="propietario_nombre"]');
+          var titleH2 = card.querySelector('.card-title h2');
+          var titleSpan = card.querySelector('.card-title span');
+          if(dirInput && titleH2) titleH2.textContent = dirInput.value || mandato.propiedad;
+          if(nombreInput && titleSpan) titleSpan.textContent = nombreInput.value || '';
+        } else {
+          msg.className = 'save-msg err';
+          msg.textContent = '❌ No se pudo guardar. Inténtalo de nuevo.';
+        }
+      }).catch(function(){
+        saveBtn.disabled = false;
+        msg.className = 'save-msg err';
+        msg.textContent = '❌ Hubo un problema al conectar con el sistema.';
+      });
+    });
+  }
+
+  function toggleEditar(card, mandato, btn){
+    var body = card.querySelector('.card-body');
+    var yaAbierto = body.classList.contains('open');
+    if(yaAbierto){
+      body.classList.remove('open');
+      btn.classList.remove('open');
+      btn.textContent = 'Editar';
+      return;
+    }
+    btn.classList.add('open');
+    btn.textContent = 'Cerrar';
+    body.classList.add('open');
+    if(body.getAttribute('data-cargado') === '1') return;
+    body.innerHTML = '<div class="loading-state">Cargando ficha técnica…</div>';
+    fetch(INFORMES_SCRIPT_URL + '?action=get_ficha_tecnica&propiedad=' + encodeURIComponent(mandato.propiedad))
+      .then(function(r){ return r.json(); })
+      .then(function(ficha){
+        body.setAttribute('data-cargado', '1');
+        construirFormulario(card, mandato, ficha || {});
+      })
+      .catch(function(){
+        body.innerHTML = '<div class="loading-state">No se pudo cargar la ficha técnica. Inténtalo de nuevo.</div>';
+      });
+  }
+
+  function renderLista(list){
+    var listado = document.getElementById('listado');
+    listado.innerHTML = '';
+    if(!list.length){
+      listado.innerHTML = '<div class="empty-state">Todavía no hay ningún mandato guardado. Empieza en <a href="Mandato_FichaTecnica.html">Lector de documentos</a>.</div>';
+      return;
+    }
+    list.forEach(function(m){
+      var card = document.createElement('div');
+      card.className = 'card';
+      var titulo = m.direccion || m.propiedad || '(sin dirección)'; // el "nombre" de la propiedad es su dirección.
+      var sub = m.propietario_nombre || '';
+      card.innerHTML =
+        '<div class="card-head">' +
+          '<div class="card-title"><h2>' + esc(titulo) + '</h2><span>' + esc(sub) + '</span></div>' +
+          '<button type="button" class="btn-ghost btn-edit">Editar</button>' +
+        '</div>' +
+        '<div class="card-body"></div>';
+      var editBtn = card.querySelector('.btn-edit');
+      editBtn.addEventListener('click', function(){ toggleEditar(card, m, editBtn); });
+      listado.appendChild(card);
+    });
+  }
+
+  fetch(INFORMES_SCRIPT_URL + '?action=list_mandatos')
+    .then(function(r){ return r.json(); })
+    .then(function(list){ renderLista(Array.isArray(list) ? list : []); })
+    .catch(function(){
+      document.getElementById('listado').innerHTML = '<div class="empty-state">No se pudo conectar con el sistema. Inténtalo de nuevo.</div>';
+    });
+})();
+</script>
+</body>
+</html>
