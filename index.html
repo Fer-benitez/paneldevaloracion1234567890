@@ -586,6 +586,21 @@
   .gate-card button:hover{background:var(--navy-dark);}
   .gate-error{display:none;color:#d64545!important;font-size:12.5px;margin-top:10px!important;margin-bottom:0!important;}
 
+  /* ---- Proceso completo del expediente ---- */
+  .process-strip{background:var(--white);border-bottom:1px solid var(--border);}
+  .process-strip .wrap{padding:16px 26px;display:flex;align-items:stretch;gap:0;overflow-x:auto;}
+  .process-step{display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:8px 16px;border-radius:12px;text-decoration:none;color:var(--text);transition:background .15s;}
+  .process-step:hover{background:var(--bg);}
+  .process-step .num{width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .process-step .label{display:flex;flex-direction:column;}
+  .process-step .label b{font-size:12.5px;font-weight:700;color:var(--navy-darker);}
+  .process-step .label span{font-size:10.5px;color:var(--muted);}
+  .process-step.manual .num{background:var(--amber);}
+  .process-step.manual{cursor:default;}
+  .process-step.manual:hover{background:transparent;}
+  .process-arrow{color:var(--border);font-size:16px;display:flex;align-items:center;padding:0 2px;flex-shrink:0;}
+  @media(max-width:720px){.process-strip .wrap{padding:12px 16px;}}
+
   /* ---- Informes / Activos nav ---- */
   .logo-bar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
   .informes-nav{position:relative;}
@@ -815,6 +830,35 @@
     <p>Formularios por piso y panel de valoración, todo en un mismo sitio.</p>
   </div>
 </header>
+
+<div class="process-strip">
+  <div class="wrap">
+    <a class="process-step" href="Mandato_FichaTecnica.html" target="_blank" rel="noopener">
+      <div class="num">1</div>
+      <div class="label"><b>Mandato + Ficha técnica</b><span>Sube los 6 documentos del encargo</span></div>
+    </a>
+    <div class="process-arrow">→</div>
+    <a class="process-step" href="Crear_Propiedad.html" target="_blank" rel="noopener">
+      <div class="num">2</div>
+      <div class="label"><b>Crear página de propiedad</b><span>Genera la Comparativa en blanco</span></div>
+    </a>
+    <div class="process-arrow">→</div>
+    <div class="process-step manual" title="Las creas tú mismo, aparte — no se generan desde aquí">
+      <div class="num">3</div>
+      <div class="label"><b>Leads + Ficha de interesado</b><span>Las creas tú, aparte, por candidato</span></div>
+    </div>
+    <div class="process-arrow">→</div>
+    <a class="process-step" href="#" onclick="event.stopPropagation(); document.getElementById('informesBtn').click(); return false;">
+      <div class="num">4</div>
+      <div class="label"><b>Informes · Aceptar candidato</b><span>Compara y acepta desde el panel Informes</span></div>
+    </a>
+    <div class="process-arrow">→</div>
+    <a class="process-step" href="CONTRATO/Motor_Contrato_Final.html" target="_blank" rel="noopener">
+      <div class="num">5</div>
+      <div class="label"><b>Motor de Contrato</b><span>Completa lo que falte y genera el .docx</span></div>
+    </a>
+  </div>
+</div>
 
 <div class="tab-bar">
   <div class="wrap tab-group">
