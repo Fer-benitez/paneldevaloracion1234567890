@@ -55,22 +55,9 @@
   .msg.ok{background:var(--green-wash);color:var(--green-ink);display:block;}
   .msg.err{background:var(--red-wash);color:var(--red-ink);display:block;}
 
-  #pwOverlay{position:fixed;inset:0;background:rgba(22,50,74,.55);display:flex;align-items:center;justify-content:center;z-index:50;}
-  #pwOverlay .box{background:#fff;border-radius:14px;padding:26px;max-width:320px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.25);}
-  #pwOverlay h3{font-family:'Montserrat',sans-serif;color:var(--navy-darker);margin-bottom:10px;font-size:16px;}
-  #pwOverlay input{margin-bottom:12px;}
-  #pwOverlay .row{grid-template-columns:1fr 1fr;}
 </style>
 </head>
 <body>
-
-<div id="pwOverlay">
-  <div class="box">
-    <h3>Acceso administrador</h3>
-    <input type="text" id="adminPwInput" placeholder="Contraseña" autocomplete="off">
-    <div class="row"><button class="btn-navy" id="pwOkBtn" style="width:100%">Entrar</button></div>
-  </div>
-</div>
 
 <div class="sheet">
   <header>
@@ -215,7 +202,6 @@
 <script>
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVz1wobYSJD4uN7irJMzrjOsle7qMrDPFces31LszXDdwrqahcjtEdvfD-n3wsstJM/exec';
   var ADMIN_PASSWORD = 'FER2030';
-  var adminOk = false;
 
   var MANDATO_FIELDS = ['propietario_nombre','propietario_dni','propietario_domicilio','propietario_telefono','propietario_email','gran_tenedor','porcentaje_administracion','direccion','localidad','cp','provincia','renta_propuesta','duracion_propuesta','fecha_encargo'];
   var FICHA_FIELDS = ['ref_catastral','sup_construida','sup_util','sup_comunes','anio_edificacion','cedula_numero','cedula_vigencia','energia_consumo','energia_emisiones','energia_registro','energia_vigencia','idx_inferior','idx_media','idx_superior','serpavi_min','serpavi_max','zona_tensionada','alquilada_antes','alquilada_antes_fechas','alquilada_antes_renta'];
@@ -434,19 +420,6 @@
     });
   });
 
-  document.getElementById('pwOkBtn').addEventListener('click', function(){
-    var val = document.getElementById('adminPwInput').value;
-    if (val === ADMIN_PASSWORD) {
-      adminOk = true;
-      document.getElementById('pwOverlay').style.display = 'none';
-    } else {
-      alert('Contraseña incorrecta.');
-    }
-  });
-  document.getElementById('adminPwInput').addEventListener('keydown', function(e){
-    if (e.key === 'Enter') document.getElementById('pwOkBtn').click();
-  });
-
   function showMsg(text, ok) {
     var box = document.getElementById('msgBox');
     box.textContent = text;
@@ -487,14 +460,6 @@
   document.getElementById('guardarBtn').addEventListener('click', function(){
     var propiedad = getPropiedad();
     if (!propiedad) { showMsg('Escribe primero el identificador de la propiedad.', false); return; }
-
-    if (!adminOk) {
-      document.getElementById('pwOverlay').style.display = 'flex';
-      var check = setInterval(function(){
-        if (adminOk) { clearInterval(check); guardarDatos(propiedad); }
-      }, 300);
-      return;
-    }
     guardarDatos(propiedad);
   });
 
