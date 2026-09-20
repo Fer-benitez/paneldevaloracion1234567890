@@ -454,6 +454,11 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
 
   children.push(new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
+    // Sin columnWidths explícito (en twips) Word real puede colapsar la
+    // segunda columna a un ancho casi nulo y partir el texto letra a letra
+    // — el % en cada celda no basta, Word necesita el tblGrid. El ancho
+    // útil de página es 11906 - 2500 (izq.) - 1300 (der.) = 8106 twips.
+    columnWidths: [2432, 5674], // 30% / 70% de 8106
     borders: {
       top: { style: BorderStyle.SINGLE, size: 4, color: BORDER },
       bottom: { style: BorderStyle.SINGLE, size: 4, color: BORDER },
@@ -598,6 +603,7 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
 
   children.push(new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
+    columnWidths: [4053, 4053], // 50% / 50% de 8106 — ver nota en la tabla de la ficha técnica
     borders: { top:{style:BorderStyle.NONE}, bottom:{style:BorderStyle.NONE}, left:{style:BorderStyle.NONE}, right:{style:BorderStyle.NONE}, insideHorizontal:{style:BorderStyle.NONE}, insideVertical:{style:BorderStyle.NONE} },
     rows: [ new TableRow({ children: [
       new TableCell({ width:{size:50,type:WidthType.PERCENTAGE}, children:[
