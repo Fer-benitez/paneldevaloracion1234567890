@@ -346,6 +346,16 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
       children: [new TextRun({ text, font: FONT_HEAD, bold: true, size: 26, color: NAVY_DARK, allCaps: true })]
     });
   }
+  // Junta "Etiqueta valor" solo para los pares que sí tienen valor, unidos
+  // por " · " — evita que el cuadro de resumen salga con etiquetas colgando
+  // sin dato detrás (p.ej. "Emisiones  ·  Registro  ·  Vigente hasta" vacíos)
+  // cuando esa parte de la ficha técnica todavía no se ha rellenado.
+  function juntarPartes(pares) {
+    return pares
+      .filter(function(par) { return par[1] !== undefined && par[1] !== null && String(par[1]).trim() !== ''; })
+      .map(function(par) { return par[0] + ' ' + par[1]; })
+      .join('  ·  ');
+  }
   function fichaRow(label, value) {
     return new TableRow({
       children: [
@@ -453,13 +463,13 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
       insideVertical: { style: BorderStyle.SINGLE, size: 2, color: BORDER },
     },
     rows: [
-      fichaRow('DIRECCIÓN', `${D.direccion} — ${D.localidad} (${D.cp}), ${D.provincia}`),
-      fichaRow('REF. CATASTRAL', D.refCatastral),
-      fichaRow('SUPERFICIES', `Construida ${D.supConstruida}  ·  Útil ${D.supUtil}  ·  Const.+comunes ${D.supComunes}  ·  Año ${D.anioEdif}`),
-      fichaRow('CÉDULA HABITABILIDAD', `${D.cedula}  ·  Vigente hasta ${D.cedulaVig}`),
-      fichaRow('EFICIENCIA ENERGÉTICA', `Consumo ${D.consumoE}  ·  Emisiones ${D.emisionesE}  ·  Registro ${D.registroE}  ·  Vigente hasta ${D.energiaVig}`),
-      fichaRow('ÍNDEX REF. LLOGUER (CAT.)', `Inferior ${D.idxInf}  ·  Índex ${D.idxMed}  ·  Superior ${D.idxSup}`),
-      fichaRow('SERPAVI (ESTATAL)', `De ${D.serpaviMin} a ${D.serpaviMax}`),
+      fichaRow('DIRECCIÓN', `${D.direccion} — ${D.localidad}${D.cp ? ' (' + D.cp + ')' : ''}` + (D.provincia && D.provincia !== D.localidad ? `, ${D.provincia}` : '')),
+      fichaRow('REF. CATASTRAL', D.refCatastral || '—'),
+      fichaRow('SUPERFICIES', juntarPartes([['Construida', D.supConstruida], ['Útil', D.supUtil], ['Const.+comunes', D.supComunes], ['Año', D.anioEdif]]) || '—'),
+      fichaRow('CÉDULA HABITABILIDAD', juntarPartes([['', D.cedula], ['Vigente hasta', D.cedulaVig]]) || '—'),
+      fichaRow('EFICIENCIA ENERGÉTICA', juntarPartes([['Consumo', D.consumoE], ['Emisiones', D.emisionesE], ['Registro', D.registroE], ['Vigente hasta', D.energiaVig]]) || '—'),
+      fichaRow('ÍNDEX REF. LLOGUER (CAT.)', juntarPartes([['Inferior', D.idxInf], ['Índex', D.idxMed], ['Superior', D.idxSup]]) || '—'),
+      fichaRow('SERPAVI (ESTATAL)', (D.serpaviMin || D.serpaviMax) ? `De ${D.serpaviMin || '—'} a ${D.serpaviMax || '—'}` : '—'),
       fichaRow('ZONA TENSIONADA', D.zonaTensionada ? 'SÍ' : 'NO'),
       fichaRow('ALQUILADA ÚLTIMOS 5 AÑOS', D.alquiladaAntes ? `SÍ — ${D.ultimoContratoFechas} · última renta ${D.ultimaRenta}` : 'NO'),
     ]
@@ -943,6 +953,19 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
     n = n.replace(/^(avenida|av|carrer|calle|c|paseo|passeig)-/, '');
     return n;
   }
+  // Algunos campos numéricos de la Ficha Técnica (índices de referencia,
+  // SERPAVI, superficies) se han guardado alguna vez como fecha por error
+  // — p.ej. al escribir "21-98" en la celda, Google Sheets lo interpreta
+  // como un día-mes y lo convierte en fecha, que luego Apps Script devuelve
+  // como marca de tiempo ISO completa ("2026-12-15T23:00:00.000Z"). Mostrar
+  // eso tal cual en el contrato es lo que hacía salir el cuadro "roto". Si
+  // detectamos ese patrón, no lo mostramos (mejor vacío que un dato sin
+  // sentido) — hay que corregir el valor real en Mandatos y Fichas técnicas.
+  function limpiarValorNumericoFicha(v) {
+    var s = (v === undefined || v === null) ? '' : String(v).trim();
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(s)) return '';
+    return s;
+  }
   function propiedadesCoinciden(a, b) {
     if (!a || !b) return false;
     if (a === b) return true;
@@ -958,7 +981,13 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
     arrendCount = 0;
     addArrendatario({ trat: 'D.', nombre: row['Nombre'] || '', dni: row['DNI/NIE'] || '', tel: row['Teléfono'] || '', email: row['Email'] || '' });
     if (row['Nombre completo 2'] || row['DNI/NIE 2']) {
-      addArrendatario({ trat: 'D.', nombre: row['Nombre completo 2'] || '', dni: row['DNI/NIE 2'] || '', tel: row['Teléfono'] || '', email: row['Email'] || '' });
+      // GESTION solo guarda UN teléfono/email por interesado (no hay
+      // "Teléfono 2"/"Email 2"), así que antes se copiaba por error el
+      // teléfono/email del primer arrendatario también para el segundo,
+      // haciendo parecer que eran los mismos datos de contacto cuando no
+      // se sabe si lo son. Si algún día GESTION guarda esos campos, se
+      // usan; si no, se dejan en blanco para rellenar a mano.
+      addArrendatario({ trat: 'D.', nombre: row['Nombre completo 2'] || '', dni: row['DNI/NIE 2'] || '', tel: row['Teléfono 2'] || '', email: row['Email 2'] || '' });
     }
     document.getElementById('tagArr').style.display = 'inline-block';
   }
@@ -1021,9 +1050,9 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
       // --- Ficha técnica -> Inmueble ---
       if (ficha && ficha.ref_catastral !== undefined) {
         document.getElementById('inm_refcat').value = ficha.ref_catastral || '';
-        document.getElementById('inm_supconst').value = ficha.sup_construida || '';
-        document.getElementById('inm_suputil').value = ficha.sup_util || '';
-        document.getElementById('inm_supcomunes').value = ficha.sup_comunes || '';
+        document.getElementById('inm_supconst').value = limpiarValorNumericoFicha(ficha.sup_construida);
+        document.getElementById('inm_suputil').value = limpiarValorNumericoFicha(ficha.sup_util);
+        document.getElementById('inm_supcomunes').value = limpiarValorNumericoFicha(ficha.sup_comunes);
         document.getElementById('inm_anio').value = ficha.anio_edificacion || '';
         document.getElementById('inm_cedula').value = ficha.cedula_numero || '';
         if (ficha.cedula_vigencia) document.getElementById('inm_cedulavig').value = String(ficha.cedula_vigencia).substring(0,10);
@@ -1031,11 +1060,11 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
         document.getElementById('inm_emisionese').value = ficha.energia_emisiones || '';
         document.getElementById('inm_registroe').value = ficha.energia_registro || '';
         if (ficha.energia_vigencia) document.getElementById('inm_energiavig').value = String(ficha.energia_vigencia).substring(0,10);
-        document.getElementById('inm_idxinf').value = ficha.idx_inferior || '';
-        document.getElementById('inm_idxmed').value = ficha.idx_media || '';
-        document.getElementById('inm_idxsup').value = ficha.idx_superior || '';
-        document.getElementById('inm_serpavimin').value = ficha.serpavi_min || '';
-        document.getElementById('inm_serpavimax').value = ficha.serpavi_max || '';
+        document.getElementById('inm_idxinf').value = limpiarValorNumericoFicha(ficha.idx_inferior);
+        document.getElementById('inm_idxmed').value = limpiarValorNumericoFicha(ficha.idx_media);
+        document.getElementById('inm_idxsup').value = limpiarValorNumericoFicha(ficha.idx_superior);
+        document.getElementById('inm_serpavimin').value = limpiarValorNumericoFicha(ficha.serpavi_min);
+        document.getElementById('inm_serpavimax').value = limpiarValorNumericoFicha(ficha.serpavi_max);
         setToggleValue('zonaTensionada', ficha.zona_tensionada === 'SI');
         setToggleValue('alquiladaAntes', ficha.alquilada_antes === 'SI');
         document.getElementById('inm_fechasantes').value = ficha.alquilada_antes_fechas || '';
