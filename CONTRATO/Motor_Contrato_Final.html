@@ -932,6 +932,25 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
     return corta.length > 0 && corta.every(function(w){ return w.length > 1 && larga.indexOf(w) !== -1; });
   }
 
+  // Normaliza un identificador de propiedad para comparar (sin acentos,
+  // minúsculas, guiones en vez de separadores, sin prefijos de tipo de vía)
+  // — misma lógica que en index.html (operaciones cerradas), porque cada
+  // herramienta (Comparativa, Mandato, Motor de Contrato) puede guardar el
+  // identificador de una propiedad con un formato ligeramente distinto.
+  function normalizarPropiedadId(s) {
+    var n = (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    n = n.replace(/^(avenida|av|carrer|calle|c|paseo|passeig)-/, '');
+    return n;
+  }
+  function propiedadesCoinciden(a, b) {
+    if (!a || !b) return false;
+    if (a === b) return true;
+    var na = normalizarPropiedadId(a), nb = normalizarPropiedadId(b);
+    if (!na || !nb) return false;
+    return na === nb || na.indexOf(nb) !== -1 || nb.indexOf(na) !== -1;
+  }
+
   // Rellena el/los arrendatario(s) a partir de una fila de GESTION —
   // compartido entre el auto-relleno y el botón manual "Usar estos datos".
   function aplicarDatosGestion(row) {
@@ -951,7 +970,12 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
 
     var gestionError = '';
     Promise.all([
-      fetch(SCRIPT_URL_COMPARATIVA + '?action=list_candidatos&propiedad=' + encodeURIComponent(propiedad)).then(function(r){ return r.json(); }).catch(function(){ return []; }),
+      // Se piden TODOS los candidatos (sin filtrar por "propiedad" en el
+      // backend, que hace coincidencia exacta) porque Comparativa puede
+      // haber guardado el identificador de la propiedad con un formato
+      // distinto al que se usa aquí; el emparejamiento tolerante se hace
+      // abajo con propiedadesCoinciden().
+      fetch(SCRIPT_URL_COMPARATIVA + '?action=list_candidatos').then(function(r){ return r.json(); }).catch(function(){ return []; }),
       fetch(SCRIPT_URL_COMPARATIVA + '?action=get_mandato&propiedad=' + encodeURIComponent(propiedad)).then(function(r){ return r.json(); }).catch(function(){ return {}; }),
       fetch(SCRIPT_URL_COMPARATIVA + '?action=get_ficha_tecnica&propiedad=' + encodeURIComponent(propiedad)).then(function(r){ return r.json(); }).catch(function(){ return {}; }),
       fetch(SCRIPT_URL_GESTION).then(function(r){ return r.json(); }).catch(function(err){ gestionError = (err && err.message) ? err.message : 'error desconocido'; return []; })
@@ -963,7 +987,7 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
 
       var aceptado = null;
       if (Array.isArray(candidatos)) {
-        aceptado = candidatos.filter(function(c){ return c.propiedad === propiedad; })
+        aceptado = candidatos.filter(function(c){ return propiedadesCoinciden(c.propiedad, propiedad); })
                              .find(function(c){ return c.estado === 'aceptado'; });
       }
 
