@@ -871,7 +871,16 @@ Busco una vivienda estable en Barcelona para instalarme tras mi regreso y reinco
       match = lista.find(function(c){ return normaliza(c['Nombre']) === target; });
     }
     if(!match) throw new Error('sin coincidencia');
-    var docs = (match['Documentos'] || '').split('|').map(function(d){ return d.trim(); }).filter(Boolean);
+
+    function firstNonEmpty(obj, keys){
+      for(var k = 0; k < keys.length; k++){ if(obj[keys[k]]) return obj[keys[k]]; }
+      return '';
+    }
+    var docsCandidato = (match['Documentos'] || '').split('|').map(function(d){ return d.trim(); }).filter(Boolean);
+    var docsAvalista = firstNonEmpty(match, ['Documentos avalista', 'Documentos avalista (enlaces)', 'documentosAvalista']).split('|').map(function(d){ return d.trim(); }).filter(Boolean);
+    var avalBancarioRaw = firstNonEmpty(match, ['Aval bancario', 'Aval bancario (enlace)', 'avalBancario']);
+    var docs = docsCandidato.concat(docsAvalista);
+    if(avalBancarioRaw) docs.push(avalBancarioRaw.indexOf(':') === -1 ? ('Aval bancario: ' + avalBancarioRaw) : avalBancarioRaw);
     if(docs.length === 0) throw new Error('sin documentos');
 
     var zip = new JSZip();
