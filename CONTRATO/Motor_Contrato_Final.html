@@ -1044,7 +1044,20 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
       }
 
       // --- GESTION: preparar selector de interesados de este piso ---
-      GESTION_ROWS = Array.isArray(interesados) ? interesados : [];
+      // El backend de GESTION no devuelve un array "pelado": responde
+      // { success:true, data:[...] } (o { success:false } si algo falla),
+      // igual que hace GESTION.html al leerlo. Si en el futuro alguna
+      // versión devolviera directamente el array, también se soporta.
+      if (Array.isArray(interesados)) {
+        GESTION_ROWS = interesados;
+      } else if (interesados && Array.isArray(interesados.data)) {
+        GESTION_ROWS = interesados.data;
+      } else {
+        GESTION_ROWS = [];
+        if (interesados && interesados.success === false) {
+          gestionError = 'el backend de GESTION respondió con un error';
+        }
+      }
       var gestionDiag = gestionError
         ? ('<br>⚠️ No se pudo leer GESTION (interesados): ' + gestionError + '.')
         : ('<br>ℹ️ GESTION: ' + GESTION_ROWS.length + ' interesado(s) cargados.');
