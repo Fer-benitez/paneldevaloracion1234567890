@@ -6,6 +6,7 @@
 <title>Motor de Contrato — AG Núñez</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
   :root{
     --navy:#346B93; --navy-dark:#1F4460; --navy-darker:#16324a;
@@ -77,6 +78,24 @@
   .stepnav-step:hover{background:rgba(255,255,255,0.18);}
   .stepnav-step.current{background:#fff;color:var(--navy-darker);pointer-events:none;}
   @media(max-width:680px){.stepnav-wrap{justify-content:center;}.stepnav-steps{justify-content:center;width:100%;}}
+
+  /* ---- Vista previa del contrato antes de descargar ---- */
+  .preview-overlay{display:none;position:fixed;inset:0;background:rgba(22,50,74,0.55);z-index:1000;align-items:center;justify-content:center;padding:24px 14px;}
+  .preview-overlay.open{display:flex;}
+  .preview-box{background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(22,50,74,0.35);width:100%;max-width:840px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;}
+  .preview-head{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);color:#fff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;}
+  .preview-head h3{font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;}
+  .preview-head span{display:block;font-size:11.5px;color:#cfe0ee;margin-top:2px;}
+  .preview-close{background:rgba(255,255,255,0.16);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:999px;width:30px;height:30px;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0;}
+  .preview-close:hover{background:rgba(255,255,255,0.28);}
+  .preview-body{padding:22px 26px;overflow-y:auto;flex:1;font-family:'Inter',sans-serif;font-size:13.5px;line-height:1.65;color:var(--text);}
+  .preview-body table{border-collapse:collapse;width:100%;margin:10px 0 16px;}
+  .preview-body table td,.preview-body table th{border:1px solid var(--border);padding:6px 10px;font-size:12.5px;vertical-align:top;}
+  .preview-body p{margin:0 0 10px;}
+  .preview-body h1,.preview-body h2,.preview-body h3{color:var(--navy-darker);margin:16px 0 8px;font-family:'Montserrat',sans-serif;}
+  .preview-body img{max-width:120px;}
+  .preview-loading{padding:60px 20px;text-align:center;color:var(--muted);font-size:13.5px;}
+  .preview-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;flex-wrap:wrap;}
 </style>
 </head>
 <body>
@@ -267,6 +286,25 @@
 
   <div class="save-bar">
     <button class="btn-orange" id="generarBtn" type="button">Generar contrato (.docx)</button>
+  </div>
+</div>
+
+<div class="preview-overlay" id="previewOverlay">
+  <div class="preview-box">
+    <div class="preview-head">
+      <div>
+        <h3>Vista previa del contrato</h3>
+        <span>Revisa el texto antes de descargar el .docx — la maquetación exacta (tipografías, colores) solo se ve en Word.</span>
+      </div>
+      <button type="button" class="preview-close" id="previewCloseBtn" title="Cerrar">✕</button>
+    </div>
+    <div class="preview-body" id="previewBody">
+      <div class="preview-loading">Generando vista previa…</div>
+    </div>
+    <div class="preview-foot">
+      <button class="btn-ghost" type="button" id="previewEditarBtn">✏️ Seguir editando</button>
+      <button class="btn-orange" type="button" id="previewDescargarBtn">⬇️ Descargar contrato (.docx)</button>
+    </div>
   </div>
 </div>
 
@@ -1289,14 +1327,9 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
     try {
       var doc = construirContratoDocx(window.docx, D, LOGO_BYTES, SELLO_BYTES);
       window.docx.Packer.toBlob(doc).then(function(blob){
-        var a = document.createElement('a');
         var nombreArchivo = 'Contrato_' + (document.getElementById('propiedadInput').value.trim() || 'AGNunez') + '_' + D.fechaCorta.replace(/\//g,'') + '.docx';
-        a.href = URL.createObjectURL(blob);
-        a.download = nombreArchivo;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        showMsg('✅ Contrato generado y descargado: <strong>' + nombreArchivo + '</strong>. Revísalo antes de enviarlo a firmar.', 'ok');
+        mostrarPreviewContrato(blob, nombreArchivo);
+        showMsg('✅ Contrato generado — revísalo en la vista previa antes de descargar.', 'ok');
       }).catch(function(err){
         showMsg('Error al construir el archivo .docx: ' + (err && err.message ? err.message : err), 'err');
       });
@@ -1304,6 +1337,55 @@ function construirContratoDocx(docxLib, D, logoBuf, selloBuf) {
       showMsg('Error al generar el contrato: ' + (err && err.message ? err.message : err), 'err');
     }
   }
+
+  // ---------- Vista previa del contrato antes de descargar ----------
+  // El .docx ya generado (blob) se convierte a HTML con mammoth (la misma
+  // librería que se usa en "Lector de documentos" para leer documentos, solo
+  // que aquí en sentido inverso) para poder revisar el texto sin tener que
+  // abrir el archivo. La descarga real no ocurre hasta que se pulsa el botón
+  // "Descargar" del propio panel — así no se guarda un archivo en el
+  // ordenador solo por haberlo generado, si Fer quiere seguir ajustando algo.
+  var previewBlobPendiente = null;
+  var previewNombrePendiente = '';
+
+  function mostrarPreviewContrato(blob, nombreArchivo) {
+    previewBlobPendiente = blob;
+    previewNombrePendiente = nombreArchivo;
+    var overlay = document.getElementById('previewOverlay');
+    var body = document.getElementById('previewBody');
+    body.innerHTML = '<div class="preview-loading">Generando vista previa…</div>';
+    overlay.classList.add('open');
+
+    blob.arrayBuffer().then(function(buf){
+      if (!window.mammoth) throw new Error('No se pudo cargar el conversor de vista previa (mammoth).');
+      return window.mammoth.convertToHtml({ arrayBuffer: buf });
+    }).then(function(resultado){
+      body.innerHTML = resultado.value || '<p>(El documento no tiene texto para mostrar.)</p>';
+    }).catch(function(err){
+      body.innerHTML = '<div class="preview-loading">No se pudo generar la vista previa (' + (err && err.message ? err.message : err) + '). Puedes descargar el .docx igualmente y revisarlo en Word.</div>';
+    });
+  }
+
+  function cerrarPreviewContrato() {
+    document.getElementById('previewOverlay').classList.remove('open');
+  }
+
+  document.getElementById('previewCloseBtn').addEventListener('click', cerrarPreviewContrato);
+  document.getElementById('previewEditarBtn').addEventListener('click', cerrarPreviewContrato);
+  document.getElementById('previewOverlay').addEventListener('click', function(e){
+    if (e.target === this) cerrarPreviewContrato();
+  });
+  document.getElementById('previewDescargarBtn').addEventListener('click', function(){
+    if (!previewBlobPendiente) return;
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(previewBlobPendiente);
+    a.download = previewNombrePendiente;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    cerrarPreviewContrato();
+    showMsg('✅ Contrato descargado: <strong>' + previewNombrePendiente + '</strong>. Revísalo antes de enviarlo a firmar.', 'ok');
+  });
 </script>
 
 </body>
