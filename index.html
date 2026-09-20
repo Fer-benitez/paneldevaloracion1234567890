@@ -142,6 +142,11 @@
   }
   .tipo-badge.tipo-ficha{background:#eaf1f6;color:var(--navy);}
   .tipo-badge.tipo-leads{background:#fdeee0;color:var(--orange);}
+  .map-row{display:flex;align-items:center;gap:8px;margin:10px 0 2px;font-size:12px;font-weight:700;color:var(--navy-dark);}
+  .map-row select{flex:1;font:inherit;font-weight:600;padding:7px 9px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--navy-dark);cursor:pointer;}
+  .map-row select.res{background:#fff4cf;border-color:#e0a800;}
+  .map-row select.alq{background:#eee;border-color:#999;color:#666;}
+  .map-row .ok{color:var(--green);font-weight:700;}
   .delete-piso-btn{
     width:100%;margin-top:8px;background:transparent;color:var(--red);border:1.5px solid var(--border);
     padding:8px;border-radius:7px;font-weight:600;font-size:12px;cursor:pointer;
@@ -1267,6 +1272,14 @@
 <script>
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwJe2nw_bpxIqsZKvW3mj1eMkG4OkTSPYjrkD6BvPbXze5Q1z0e90kUMqcsB-k-hlgMw/exec';
 
+  // Mapa público de alquileres (script aparte, solo para reservas): estado Disponible / Reservado / Alquilado
+  const MAP_API_URL = 'https://script.google.com/macros/s/AKfycbwz3g8ZNRAtqxDwHMT3ersFKSxRNFNCx1WtvYnPL42ujnE_AY4cJXnQ9N4eIOFmfjn-AA/exec';
+  const MAP_TOKEN = 'fb-7149be9d0d7341fb40d54bbc';
+  function mapClave(link){
+    const m = String(link||'').trim().replace(/\\/g,'').replace(/[?#].*$/,'').replace(/\/+$/,'').match(/([^\/]+)$/);
+    return m ? m[1].toLowerCase() : '';
+  }
+
   // ---- Simple access gate (deterrent, not real security) ----
   // Change this password to whatever you like — it lives only in this file.
   const GATE_PASSWORD = 'XX2123?';
@@ -1429,6 +1442,8 @@
     try{
       const res = await fetch(APPS_SCRIPT_URL + '?tipo=pisos');
       const json = await res.json();
+      let estados = {};
+      try{ const er = await fetch(MAP_API_URL + '?action=estados'); const ej = await er.json(); if(ej.success) estados = ej.data || {}; }catch(e){}
       loadingPisos.style.display = 'none';
       if(json.success && json.data.length > 0){
         formsGrid.innerHTML = json.data.reverse().map(p => `
@@ -1437,6 +1452,12 @@
             <div class="body">
               <div class="name">${p['Piso'] || 'Sin nombre'}</div>
               <span class="tipo-badge ${p['Tipo'] === 'Leads (pre-visita)' ? 'tipo-leads' : 'tipo-ficha'}">${p['Tipo'] === 'Leads (pre-visita)' ? 'Leads' : 'Ficha'}</span>
+              ${p['Tipo'] === 'Leads (pre-visita)' ? (() => { const st = estados[mapClave(p['Link'])] || 'disponible'; return `<label class="map-row">En el mapa
+                <select class="map-estado ${st==='reservado'?'res':st==='alquilado'?'alq':''}" data-link="${p['Link']}">
+                  <option value="disponible"${st==='disponible'?' selected':''}>Disponible</option>
+                  <option value="reservado"${st==='reservado'?' selected':''}>Reservado</option>
+                  <option value="alquilado"${st==='alquilado'?' selected':''}>Alquilado (ocultar)</option>
+                </select><span class="ok"></span></label>`; })() : ''}
               <div class="actions">
                 <a class="open-link" href="${p['Link']}" target="_blank" rel="noopener">Abrir</a>
                 <button class="copy-link" data-link="${p['Link']}">Copiar link</button>
@@ -1445,6 +1466,19 @@
             </div>
           </div>
         `).join('');
+        formsGrid.querySelectorAll('.map-estado').forEach(sel=>{
+          sel.addEventListener('change', async ()=>{
+            const tick = sel.parentElement.querySelector('.ok');
+            sel.className = 'map-estado ' + (sel.value==='reservado'?'res':sel.value==='alquilado'?'alq':'');
+            sel.disabled = true; tick.textContent = '…';
+            try{
+              await fetch(MAP_API_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'estado', token: MAP_TOKEN, link: sel.dataset.link, estado: sel.value }) });
+              tick.textContent = '✓';
+            }catch(err){ tick.textContent = '✗'; alert('No se pudo cambiar el estado en el mapa. Revisa tu conexión.'); }
+            sel.disabled = false;
+            setTimeout(()=>{ tick.textContent = ''; }, 2000);
+          });
+        });
         formsGrid.querySelectorAll('.copy-link').forEach(btn=>{
           btn.addEventListener('click', ()=>{
             navigator.clipboard.writeText(btn.dataset.link).then(()=>{
