@@ -218,6 +218,13 @@
   }
   .filter-btn:hover{border-color:var(--navy);}
   .filter-btn.active{background:var(--navy);border-color:var(--navy);color:var(--white);}
+  .tipo-filter-btn{
+    background:var(--white);border:1.5px solid var(--border);color:var(--muted);
+    font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer;
+    transition:all .2s var(--ease);font-family:'Inter',sans-serif;
+  }
+  .tipo-filter-btn:hover{border-color:var(--navy);}
+  .tipo-filter-btn.active{background:var(--navy);border-color:var(--navy);color:var(--white);}
   .refresh-btn{
     background:var(--white);border:1.5px solid var(--border);color:var(--navy-dark);
     font-size:13px;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;
@@ -963,6 +970,14 @@
       <p class="piso-hint" id="pisoHint">Escribe el nombre, pega el link y sube una foto para poder añadirlo.</p>
     </div>
 
+    <div class="toolbar" style="margin-bottom:16px;">
+      <div class="filter-group">
+        <button class="tipo-filter-btn active" data-tipo-filter="todos">Todos</button>
+        <button class="tipo-filter-btn" data-tipo-filter="ficha">📄 Ficha completa</button>
+        <button class="tipo-filter-btn" data-tipo-filter="leads">📋 Leads (pre-visita)</button>
+      </div>
+    </div>
+
     <p id="loadingPisos" class="section-desc">Cargando pisos...</p>
     <div class="cards-grid" id="formsGrid"></div>
     <div class="empty-state" id="emptyForms" style="display:none;">
@@ -1439,6 +1454,10 @@
     addPisoBtn.disabled = true;
   });
 
+  let cachedPisos = [];
+  let cachedEstadosMapa = {};
+  let currentTipoFilter = 'todos';
+
   async function loadPisos(){
     loadingPisos.style.display = 'block';
     formsGrid.innerHTML = '';
@@ -1450,56 +1469,11 @@
       try{ const er = await fetch(MAP_API_URL + '?action=estados'); const ej = await er.json(); if(ej.success) estados = ej.data || {}; }catch(e){}
       loadingPisos.style.display = 'none';
       if(json.success && json.data.length > 0){
-        formsGrid.innerHTML = json.data.reverse().map(p => `
-          <div class="form-card">
-            ${p['Imagen'] ? `<img class="thumb" src="${p['Imagen']}" alt="${p['Piso']}">` : ''}
-            <div class="body">
-              <div class="name">${p['Piso'] || 'Sin nombre'}</div>
-              <span class="tipo-badge ${p['Tipo'] === 'Leads (pre-visita)' ? 'tipo-leads' : 'tipo-ficha'}">${p['Tipo'] === 'Leads (pre-visita)' ? 'Leads' : 'Ficha'}</span>
-              ${p['Tipo'] === 'Leads (pre-visita)' ? (() => { const st = estados[mapClave(p['Link'])] || 'disponible'; return `<label class="map-row">En el mapa
-                <select class="map-estado ${st==='reservado'?'res':st==='alquilado'?'alq':''}" data-link="${p['Link']}">
-                  <option value="disponible"${st==='disponible'?' selected':''}>Disponible</option>
-                  <option value="reservado"${st==='reservado'?' selected':''}>Reservado</option>
-                  <option value="alquilado"${st==='alquilado'?' selected':''}>Alquilado (ocultar)</option>
-                </select><span class="ok"></span></label>`; })() : ''}
-              <div class="actions">
-                <a class="open-link" href="${p['Link']}" target="_blank" rel="noopener">Abrir</a>
-                <button class="copy-link" data-link="${p['Link']}">Copiar link</button>
-              </div>
-              <button class="delete-piso-btn" data-piso="${p['Piso']}" data-link="${p['Link']}">Eliminar formulario</button>
-            </div>
-          </div>
-        `).join('');
-        formsGrid.querySelectorAll('.map-estado').forEach(sel=>{
-          sel.addEventListener('change', async ()=>{
-            const tick = sel.parentElement.querySelector('.ok');
-            sel.className = 'map-estado ' + (sel.value==='reservado'?'res':sel.value==='alquilado'?'alq':'');
-            sel.disabled = true; tick.textContent = '…';
-            try{
-              await fetch(MAP_API_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'estado', token: MAP_TOKEN, link: sel.dataset.link, estado: sel.value }) });
-              tick.textContent = '✓';
-            }catch(err){ tick.textContent = '✗'; alert('No se pudo cambiar el estado en el mapa. Revisa tu conexión.'); }
-            sel.disabled = false;
-            setTimeout(()=>{ tick.textContent = ''; }, 2000);
-          });
-        });
-        formsGrid.querySelectorAll('.copy-link').forEach(btn=>{
-          btn.addEventListener('click', ()=>{
-            navigator.clipboard.writeText(btn.dataset.link).then(()=>{
-              const original = btn.textContent;
-              btn.textContent = 'Copiado ✓';
-              btn.classList.add('copied');
-              setTimeout(()=>{ btn.textContent = original; btn.classList.remove('copied'); }, 2000);
-            });
-          });
-        });
-        formsGrid.querySelectorAll('.delete-piso-btn').forEach(btn=>{
-          btn.addEventListener('click', ()=>{
-            const card = btn.closest('.form-card');
-            openConfirm(()=> deletePiso(btn.dataset.piso, btn.dataset.link, card), '¿Eliminar este formulario?', 'Se quitará de Gestión (no borra el repo de GitHub donde está publicado). No se puede deshacer.');
-          });
-        });
+        cachedPisos = json.data.reverse();
+        cachedEstadosMapa = estados;
+        renderPisosCards();
       } else {
+        cachedPisos = [];
         emptyForms.textContent = json.error || 'Todavía no has añadido ningún piso. Escribe un nombre y sube una foto arriba para crear el primero.';
         emptyForms.style.display = 'block';
       }
@@ -1509,6 +1483,85 @@
       emptyForms.style.display = 'block';
     }
   }
+
+  function renderPisosCards(){
+    const estados = cachedEstadosMapa;
+    const pisosFiltrados = cachedPisos.filter(p=>{
+      if(currentTipoFilter === 'todos') return true;
+      const esLeads = p['Tipo'] === 'Leads (pre-visita)';
+      return currentTipoFilter === 'leads' ? esLeads : !esLeads;
+    });
+
+    if(pisosFiltrados.length === 0){
+      formsGrid.innerHTML = '';
+      emptyForms.textContent = cachedPisos.length === 0
+        ? 'Todavía no has añadido ningún piso. Escribe un nombre y sube una foto arriba para crear el primero.'
+        : 'No hay formularios de este tipo con este filtro.';
+      emptyForms.style.display = 'block';
+      return;
+    }
+    emptyForms.style.display = 'none';
+
+    formsGrid.innerHTML = pisosFiltrados.map(p => `
+      <div class="form-card">
+        ${p['Imagen'] ? `<img class="thumb" src="${p['Imagen']}" alt="${p['Piso']}">` : ''}
+        <div class="body">
+          <div class="name">${p['Piso'] || 'Sin nombre'}</div>
+          <span class="tipo-badge ${p['Tipo'] === 'Leads (pre-visita)' ? 'tipo-leads' : 'tipo-ficha'}">${p['Tipo'] === 'Leads (pre-visita)' ? 'Leads' : 'Ficha'}</span>
+          ${p['Tipo'] === 'Leads (pre-visita)' ? (() => { const st = estados[mapClave(p['Link'])] || 'disponible'; return `<label class="map-row">En el mapa
+            <select class="map-estado ${st==='reservado'?'res':st==='alquilado'?'alq':''}" data-link="${p['Link']}">
+              <option value="disponible"${st==='disponible'?' selected':''}>Disponible</option>
+              <option value="reservado"${st==='reservado'?' selected':''}>Reservado</option>
+              <option value="alquilado"${st==='alquilado'?' selected':''}>Alquilado (ocultar)</option>
+            </select><span class="ok"></span></label>`; })() : ''}
+          <div class="actions">
+            <a class="open-link" href="${p['Link']}" target="_blank" rel="noopener">Abrir</a>
+            <button class="copy-link" data-link="${p['Link']}">Copiar link</button>
+          </div>
+          <button class="delete-piso-btn" data-piso="${p['Piso']}" data-link="${p['Link']}">Eliminar formulario</button>
+        </div>
+      </div>
+    `).join('');
+    formsGrid.querySelectorAll('.map-estado').forEach(sel=>{
+      sel.addEventListener('change', async ()=>{
+        const tick = sel.parentElement.querySelector('.ok');
+        sel.className = 'map-estado ' + (sel.value==='reservado'?'res':sel.value==='alquilado'?'alq':'');
+        sel.disabled = true; tick.textContent = '…';
+        try{
+          await fetch(MAP_API_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'estado', token: MAP_TOKEN, link: sel.dataset.link, estado: sel.value }) });
+          tick.textContent = '✓';
+        }catch(err){ tick.textContent = '✗'; alert('No se pudo cambiar el estado en el mapa. Revisa tu conexión.'); }
+        sel.disabled = false;
+        setTimeout(()=>{ tick.textContent = ''; }, 2000);
+      });
+    });
+    formsGrid.querySelectorAll('.copy-link').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        navigator.clipboard.writeText(btn.dataset.link).then(()=>{
+          const original = btn.textContent;
+          btn.textContent = 'Copiado ✓';
+          btn.classList.add('copied');
+          setTimeout(()=>{ btn.textContent = original; btn.classList.remove('copied'); }, 2000);
+        });
+      });
+    });
+    formsGrid.querySelectorAll('.delete-piso-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const card = btn.closest('.form-card');
+        openConfirm(()=> deletePiso(btn.dataset.piso, btn.dataset.link, card), '¿Eliminar este formulario?', 'Se quitará de Gestión (no borra el repo de GitHub donde está publicado). No se puede deshacer.');
+      });
+    });
+  }
+
+  document.querySelectorAll('.tipo-filter-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tipo-filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTipoFilter = btn.dataset.tipoFilter;
+      renderPisosCards();
+    });
+  });
+
   loadPisos();
 
   // ---- Tab V: valuation panel logic ----
@@ -1955,6 +2008,7 @@
         body: JSON.stringify({ action:'eliminar_piso', piso: piso, link: link })
       });
       card.remove();
+      cachedPisos = cachedPisos.filter(p => !(p['Piso'] === piso && p['Link'] === link));
       if(formsGrid.querySelectorAll('.form-card').length === 0){
         emptyForms.style.display = 'block';
       }
@@ -2847,7 +2901,7 @@
       if(!da && !db) return 0;
       if(!da) return 1;
       if(!db) return -1;
-      return da - db;
+      return db - da;
     });
 
     if(n1.length === 0){
@@ -2940,7 +2994,9 @@
   function horaLlegada(val){
     const d = parseFechaLead(val);
     if(!d) return '';
-    return d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+    const fecha = d.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const hora = d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+    return fecha + ' · ' + hora;
   }
 
 
