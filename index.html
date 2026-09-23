@@ -1355,12 +1355,18 @@
     <div class="add-piso-card" id="addPropVentaCard" style="display:none;">
       <div class="add-piso-row">
         <div class="add-piso-field"><label>Dirección</label><input type="text" id="pvDireccion" placeholder="Ej. Aribau 218, 3r 1a"></div>
-        <div class="add-piso-field"><label>Foto</label><input type="file" id="pvFoto" accept="image/*"></div>
+        <div class="add-piso-field"><label>Fotos (puedes elegir varias)</label><input type="file" id="pvFoto" accept="image/*" multiple></div>
       </div>
       <div class="add-piso-row">
         <div class="add-piso-field"><label>Link de Idealista</label><input type="text" id="pvLink" placeholder="https://www.idealista.com/inmueble/..."></div>
         <div class="add-piso-field"><label>Precio de venta (opcional)</label><input type="text" id="pvPrecio" placeholder="Ej. 320.000 €"></div>
       </div>
+      <div class="add-piso-row">
+        <div class="add-piso-field"><label>Barrio (opcional)</label><input type="text" id="pvBarrio" placeholder="Ej. Sant Gervasi"></div>
+        <div class="add-piso-field"><label>Metros cuadrados (opcional)</label><input type="text" id="pvMetros" placeholder="Ej. 85 m²"></div>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;"><label>Habitaciones (opcional)</label><input type="text" id="pvHabitaciones" placeholder="Ej. 3" style="max-width:160px;"></div>
+      <div class="add-piso-field" style="margin-bottom:14px;"><label>Descripción (opcional)</label><textarea id="pvDescripcion" rows="3" placeholder="Notas sobre el piso: distribución, estado, orientación..."></textarea></div>
       <div id="pvUploadStatus" class="piso-upload-status"></div>
       <button id="addPropVentaBtn" class="add-piso-btn" disabled>Añadir propiedad</button>
       <p class="piso-hint" id="pvHint">Escribe la dirección y sube una foto para poder añadirla.</p>
@@ -3493,46 +3499,66 @@
     togglePropVentaBtn.textContent = showing ? '+ Añadir propiedad en venta' : '– Ocultar formulario';
   });
 
-  let uploadedPropVentaImageUrl = '';
+  const pvBarrio = document.getElementById('pvBarrio');
+  const pvMetros = document.getElementById('pvMetros');
+  const pvHabitaciones = document.getElementById('pvHabitaciones');
+  const pvDescripcion = document.getElementById('pvDescripcion');
+
+  let uploadedPropVentaImageUrls = []; // todas las fotos subidas; la primera es la de portada
   pvFoto.addEventListener('change', ()=>{
-    const file = pvFoto.files[0];
-    if(!file) return;
-    uploadedPropVentaImageUrl = '';
+    const files = Array.from(pvFoto.files || []);
+    if(files.length === 0) return;
+    uploadedPropVentaImageUrls = [];
     addPropVentaBtn.disabled = true;
-    pvUploadStatus.textContent = 'Subiendo foto...';
+    pvUploadStatus.textContent = `Subiendo 0 de ${files.length} foto(s)...`;
     pvUploadStatus.className = 'piso-upload-status';
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('upload_preset', 'documentos_alquiler');
-    fetch('https://api.cloudinary.com/v1_1/do9fo5gg/auto/upload', { method:'POST', body: fd })
-      .then(res=> res.json())
-      .then(data=>{
-        if(data.secure_url){
-          uploadedPropVentaImageUrl = data.secure_url;
-          pvUploadStatus.textContent = 'Foto subida ✓';
-          pvUploadStatus.className = 'piso-upload-status ok';
-          checkAddPropVentaReady();
-        } else {
-          pvUploadStatus.textContent = 'Error al subir la foto.';
-          pvUploadStatus.className = 'piso-upload-status error';
-        }
-      })
-      .catch(()=>{
-        pvUploadStatus.textContent = 'Error al subir la foto.';
-        pvUploadStatus.className = 'piso-upload-status error';
-      });
+
+    let subidas = 0;
+    let fallos = 0;
+    const resultados = new Array(files.length).fill(null);
+
+    const subirUna = (file, idx) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', 'documentos_alquiler');
+      return fetch('https://api.cloudinary.com/v1_1/do9fo5gg/auto/upload', { method:'POST', body: fd })
+        .then(res=> res.json())
+        .then(data=>{
+          if(data.secure_url){ resultados[idx] = data.secure_url; }
+          else { fallos++; }
+        })
+        .catch(()=>{ fallos++; })
+        .finally(()=>{
+          subidas++;
+          pvUploadStatus.textContent = `Subiendo ${subidas} de ${files.length} foto(s)...`;
+          if(subidas === files.length){
+            uploadedPropVentaImageUrls = resultados.filter(Boolean);
+            if(uploadedPropVentaImageUrls.length > 0){
+              pvUploadStatus.textContent = fallos > 0
+                ? `${uploadedPropVentaImageUrls.length} foto(s) subida(s) ✓ (${fallos} fallaron)`
+                : `${uploadedPropVentaImageUrls.length} foto(s) subida(s) ✓`;
+              pvUploadStatus.className = 'piso-upload-status ok';
+            } else {
+              pvUploadStatus.textContent = 'Error al subir las fotos.';
+              pvUploadStatus.className = 'piso-upload-status error';
+            }
+            checkAddPropVentaReady();
+          }
+        });
+    };
+    files.forEach((file, idx) => subirUna(file, idx));
   });
 
   pvDireccion.addEventListener('input', checkAddPropVentaReady);
   function checkAddPropVentaReady(){
     const direccion = pvDireccion.value.trim();
-    const ready = !!(direccion && uploadedPropVentaImageUrl);
+    const ready = !!(direccion && uploadedPropVentaImageUrls.length > 0);
     addPropVentaBtn.disabled = !ready;
     if(ready){ pvHint.textContent = ''; }
     else{
       const faltan = [];
       if(!direccion) faltan.push('la dirección');
-      if(!uploadedPropVentaImageUrl) faltan.push('la foto');
+      if(uploadedPropVentaImageUrls.length === 0) faltan.push('al menos una foto');
       pvHint.textContent = 'Falta ' + faltan.join(', ') + '.';
     }
   }
@@ -3541,16 +3567,28 @@
     const direccion = pvDireccion.value.trim();
     const link = pvLink.value.trim();
     const precio = pvPrecio.value.trim();
-    if(!direccion || !uploadedPropVentaImageUrl) return;
+    const barrio = pvBarrio.value.trim();
+    const metros = pvMetros.value.trim();
+    const habitaciones = pvHabitaciones.value.trim();
+    const descripcion = pvDescripcion.value.trim();
+    if(!direccion || uploadedPropVentaImageUrls.length === 0) return;
     addPropVentaBtn.disabled = true;
     addPropVentaBtn.textContent = 'Añadiendo...';
     try{
       await fetch(APPS_SCRIPT_URL_VENTA, {
         method:'POST', mode:'no-cors',
-        body: JSON.stringify({ action:'nueva_propiedad_venta', direccion: direccion, imagen: uploadedPropVentaImageUrl, link: link, precio: precio })
+        body: JSON.stringify({
+          action:'nueva_propiedad_venta',
+          direccion: direccion,
+          imagen: uploadedPropVentaImageUrls[0],
+          fotos: uploadedPropVentaImageUrls.join('|'),
+          link: link, precio: precio,
+          barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion
+        })
       });
       pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = '';
-      uploadedPropVentaImageUrl = '';
+      pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
+      uploadedPropVentaImageUrls = [];
       pvUploadStatus.textContent = '';
       pvHint.textContent = 'Escribe la dirección y sube una foto para poder añadirla.';
       await loadPropiedadesVenta();
@@ -3613,6 +3651,21 @@
       const precioTag = precio
         ? `<div class="venta-photo-scrim"></div><div class="venta-price-tag">${escVenta(precio)}</div>`
         : '';
+      const barrio = (p['Barrio'] || '').toString().trim();
+      const metros = (p['Metros'] || '').toString().trim();
+      const habitaciones = (p['Habitaciones'] || '').toString().trim();
+      const descripcion = (p['Descripción'] || '').toString().trim();
+      const fotos = (p['Fotos'] || '').toString().split('|').map(u=>u.trim()).filter(Boolean);
+      const metaParts = [];
+      if(barrio) metaParts.push(escVenta(barrio));
+      if(metros) metaParts.push(escVenta(metros) + ' m²');
+      if(habitaciones) metaParts.push(escVenta(habitaciones) + (habitaciones === '1' ? ' hab.' : ' hab.'));
+      const metaLine = metaParts.length
+        ? `<div class="pv-meta" style="margin-top:2px;font-size:12px;color:var(--text-light,#8a8a8a);">${metaParts.join(' · ')}</div>`
+        : '';
+      const miniaturas = fotos.length > 1
+        ? `<div class="pv-miniaturas" style="display:flex;gap:5px;margin-top:6px;overflow-x:auto;">${fotos.map(u=>`<img src="${u}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;border:1px solid var(--border);">`).join('')}</div>`
+        : '';
       card.innerHTML = `
         <div class="venta-photo-wrap">
           <img src="${p['Imagen'] || ''}" alt="${escVenta(p['Dirección'] || '')}">
@@ -3621,20 +3674,40 @@
         </div>
         <div class="body">
           <div class="dir">${escVenta(p['Dirección'] || 'Sin dirección')}</div>
+          ${metaLine}
+          ${miniaturas}
           ${estadoBotones}
-          <div class="add-piso-field" style="margin-top:9px;margin-bottom:0;">
+          <button class="pv-precio-toggle" style="margin-top:9px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;">✎ ${precio ? 'Editar precio' : 'Poner precio'}</button>
+          <div class="add-piso-field pv-precio-box" style="margin-top:8px;margin-bottom:0;display:none;">
             <label style="margin-bottom:4px;">Precio de venta</label>
             <div style="display:flex;gap:6px;">
               <input type="text" class="pv-precio-input" value="${escVenta(precio)}" placeholder="Ej. 320.000 €" style="flex:1;padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
               <button class="pv-precio-guardar edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12px;">Guardar</button>
             </div>
           </div>
+          ${descripcion ? `<button class="pv-desc-toggle" style="margin-top:6px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">✎ Ver descripción</button>
+          <div class="pv-desc-box" style="margin-top:6px;display:none;font-size:12.5px;color:var(--text,#444);line-height:1.4;white-space:pre-wrap;">${escVenta(descripcion)}</div>` : ''}
           <div class="actions" style="margin-top:9px;">
             ${p['Link'] ? `<a class="idealista-link" href="${p['Link']}" target="_blank" rel="noopener">Ver en Idealista</a>` : ''}
             <button class="delete-piso-btn" style="flex:1;">Eliminar</button>
           </div>
         </div>
       `;
+      const pvDescToggle = card.querySelector('.pv-desc-toggle');
+      if(pvDescToggle){
+        pvDescToggle.addEventListener('click', ()=>{
+          const descBox = card.querySelector('.pv-desc-box');
+          const showing = descBox.style.display !== 'none';
+          descBox.style.display = showing ? 'none' : 'block';
+          pvDescToggle.textContent = showing ? '✎ Ver descripción' : '✎ Ocultar descripción';
+        });
+      }
+      const pvPrecioBox = card.querySelector('.pv-precio-box');
+      card.querySelector('.pv-precio-toggle').addEventListener('click', (e)=>{
+        const showing = pvPrecioBox.style.display !== 'none';
+        pvPrecioBox.style.display = showing ? 'none' : 'block';
+        if(!showing) card.querySelector('.pv-precio-input').focus();
+      });
       card.querySelector('.pv-precio-guardar').addEventListener('click', async (e)=>{
         const btn = e.currentTarget;
         const input = card.querySelector('.pv-precio-input');
