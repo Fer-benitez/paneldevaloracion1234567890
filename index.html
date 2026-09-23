@@ -753,6 +753,7 @@
   .propiedad-venta-card .idealista-link:hover{background:#f5e8bd;}
 
   .propiedad-venta-card{position:relative;}
+  .venta-photo-wrap{position:relative;overflow:hidden;}
   .venta-ribbon{
     position:absolute;top:16px;left:-38px;width:150px;text-align:center;
     transform:rotate(-40deg);font-family:'Montserrat',sans-serif;font-weight:800;font-size:12px;
@@ -763,6 +764,16 @@
   .venta-ribbon.vendida{background:var(--red);}
   .propiedad-venta-card.vendida img{filter:grayscale(0.5);opacity:0.75;}
   .propiedad-venta-card.vendida .body{opacity:0.85;}
+  .venta-photo-scrim{
+    position:absolute;left:0;right:0;bottom:0;height:48%;
+    background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.58) 100%);
+    pointer-events:none;
+  }
+  .venta-price-tag{
+    position:absolute;bottom:12px;left:14px;color:#fff;
+    font-family:'Montserrat',sans-serif;font-weight:800;font-size:17px;
+    text-shadow:0 1px 4px rgba(0,0,0,0.55);letter-spacing:0.01em;
+  }
   .estado-venta-group{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
   .estado-venta-btn{
     flex:1;font-size:11px;font-weight:700;padding:7px 6px;border-radius:6px;cursor:pointer;
@@ -1346,7 +1357,10 @@
         <div class="add-piso-field"><label>Dirección</label><input type="text" id="pvDireccion" placeholder="Ej. Aribau 218, 3r 1a"></div>
         <div class="add-piso-field"><label>Foto</label><input type="file" id="pvFoto" accept="image/*"></div>
       </div>
-      <div class="add-piso-field" style="margin-bottom:14px;"><label>Link de Idealista</label><input type="text" id="pvLink" placeholder="https://www.idealista.com/inmueble/..."></div>
+      <div class="add-piso-row">
+        <div class="add-piso-field"><label>Link de Idealista</label><input type="text" id="pvLink" placeholder="https://www.idealista.com/inmueble/..."></div>
+        <div class="add-piso-field"><label>Precio de venta (opcional)</label><input type="text" id="pvPrecio" placeholder="Ej. 320.000 €"></div>
+      </div>
       <div id="pvUploadStatus" class="piso-upload-status"></div>
       <button id="addPropVentaBtn" class="add-piso-btn" disabled>Añadir propiedad</button>
       <p class="piso-hint" id="pvHint">Escribe la dirección y sube una foto para poder añadirla.</p>
@@ -3463,6 +3477,7 @@
   const pvDireccion = document.getElementById('pvDireccion');
   const pvFoto = document.getElementById('pvFoto');
   const pvLink = document.getElementById('pvLink');
+  const pvPrecio = document.getElementById('pvPrecio');
   const pvUploadStatus = document.getElementById('pvUploadStatus');
   const addPropVentaBtn = document.getElementById('addPropVentaBtn');
   const pvHint = document.getElementById('pvHint');
@@ -3525,15 +3540,16 @@
   addPropVentaBtn.addEventListener('click', async ()=>{
     const direccion = pvDireccion.value.trim();
     const link = pvLink.value.trim();
+    const precio = pvPrecio.value.trim();
     if(!direccion || !uploadedPropVentaImageUrl) return;
     addPropVentaBtn.disabled = true;
     addPropVentaBtn.textContent = 'Añadiendo...';
     try{
       await fetch(APPS_SCRIPT_URL_VENTA, {
         method:'POST', mode:'no-cors',
-        body: JSON.stringify({ action:'nueva_propiedad_venta', direccion: direccion, imagen: uploadedPropVentaImageUrl, link: link })
+        body: JSON.stringify({ action:'nueva_propiedad_venta', direccion: direccion, imagen: uploadedPropVentaImageUrl, link: link, precio: precio })
       });
-      pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = '';
+      pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = '';
       uploadedPropVentaImageUrl = '';
       pvUploadStatus.textContent = '';
       pvHint.textContent = 'Escribe la dirección y sube una foto para poder añadirla.';
@@ -3593,18 +3609,49 @@
           <button class="estado-venta-btn" data-estado="Vendida">Vendida</button>
         </div>
       `;
+      const precio = (p['Precio'] || '').toString().trim();
+      const precioTag = precio
+        ? `<div class="venta-photo-scrim"></div><div class="venta-price-tag">${escVenta(precio)}</div>`
+        : '';
       card.innerHTML = `
-        ${ribbon}
-        <img src="${p['Imagen'] || ''}" alt="${escVenta(p['Dirección'] || '')}">
+        <div class="venta-photo-wrap">
+          <img src="${p['Imagen'] || ''}" alt="${escVenta(p['Dirección'] || '')}">
+          ${ribbon}
+          ${precioTag}
+        </div>
         <div class="body">
           <div class="dir">${escVenta(p['Dirección'] || 'Sin dirección')}</div>
           ${estadoBotones}
+          <div class="add-piso-field" style="margin-top:9px;margin-bottom:0;">
+            <label style="margin-bottom:4px;">Precio de venta</label>
+            <div style="display:flex;gap:6px;">
+              <input type="text" class="pv-precio-input" value="${escVenta(precio)}" placeholder="Ej. 320.000 €" style="flex:1;padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
+              <button class="pv-precio-guardar edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12px;">Guardar</button>
+            </div>
+          </div>
           <div class="actions" style="margin-top:9px;">
             ${p['Link'] ? `<a class="idealista-link" href="${p['Link']}" target="_blank" rel="noopener">Ver en Idealista</a>` : ''}
             <button class="delete-piso-btn" style="flex:1;">Eliminar</button>
           </div>
         </div>
       `;
+      card.querySelector('.pv-precio-guardar').addEventListener('click', async (e)=>{
+        const btn = e.currentTarget;
+        const input = card.querySelector('.pv-precio-input');
+        const nuevoPrecio = input.value.trim();
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+        try{
+          await fetch(APPS_SCRIPT_URL_VENTA, {
+            method:'POST', mode:'no-cors',
+            body: JSON.stringify({ action:'actualizar_precio_propiedad_venta', direccion: p['Dirección'], link: p['Link'], precio: nuevoPrecio })
+          });
+          p['Precio'] = nuevoPrecio;
+          renderPropiedadesVentaCards();
+        } catch(err){ alert('No se pudo guardar el precio. Revisa tu conexión.'); }
+        btn.disabled = false;
+        btn.textContent = 'Guardar';
+      });
       card.querySelectorAll('.estado-venta-btn').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
           const nuevoEstado = btn.dataset.estado;
