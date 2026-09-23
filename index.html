@@ -818,6 +818,8 @@
     #tab-venta .leads-column.mobile-active{display:block;}
   }
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
@@ -1372,9 +1374,15 @@
       </div>
       <div class="add-piso-field" style="margin-bottom:14px;"><label>Habitaciones (opcional)</label><input type="text" id="pvHabitaciones" placeholder="Ej. 3" style="max-width:160px;"></div>
       <div class="add-piso-field" style="margin-bottom:14px;"><label>Descripción (opcional)</label><textarea id="pvDescripcion" rows="3" placeholder="Notas sobre el piso: distribución, estado, orientación..."></textarea></div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Ubicación en el mapa (necesaria para que salga en el mapa público de venta)</label>
+        <div id="pvMapPicker" style="height:220px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:6px;cursor:crosshair;"></div>
+        <p style="font-size:12px;color:var(--muted,#8a8a8a);margin:0;">Toca el mapa para colocar el pin en la propiedad (puedes moverlo tocando otra vez). <span id="pvLatLngTxt">Sin ubicación seleccionada.</span></p>
+        <input type="hidden" id="pvLat"><input type="hidden" id="pvLng">
+      </div>
       <div id="pvUploadStatus" class="piso-upload-status"></div>
       <button id="addPropVentaBtn" class="add-piso-btn" disabled>Añadir propiedad</button>
-      <p class="piso-hint" id="pvHint">Escribe la dirección y sube una foto para poder añadirla.</p>
+      <p class="piso-hint" id="pvHint">Escribe la dirección, sube una foto y coloca el pin en el mapa para poder añadirla.</p>
     </div>
     <p id="loadingPropVenta" class="section-desc">Cargando propiedades...</p>
     <div class="cards-grid" id="propVentaGrid" style="margin-bottom:28px;"></div>
@@ -3502,12 +3510,32 @@
     const showing = addPropVentaCard.style.display !== 'none';
     addPropVentaCard.style.display = showing ? 'none' : 'block';
     togglePropVentaBtn.textContent = showing ? '+ Añadir propiedad en venta' : '– Ocultar formulario';
+    if(!showing){ ensurePvMap(); setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 150); }
   });
 
   const pvBarrio = document.getElementById('pvBarrio');
   const pvMetros = document.getElementById('pvMetros');
   const pvHabitaciones = document.getElementById('pvHabitaciones');
   const pvDescripcion = document.getElementById('pvDescripcion');
+
+  // ---- Selector de ubicación (lat/lng) para el mapa público de venta ----
+  const pvLat = document.getElementById('pvLat');
+  const pvLng = document.getElementById('pvLng');
+  const pvLatLngTxt = document.getElementById('pvLatLngTxt');
+  let pvMap = null, pvMarker = null;
+  function ensurePvMap(){
+    if(pvMap) return;
+    pvMap = L.map('pvMapPicker', { zoomControl:true }).setView([41.3874, 2.1686], 13); // Barcelona
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap' }).addTo(pvMap);
+    pvMap.on('click', (e)=> setPvLocation(e.latlng.lat, e.latlng.lng));
+  }
+  function setPvLocation(lat, lng){
+    pvLat.value = lat.toFixed(6);
+    pvLng.value = lng.toFixed(6);
+    pvLatLngTxt.textContent = 'Ubicación: ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+    if(pvMarker){ pvMarker.setLatLng([lat, lng]); } else { pvMarker = L.marker([lat, lng]).addTo(pvMap); }
+    checkAddPropVentaReady();
+  }
 
   let uploadedPropVentaImageUrls = []; // todas las fotos subidas; la primera es la de portada
   pvFoto.addEventListener('change', ()=>{
@@ -3557,13 +3585,15 @@
   pvDireccion.addEventListener('input', checkAddPropVentaReady);
   function checkAddPropVentaReady(){
     const direccion = pvDireccion.value.trim();
-    const ready = !!(direccion && uploadedPropVentaImageUrls.length > 0);
+    const tieneUbicacion = !!pvLat.value;
+    const ready = !!(direccion && uploadedPropVentaImageUrls.length > 0 && tieneUbicacion);
     addPropVentaBtn.disabled = !ready;
     if(ready){ pvHint.textContent = ''; }
     else{
       const faltan = [];
       if(!direccion) faltan.push('la dirección');
       if(uploadedPropVentaImageUrls.length === 0) faltan.push('al menos una foto');
+      if(!tieneUbicacion) faltan.push('el punto en el mapa');
       pvHint.textContent = 'Falta ' + faltan.join(', ') + '.';
     }
   }
@@ -3576,7 +3606,9 @@
     const metros = pvMetros.value.trim();
     const habitaciones = pvHabitaciones.value.trim();
     const descripcion = pvDescripcion.value.trim();
-    if(!direccion || uploadedPropVentaImageUrls.length === 0) return;
+    const lat = pvLat.value;
+    const lng = pvLng.value;
+    if(!direccion || uploadedPropVentaImageUrls.length === 0 || !lat) return;
     addPropVentaBtn.disabled = true;
     addPropVentaBtn.textContent = 'Añadiendo...';
     try{
@@ -3588,14 +3620,18 @@
           imagen: uploadedPropVentaImageUrls[0],
           fotos: uploadedPropVentaImageUrls.join('|'),
           link: link, precio: precio,
-          barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion
+          barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
+          lat: lat, lng: lng
         })
       });
       pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = '';
       pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
       uploadedPropVentaImageUrls = [];
       pvUploadStatus.textContent = '';
-      pvHint.textContent = 'Escribe la dirección y sube una foto para poder añadirla.';
+      pvLat.value = ''; pvLng.value = '';
+      pvLatLngTxt.textContent = 'Sin ubicación seleccionada.';
+      if(pvMarker && pvMap){ pvMap.removeLayer(pvMarker); pvMarker = null; }
+      pvHint.textContent = 'Escribe la dirección, sube una foto y coloca el pin en el mapa para poder añadirla.';
       await loadPropiedadesVenta();
     } catch(err){
       alert('No se pudo añadir la propiedad. Revisa tu conexión.');
@@ -3690,6 +3726,13 @@
               <button class="pv-precio-guardar edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12px;">Guardar</button>
             </div>
           </div>
+          <button class="pv-ubic-toggle" style="margin-top:6px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">✎ ${(p['Lat'] && p['Lng']) ? 'Editar ubicación' : 'Falta ubicación en el mapa · añadir'}</button>
+          <div class="add-piso-field pv-ubic-box" style="margin-top:8px;margin-bottom:0;display:none;">
+            <label style="margin-bottom:4px;">Ubicación en el mapa</label>
+            <div class="pv-ubic-map" style="height:180px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:6px;cursor:crosshair;"></div>
+            <p class="pv-ubic-txt" style="font-size:12px;color:var(--muted,#8a8a8a);margin:0 0 6px;">${(p['Lat'] && p['Lng']) ? ('Ubicación: ' + p['Lat'] + ', ' + p['Lng']) : 'Toca el mapa para colocar el pin.'}</p>
+            <button class="pv-ubic-guardar edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12px;" disabled>Guardar ubicación</button>
+          </div>
           ${descripcion ? `<button class="pv-desc-toggle" style="margin-top:6px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">✎ Ver descripción</button>
           <div class="pv-desc-box" style="margin-top:6px;display:none;font-size:12.5px;color:var(--text,#444);line-height:1.4;white-space:pre-wrap;">${escVenta(descripcion)}</div>` : ''}
           <div class="actions" style="margin-top:9px;">
@@ -3729,6 +3772,48 @@
         } catch(err){ alert('No se pudo guardar el precio. Revisa tu conexión.'); }
         btn.disabled = false;
         btn.textContent = 'Guardar';
+      });
+      // ---- Editar ubicación (lat/lng) de una propiedad ya existente ----
+      const pvUbicToggle = card.querySelector('.pv-ubic-toggle');
+      const pvUbicBox = card.querySelector('.pv-ubic-box');
+      const pvUbicMapDiv = card.querySelector('.pv-ubic-map');
+      const pvUbicTxt = card.querySelector('.pv-ubic-txt');
+      const pvUbicGuardar = card.querySelector('.pv-ubic-guardar');
+      let cardMap = null, cardMarker = null, cardLat = p['Lat'] || null, cardLng = p['Lng'] || null;
+      pvUbicToggle.addEventListener('click', ()=>{
+        const showing = pvUbicBox.style.display !== 'none';
+        pvUbicBox.style.display = showing ? 'none' : 'block';
+        if(!showing){
+          setTimeout(()=>{
+            if(!cardMap){
+              const startLat = parseFloat(cardLat) || 41.3874, startLng = parseFloat(cardLng) || 2.1686;
+              cardMap = L.map(pvUbicMapDiv, { zoomControl:true }).setView([startLat, startLng], cardLat ? 15 : 13);
+              L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap' }).addTo(cardMap);
+              if(cardLat && cardLng){ cardMarker = L.marker([parseFloat(cardLat), parseFloat(cardLng)]).addTo(cardMap); }
+              cardMap.on('click', (e)=>{
+                cardLat = e.latlng.lat.toFixed(6); cardLng = e.latlng.lng.toFixed(6);
+                pvUbicTxt.textContent = 'Ubicación: ' + cardLat + ', ' + cardLng;
+                if(cardMarker){ cardMarker.setLatLng(e.latlng); } else { cardMarker = L.marker(e.latlng).addTo(cardMap); }
+                pvUbicGuardar.disabled = false;
+              });
+            }
+            cardMap.invalidateSize();
+          }, 150);
+        }
+      });
+      pvUbicGuardar.addEventListener('click', async (e)=>{
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+        try{
+          await fetch(APPS_SCRIPT_URL_VENTA, {
+            method:'POST', mode:'no-cors',
+            body: JSON.stringify({ action:'actualizar_ubicacion_propiedad_venta', direccion: p['Dirección'], link: p['Link'], lat: cardLat, lng: cardLng })
+          });
+          p['Lat'] = cardLat; p['Lng'] = cardLng;
+          pvUbicToggle.textContent = '✎ Editar ubicación';
+        } catch(err){ alert('No se pudo guardar la ubicación. Revisa tu conexión.'); }
+        btn.textContent = 'Guardar ubicación';
       });
       card.querySelectorAll('.estado-venta-btn').forEach(btn=>{
         btn.addEventListener('click', async ()=>{
