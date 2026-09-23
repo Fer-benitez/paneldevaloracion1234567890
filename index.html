@@ -37,6 +37,8 @@
     --green: #2e8b57;
     --amber: #d99a1b;
     --red: #d64545;
+    --gold: #C9A227;
+    --gold-dark: #8a6d17;
     --ease: cubic-bezier(.22,.68,0,1);
   }
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -704,6 +706,79 @@
     .informes-panel{width:calc(100vw - 32px);right:-6px;}
     .informes-btn{padding:8px 13px;font-size:12.5px;}
   }
+
+  /* ---- Tab VENTA: leads de venta (Idealista) ---- */
+  .tab-btn.tab-venta .letter{background:var(--gold-dark);}
+  .tab-btn.tab-venta.active{border-bottom-color:var(--gold);}
+  .tab-btn.tab-venta.active .letter{background:var(--gold);color:#241d05;}
+
+  .venta-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    background:linear-gradient(135deg,#E3C25C,#9c7a1e);color:#241d05;
+    font-family:'Montserrat',sans-serif;font-weight:800;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;
+    padding:4px 11px;border-radius:999px;margin-bottom:10px;box-shadow:0 3px 8px -3px rgba(156,122,30,0.55);
+  }
+
+  .paste-idealista-box{
+    background:#fffdf5;border:2px dashed var(--gold);border-radius:12px;padding:18px;margin-bottom:20px;
+  }
+  .paste-idealista-label{
+    font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold-dark);
+    margin-bottom:9px;display:flex;align-items:center;gap:6px;
+  }
+  .paste-idealista-box textarea{
+    width:100%;min-height:84px;border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;
+    font-family:'Inter',sans-serif;font-size:14px;resize:vertical;color:var(--text);background:var(--white);
+  }
+  .paste-idealista-box textarea:focus{outline:none;border-color:var(--gold-dark);box-shadow:0 0 0 3px rgba(201,162,39,0.16);}
+  .paste-hint{font-size:12px;color:var(--muted);margin-top:8px;}
+  .paste-status{font-size:12.5px;font-weight:700;margin-top:8px;}
+  .paste-status.ok{color:var(--green);}
+  .paste-status.error{color:var(--red);}
+
+  .propiedad-venta-card{
+    background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;
+    transition:transform .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .propiedad-venta-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px -10px rgba(156,122,30,0.35);}
+  .propiedad-venta-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--bg);}
+  .propiedad-venta-card .body{padding:13px 15px;}
+  .propiedad-venta-card .dir{font-family:'Montserrat',sans-serif;font-weight:700;font-size:14.5px;color:var(--navy-darker);margin-bottom:8px;}
+  .propiedad-venta-card .actions{display:flex;gap:8px;}
+  .propiedad-venta-card .actions a, .propiedad-venta-card .actions button{
+    flex:1;text-align:center;font-size:12px;font-weight:700;padding:8px;border-radius:7px;
+    text-decoration:none;cursor:pointer;font-family:'Inter',sans-serif;border:none;
+  }
+  .propiedad-venta-card .idealista-link{background:#fbf3dc;color:var(--gold-dark);}
+  .propiedad-venta-card .idealista-link:hover{background:#f5e8bd;}
+
+  .lead-card.venta{
+    border-color:#ecdfae;border-left:4px solid var(--gold);
+    background:linear-gradient(180deg,#fffdf6,#ffffff);
+    box-shadow:0 4px 14px -9px rgba(156,122,30,0.4);
+  }
+  .lead-card.venta .name{color:#4a3b0e;}
+  .lead-card.venta.semaforo-verde{border-left-color:var(--green);}
+  .lead-card.venta.semaforo-rojo{border-left-color:var(--red);}
+  .lead-card.venta .move-btn{background:var(--gold-dark);}
+  .lead-card.venta .move-btn:hover{background:#6e5710;}
+  .lead-card.venta .lead-number{background:var(--gold-dark);}
+  .leads-num.venta-num{background:var(--gold-dark);}
+  .lead-card.venta .hora-pill{background:var(--gold);color:#241d05;}
+
+  .leads-mtab-venta{
+    flex:1;background:transparent;border:none;padding:11px;border-radius:8px;
+    font-family:'Inter',sans-serif;font-weight:700;font-size:13.5px;color:var(--muted);cursor:pointer;
+  }
+  .leads-mtab-venta.active{background:var(--white);color:var(--gold-dark);box-shadow:0 1px 4px rgba(22,50,74,0.12);}
+  @media (max-width:700px){
+    #tab-venta .leads-columns{grid-template-columns:1fr;}
+    #tab-venta .leads-mobile-tabs{
+      display:flex;gap:8px;margin-bottom:18px;background:var(--bg);padding:4px;border-radius:10px;
+    }
+    #tab-venta .leads-column{display:none;}
+    #tab-venta .leads-column.mobile-active{display:block;}
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
@@ -934,6 +1009,7 @@
     <button class="tab-btn" data-tab="valoracion"><span class="letter">V</span>Panel de valoración</button>
     <button class="tab-btn" data-tab="reconocimiento"><span class="letter">R</span>Reconocimiento</button>
     <button class="tab-btn" data-tab="leads"><span class="letter">L</span>Leads</button>
+    <button class="tab-btn tab-venta" data-tab="venta"><span class="letter">€</span>Leads Venta</button>
   </div>
 </div>
 
@@ -1236,6 +1312,85 @@
     </div>
   </div>
 
+  <!-- ==================== TAB VENTA — LEADS DE VENTA (IDEALISTA) ==================== -->
+  <div class="tab-panel" id="tab-venta">
+    <span class="venta-badge">€ Venta</span>
+    <p class="section-desc">Leads de venta que llegan por Idealista. Empiezan en Nivel 1 — cuando confirmas la visita, los subes a Nivel 2 y se agenda solo en tu calendario de Google "AG Núñez - Visitas de venta".</p>
+
+    <!-- Catálogo de propiedades en venta -->
+    <button id="togglePropVentaBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;margin-bottom:16px;">+ Añadir propiedad en venta</button>
+    <div class="add-piso-card" id="addPropVentaCard" style="display:none;">
+      <div class="add-piso-row">
+        <div class="add-piso-field"><label>Dirección</label><input type="text" id="pvDireccion" placeholder="Ej. Aribau 218, 3r 1a"></div>
+        <div class="add-piso-field"><label>Foto</label><input type="file" id="pvFoto" accept="image/*"></div>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;"><label>Link de Idealista</label><input type="text" id="pvLink" placeholder="https://www.idealista.com/inmueble/..."></div>
+      <div id="pvUploadStatus" class="piso-upload-status"></div>
+      <button id="addPropVentaBtn" class="add-piso-btn" disabled>Añadir propiedad</button>
+      <p class="piso-hint" id="pvHint">Escribe la dirección y sube una foto para poder añadirla.</p>
+    </div>
+    <p id="loadingPropVenta" class="section-desc">Cargando propiedades...</p>
+    <div class="cards-grid" id="propVentaGrid" style="margin-bottom:28px;"></div>
+    <div class="empty-state" id="emptyPropVenta" style="display:none;margin-bottom:28px;">Todavía no has añadido ninguna propiedad en venta. Añade una arriba (foto + dirección) para poder asociarle leads.</div>
+
+    <!-- Pegar contacto de Idealista -->
+    <div class="paste-idealista-box">
+      <div class="paste-idealista-label">📋 Pega aquí el contacto de Idealista</div>
+      <textarea id="pasteIdealista" placeholder="Pega aquí tal cual el nombre, teléfono+email y mensaje que te llega de Idealista..."></textarea>
+      <p class="paste-hint">Se rellenan solos el nombre, el teléfono, el email y el mensaje abajo. Revisa, elige la propiedad y guarda.</p>
+      <div id="pasteStatus" class="paste-status"></div>
+    </div>
+
+    <div class="add-piso-card" id="addLeadVentaCard">
+      <div class="reco-row-2">
+        <div class="add-piso-field"><label>Nombre</label><input type="text" id="lvNombre"></div>
+        <div class="add-piso-field"><label>Teléfono</label><input type="text" id="lvTelefono"></div>
+      </div>
+      <div class="reco-row-2">
+        <div class="add-piso-field"><label>Email</label><input type="text" id="lvEmail"></div>
+        <div class="add-piso-field">
+          <label>Propiedad de interés</label>
+          <select id="lvPropiedad" class="piso-select">
+            <option value="">Sin seleccionar</option>
+          </select>
+        </div>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;"><label>Mensaje</label><textarea id="lvMensaje" rows="2"></textarea></div>
+      <div class="add-piso-field">
+        <label>Día de la visita <span style="color:var(--muted);font-weight:400;text-transform:none;">(necesario para pasar a Nivel 2)</span></label>
+        <div class="choice-group" id="diaVisitaVentaGroup">
+          <button type="button" class="choice-btn">Hoy</button>
+          <button type="button" class="choice-btn">Mañana</button>
+          <button type="button" class="choice-btn">Otro</button>
+        </div>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;"><label>Hora de la visita</label><input type="time" id="lvHoraVisita"></div>
+      <button id="addLeadVentaBtn" class="add-piso-btn" disabled>Añadir lead de venta</button>
+      <button id="cancelLeadVentaEditBtn" class="edit-reco-btn" style="display:none;">Cancelar edición</button>
+      <p class="piso-hint" id="leadVentaHint">Escribe al menos el nombre y el teléfono (o pega el contacto arriba).</p>
+    </div>
+
+    <p id="loadingLeadsVenta" class="section-desc">Cargando leads de venta...</p>
+
+    <div class="leads-mobile-tabs">
+      <button class="leads-mtab-venta active" data-target="leadsVentaColN1">Entrada</button>
+      <button class="leads-mtab-venta" data-target="leadsVentaColN2">Visitas</button>
+    </div>
+
+    <div class="leads-columns">
+      <div class="leads-column" id="leadsVentaColN1">
+        <div class="leads-column-title"><span class="leads-num venta-num">1</span>Entrada</div>
+        <div class="cards-grid" id="leadsVentaGridN1"></div>
+        <div class="empty-state" id="emptyLeadsVentaN1" style="display:none;">Sin leads en Nivel 1.</div>
+      </div>
+      <div class="leads-column" id="leadsVentaColN2">
+        <div class="leads-column-title"><span class="leads-num venta-num">2</span>Visitas</div>
+        <div id="leadsVentaGridN2"></div>
+        <div class="empty-state" id="emptyLeadsVentaN2" style="display:none;">Sin leads en Nivel 2.</div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <div class="confirm-overlay" id="confirmOverlay">
@@ -1342,10 +1497,16 @@
         leadsLoaded = true;
         loadLeads();
       }
+      if(btn.dataset.tab === 'venta' && !ventaLoaded){
+        ventaLoaded = true;
+        loadPropiedadesVenta();
+        loadLeadsVenta();
+      }
     });
   });
   let reconocimientoLoaded = false;
   let leadsLoaded = false;
+  let ventaLoaded = false;
 
   // ---- Tab F: dynamic property cards ----
   const CLOUDINARY_CLOUD_NAME = 'do9fo5gg';
@@ -3231,6 +3392,533 @@
       }
     });
   })();
+</script>
+
+<script>
+(function(){
+  // ==================== TAB VENTA: propiedades + leads de venta (Idealista) ====================
+  const APPS_SCRIPT_URL_VENTA = 'https://script.google.com/macros/s/AKfycbzwJe2nw_bpxIqsZKvW3mj1eMkG4OkTSPYjrkD6BvPbXze5Q1z0e90kUMqcsB-k-hlgMw/exec';
+
+  function escVenta(s){
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+  function openConfirmVenta(onConfirm, title, text){
+    // Reutiliza el mismo popup de confirmación que el resto del panel.
+    if(typeof openConfirm === 'function') return openConfirm(onConfirm, title, text);
+    if(confirm(title || '¿Seguro?')) onConfirm();
+  }
+  function formatDateVenta(val){
+    if(!val) return '—';
+    const d = new Date(val);
+    if(isNaN(d)) return val;
+    return d.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric'});
+  }
+  function formatHoraVenta(val){
+    if(!val) return '';
+    const str = String(val);
+    if(str.includes('T') && str.includes(':')){
+      const match = str.match(/T(\d{2}:\d{2})/);
+      return match ? match[1] : str;
+    }
+    return str;
+  }
+  function parseFechaVenta(val){
+    if(!val) return null;
+    if(val instanceof Date) return val;
+    const str = String(val).trim();
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[ ,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if(m){
+      const [, d, mo, y, h, mi, s] = m;
+      return new Date(+y, +mo - 1, +d, +h, +mi, +(s || 0));
+    }
+    const d2 = new Date(str);
+    return isNaN(d2) ? null : d2;
+  }
+
+  // ---- Catálogo de propiedades en venta ----
+  const pvDireccion = document.getElementById('pvDireccion');
+  const pvFoto = document.getElementById('pvFoto');
+  const pvLink = document.getElementById('pvLink');
+  const pvUploadStatus = document.getElementById('pvUploadStatus');
+  const addPropVentaBtn = document.getElementById('addPropVentaBtn');
+  const pvHint = document.getElementById('pvHint');
+  const propVentaGrid = document.getElementById('propVentaGrid');
+  const emptyPropVenta = document.getElementById('emptyPropVenta');
+  const loadingPropVenta = document.getElementById('loadingPropVenta');
+  const togglePropVentaBtn = document.getElementById('togglePropVentaBtn');
+  const addPropVentaCard = document.getElementById('addPropVentaCard');
+
+  togglePropVentaBtn.addEventListener('click', ()=>{
+    const showing = addPropVentaCard.style.display !== 'none';
+    addPropVentaCard.style.display = showing ? 'none' : 'block';
+    togglePropVentaBtn.textContent = showing ? '+ Añadir propiedad en venta' : '– Ocultar formulario';
+  });
+
+  let uploadedPropVentaImageUrl = '';
+  pvFoto.addEventListener('change', ()=>{
+    const file = pvFoto.files[0];
+    if(!file) return;
+    uploadedPropVentaImageUrl = '';
+    addPropVentaBtn.disabled = true;
+    pvUploadStatus.textContent = 'Subiendo foto...';
+    pvUploadStatus.className = 'piso-upload-status';
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', 'documentos_alquiler');
+    fetch('https://api.cloudinary.com/v1_1/do9fo5gg/auto/upload', { method:'POST', body: fd })
+      .then(res=> res.json())
+      .then(data=>{
+        if(data.secure_url){
+          uploadedPropVentaImageUrl = data.secure_url;
+          pvUploadStatus.textContent = 'Foto subida ✓';
+          pvUploadStatus.className = 'piso-upload-status ok';
+          checkAddPropVentaReady();
+        } else {
+          pvUploadStatus.textContent = 'Error al subir la foto.';
+          pvUploadStatus.className = 'piso-upload-status error';
+        }
+      })
+      .catch(()=>{
+        pvUploadStatus.textContent = 'Error al subir la foto.';
+        pvUploadStatus.className = 'piso-upload-status error';
+      });
+  });
+
+  pvDireccion.addEventListener('input', checkAddPropVentaReady);
+  function checkAddPropVentaReady(){
+    const direccion = pvDireccion.value.trim();
+    const ready = !!(direccion && uploadedPropVentaImageUrl);
+    addPropVentaBtn.disabled = !ready;
+    if(ready){ pvHint.textContent = ''; }
+    else{
+      const faltan = [];
+      if(!direccion) faltan.push('la dirección');
+      if(!uploadedPropVentaImageUrl) faltan.push('la foto');
+      pvHint.textContent = 'Falta ' + faltan.join(', ') + '.';
+    }
+  }
+
+  addPropVentaBtn.addEventListener('click', async ()=>{
+    const direccion = pvDireccion.value.trim();
+    const link = pvLink.value.trim();
+    if(!direccion || !uploadedPropVentaImageUrl) return;
+    addPropVentaBtn.disabled = true;
+    addPropVentaBtn.textContent = 'Añadiendo...';
+    try{
+      await fetch(APPS_SCRIPT_URL_VENTA, {
+        method:'POST', mode:'no-cors',
+        body: JSON.stringify({ action:'nueva_propiedad_venta', direccion: direccion, imagen: uploadedPropVentaImageUrl, link: link })
+      });
+      pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = '';
+      uploadedPropVentaImageUrl = '';
+      pvUploadStatus.textContent = '';
+      pvHint.textContent = 'Escribe la dirección y sube una foto para poder añadirla.';
+      await loadPropiedadesVenta();
+    } catch(err){
+      alert('No se pudo añadir la propiedad. Revisa tu conexión.');
+    }
+    addPropVentaBtn.textContent = 'Añadir propiedad';
+    addPropVentaBtn.disabled = true;
+  });
+
+  let cachedPropiedadesVenta = [];
+  window.loadPropiedadesVenta = async function loadPropiedadesVenta(){
+    loadingPropVenta.style.display = 'block';
+    propVentaGrid.innerHTML = '';
+    emptyPropVenta.style.display = 'none';
+    try{
+      const res = await fetch(APPS_SCRIPT_URL_VENTA + '?tipo=propiedades_venta');
+      const json = await res.json();
+      loadingPropVenta.style.display = 'none';
+      if(!json.success){
+        emptyPropVenta.textContent = json.error || 'No se pudo conectar con la hoja. Falta crear la pestaña "PropiedadesVenta" o la acción en Apps Script.';
+        emptyPropVenta.style.display = 'block';
+        return;
+      }
+      cachedPropiedadesVenta = json.data;
+      renderPropiedadesVentaCards();
+      populateLvPropiedadSelect();
+    } catch(err){
+      loadingPropVenta.style.display = 'none';
+      emptyPropVenta.textContent = 'No se pudo conectar con la hoja.';
+      emptyPropVenta.style.display = 'block';
+    }
+  };
+
+  function renderPropiedadesVentaCards(){
+    propVentaGrid.innerHTML = '';
+    if(cachedPropiedadesVenta.length === 0){
+      emptyPropVenta.style.display = 'block';
+      return;
+    }
+    emptyPropVenta.style.display = 'none';
+    cachedPropiedadesVenta.forEach(p=>{
+      const card = document.createElement('div');
+      card.className = 'propiedad-venta-card';
+      card.innerHTML = `
+        <img src="${p['Imagen'] || ''}" alt="${escVenta(p['Dirección'] || '')}">
+        <div class="body">
+          <div class="dir">${escVenta(p['Dirección'] || 'Sin dirección')}</div>
+          <div class="actions">
+            ${p['Link'] ? `<a class="idealista-link" href="${p['Link']}" target="_blank" rel="noopener">Ver en Idealista</a>` : ''}
+            <button class="delete-piso-btn" style="flex:1;">Eliminar</button>
+          </div>
+        </div>
+      `;
+      card.querySelector('.delete-piso-btn').addEventListener('click', ()=>{
+        openConfirmVenta(
+          async ()=>{
+            try{
+              await fetch(APPS_SCRIPT_URL_VENTA, {
+                method:'POST', mode:'no-cors',
+                body: JSON.stringify({ action:'eliminar_propiedad_venta', direccion: p['Dirección'], link: p['Link'] })
+              });
+              cachedPropiedadesVenta = cachedPropiedadesVenta.filter(x=> x !== p);
+              renderPropiedadesVentaCards();
+              populateLvPropiedadSelect();
+            } catch(err){ alert('No se pudo eliminar. Revisa tu conexión.'); }
+          },
+          '¿Eliminar esta propiedad?',
+          'Se borrará de tu hoja de Google. No afecta a los leads ya guardados.'
+        );
+      });
+      propVentaGrid.appendChild(card);
+    });
+  }
+
+  function populateLvPropiedadSelect(){
+    const sel = document.getElementById('lvPropiedad');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Sin seleccionar</option>' +
+      cachedPropiedadesVenta.map(p => `<option value="${escVenta(p['Dirección'])}">${escVenta(p['Dirección'])}</option>`).join('');
+    if([...sel.options].some(o=>o.value === current)) sel.value = current;
+  }
+
+  // ---- Pegar contacto de Idealista ----
+  const pasteIdealista = document.getElementById('pasteIdealista');
+  const pasteStatus = document.getElementById('pasteStatus');
+  const lvNombre = document.getElementById('lvNombre');
+  const lvTelefono = document.getElementById('lvTelefono');
+  const lvEmail = document.getElementById('lvEmail');
+  const lvMensaje = document.getElementById('lvMensaje');
+
+  function parseIdealistaPaste(raw){
+    const rawLines = String(raw || '').replace(/\r\n/g, '\n').split('\n');
+    const idx1 = rawLines.findIndex(l => l.trim().length > 0);
+    if(idx1 === -1) return null;
+    const nombre = rawLines[idx1].trim();
+    let idx2 = idx1 + 1;
+    while(idx2 < rawLines.length && rawLines[idx2].trim() === '') idx2++;
+    const contactLine = rawLines[idx2] || '';
+    const emailMatch = contactLine.match(/[\w.+-]+@[\w-]+\.[A-Za-z]{2,}/);
+    const email = emailMatch ? emailMatch[0] : '';
+    const beforeEmail = emailMatch ? contactLine.slice(0, emailMatch.index) : contactLine;
+    const phoneMatch = beforeEmail.match(/[\d\s()+-]{7,}/);
+    const telefono = (phoneMatch ? phoneMatch[0] : beforeEmail).replace(/\s+/g, ' ').trim();
+    const mensaje = rawLines.slice(idx2 + 1).join('\n').trim();
+    return { nombre, telefono, email, mensaje };
+  }
+
+  pasteIdealista.addEventListener('input', ()=>{
+    const parsed = parseIdealistaPaste(pasteIdealista.value);
+    if(!parsed || !parsed.nombre){
+      pasteStatus.textContent = '';
+      return;
+    }
+    lvNombre.value = parsed.nombre;
+    if(parsed.telefono) lvTelefono.value = parsed.telefono;
+    if(parsed.email) lvEmail.value = parsed.email;
+    if(parsed.mensaje) lvMensaje.value = parsed.mensaje;
+    pasteStatus.textContent = 'Rellenado ✓ — revisa los campos de abajo antes de guardar.';
+    pasteStatus.className = 'paste-status ok';
+    checkLeadVentaReady();
+  });
+
+  // ---- Alta/edición de leads de venta ----
+  const lvPropiedad = document.getElementById('lvPropiedad');
+  const addLeadVentaBtn = document.getElementById('addLeadVentaBtn');
+  const leadVentaHint = document.getElementById('leadVentaHint');
+  const loadingLeadsVenta = document.getElementById('loadingLeadsVenta');
+  const leadsVentaGridN1 = document.getElementById('leadsVentaGridN1');
+  const leadsVentaGridN2 = document.getElementById('leadsVentaGridN2');
+  const emptyLeadsVentaN1 = document.getElementById('emptyLeadsVentaN1');
+  const emptyLeadsVentaN2 = document.getElementById('emptyLeadsVentaN2');
+  const lvHoraVisita = document.getElementById('lvHoraVisita');
+  const diaVisitaVentaGroup = document.getElementById('diaVisitaVentaGroup');
+  const cancelLeadVentaEditBtn = document.getElementById('cancelLeadVentaEditBtn');
+
+  let diaVisitaVentaSeleccionado = '';
+  diaVisitaVentaGroup.querySelectorAll('.choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      diaVisitaVentaGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      diaVisitaVentaSeleccionado = btn.textContent.trim();
+    });
+  });
+
+  function checkLeadVentaReady(){
+    addLeadVentaBtn.disabled = !(lvNombre.value.trim() && lvTelefono.value.trim());
+    if(!editingLeadVentaFecha) leadVentaHint.textContent = addLeadVentaBtn.disabled ? 'Escribe al menos el nombre y el teléfono (o pega el contacto arriba).' : '';
+  }
+  lvNombre.addEventListener('input', checkLeadVentaReady);
+  lvTelefono.addEventListener('input', checkLeadVentaReady);
+
+  let editingLeadVentaFecha = null;
+  function resetLeadVentaForm(){
+    lvNombre.value = ''; lvTelefono.value = ''; lvEmail.value = ''; lvMensaje.value = '';
+    lvPropiedad.value = ''; lvHoraVisita.value = '';
+    pasteIdealista.value = ''; pasteStatus.textContent = '';
+    diaVisitaVentaGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+    diaVisitaVentaSeleccionado = '';
+    editingLeadVentaFecha = null;
+    addLeadVentaBtn.textContent = 'Añadir lead de venta';
+    cancelLeadVentaEditBtn.style.display = 'none';
+    checkLeadVentaReady();
+  }
+  cancelLeadVentaEditBtn.addEventListener('click', resetLeadVentaForm);
+
+  function openLeadVentaEdit(l){
+    lvNombre.value = l['Nombre'] || '';
+    lvTelefono.value = l['Teléfono'] || '';
+    lvEmail.value = l['Email'] || '';
+    lvMensaje.value = l['Mensaje'] || '';
+    lvPropiedad.value = l['Propiedad'] || '';
+    lvHoraVisita.value = formatHoraVenta(l['Hora visita']);
+    diaVisitaVentaGroup.querySelectorAll('.choice-btn').forEach(b=>{
+      b.classList.toggle('active', b.textContent.trim() === l['Día visita']);
+    });
+    diaVisitaVentaSeleccionado = l['Día visita'] || '';
+    editingLeadVentaFecha = l['Fecha'];
+    addLeadVentaBtn.textContent = 'Guardar cambios';
+    cancelLeadVentaEditBtn.style.display = 'block';
+    leadVentaHint.textContent = 'Editando a ' + (l['Nombre'] || 'este lead');
+    checkLeadVentaReady();
+    document.getElementById('addLeadVentaCard').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  addLeadVentaBtn.addEventListener('click', async ()=>{
+    addLeadVentaBtn.disabled = true;
+    const wasEditing = !!editingLeadVentaFecha;
+    addLeadVentaBtn.textContent = wasEditing ? 'Guardando...' : 'Añadiendo...';
+    const payload = {
+      action: wasEditing ? 'actualizar_lead_venta' : 'nuevo_lead_venta',
+      nombre: lvNombre.value.trim(),
+      telefono: lvTelefono.value.trim(),
+      email: lvEmail.value.trim(),
+      propiedad: lvPropiedad.value,
+      mensaje: lvMensaje.value.trim(),
+      diaVisita: diaVisitaVentaSeleccionado,
+      horaVisita: lvHoraVisita.value
+    };
+    if(wasEditing) payload.fecha = editingLeadVentaFecha;
+    try{
+      await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
+      resetLeadVentaForm();
+      if(wasEditing){
+        updateCachedLeadVentaByFecha(payload.fecha, {
+          'Nombre': payload.nombre, 'Teléfono': payload.telefono, 'Email': payload.email,
+          'Propiedad': payload.propiedad, 'Mensaje': payload.mensaje,
+          'Día visita': payload.diaVisita, 'Hora visita': payload.horaVisita
+        });
+        renderLeadsVenta();
+      } else {
+        await loadLeadsVenta();
+      }
+      leadVentaHint.textContent = wasEditing ? 'Cambios guardados ✓' : 'Lead de venta añadido ✓';
+      setTimeout(()=> leadVentaHint.textContent = 'Escribe al menos el nombre y el teléfono (o pega el contacto arriba).', 2500);
+    } catch(err){
+      alert('No se pudo guardar. Revisa tu conexión.');
+    }
+    addLeadVentaBtn.textContent = wasEditing ? 'Guardar cambios' : 'Añadir lead de venta';
+    checkLeadVentaReady();
+  });
+
+  let cachedLeadsVenta = [];
+  function leadVentaKey(l){ return l['Fecha'] + '|' + l['Teléfono']; }
+  function updateCachedLeadVenta(fecha, telefono, cambios){
+    const key = fecha + '|' + telefono;
+    const idx = cachedLeadsVenta.findIndex(l => leadVentaKey(l) === key);
+    if(idx !== -1) cachedLeadsVenta[idx] = Object.assign({}, cachedLeadsVenta[idx], cambios);
+  }
+  function updateCachedLeadVentaByFecha(fecha, cambios){
+    const idx = cachedLeadsVenta.findIndex(l => String(l['Fecha']) === String(fecha));
+    if(idx !== -1) cachedLeadsVenta[idx] = Object.assign({}, cachedLeadsVenta[idx], cambios);
+  }
+
+  window.loadLeadsVenta = async function loadLeadsVenta(){
+    loadingLeadsVenta.style.display = 'block';
+    leadsVentaGridN1.innerHTML = ''; leadsVentaGridN2.innerHTML = '';
+    emptyLeadsVentaN1.style.display = 'none'; emptyLeadsVentaN2.style.display = 'none';
+    try{
+      const res = await fetch(APPS_SCRIPT_URL_VENTA + '?tipo=leads_venta');
+      const json = await res.json();
+      loadingLeadsVenta.style.display = 'none';
+      if(!json.success){
+        emptyLeadsVentaN1.textContent = json.error || 'No se pudo conectar con la hoja. Falta crear la pestaña "LeadsVenta" o la acción en Apps Script.';
+        emptyLeadsVentaN1.style.display = 'block';
+        return;
+      }
+      cachedLeadsVenta = json.data.reverse();
+      renderLeadsVenta();
+    } catch(err){
+      loadingLeadsVenta.style.display = 'none';
+      emptyLeadsVentaN1.textContent = 'No se pudo conectar con la hoja.';
+      emptyLeadsVentaN1.style.display = 'block';
+    }
+  };
+
+  function renderLeadsVenta(){
+    leadsVentaGridN1.innerHTML = ''; leadsVentaGridN2.innerHTML = '';
+    emptyLeadsVentaN1.style.display = 'none'; emptyLeadsVentaN2.style.display = 'none';
+
+    const n1 = cachedLeadsVenta.filter(l => String(l['Nivel']) !== '2');
+    const n2 = cachedLeadsVenta.filter(l => String(l['Nivel']) === '2');
+
+    n1.sort((a,b)=>{
+      const da = parseFechaVenta(a['Fecha']); const db = parseFechaVenta(b['Fecha']);
+      if(!da && !db) return 0; if(!da) return 1; if(!db) return -1;
+      return db - da;
+    });
+
+    if(n1.length === 0){
+      emptyLeadsVentaN1.textContent = 'Sin leads en Nivel 1.';
+      emptyLeadsVentaN1.style.display = 'block';
+    }
+    n1.forEach(l => leadsVentaGridN1.appendChild(buildLeadVentaCard(l, '2')));
+
+    if(n2.length === 0){
+      emptyLeadsVentaN2.textContent = 'Sin leads en Nivel 2.';
+      emptyLeadsVentaN2.style.display = 'block';
+    } else {
+      ['Hoy','Mañana','Otro'].forEach(grupo=>{
+        const enGrupo = n2.filter(l => (l['Día visita'] || 'Otro') === grupo);
+        if(enGrupo.length === 0) return;
+        if(grupo !== 'Otro'){
+          enGrupo.sort((a,b)=> (formatHoraVenta(a['Hora visita']) || '99:99').localeCompare(formatHoraVenta(b['Hora visita']) || '99:99'));
+        }
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'leads-group-title';
+        groupTitle.textContent = grupo;
+        leadsVentaGridN2.appendChild(groupTitle);
+        enGrupo.forEach(l => leadsVentaGridN2.appendChild(buildLeadVentaCard(l, '1')));
+      });
+    }
+  }
+
+  function buildLeadVentaCard(l, moveTarget){
+    const card = document.createElement('div');
+    let sema = l['Semáforo'] || '';
+    card.className = 'lead-card venta' + (sema ? ' semaforo-' + sema : '');
+    const waPhone = String(l['Teléfono'] || '').replace(/[^0-9]/g, '');
+    const horaLimpia = formatHoraVenta(l['Hora visita']);
+    const visitaHtml = (l['Día visita'] || horaLimpia)
+      ? `<div class="meta visita-programada">📅 Visita: <strong>${escVenta(l['Día visita'] || '')}</strong>${horaLimpia ? ` <span class="hora-pill">${escVenta(horaLimpia)}</span>` : ''}</div>`
+      : '';
+    card.innerHTML = `
+      <div class="lead-number">€ Venta</div>
+      <div class="name">${escVenta(l['Nombre'] || 'Sin nombre')}</div>
+      <div class="meta">${l['Fecha'] ? formatDateVenta(l['Fecha']) : '—'} · ${escVenta(l['Teléfono'] || '—')}${l['Propiedad'] ? ' · ' + escVenta(l['Propiedad']) : ''}</div>
+      ${l['Email'] ? `<div class="meta">✉️ ${escVenta(l['Email'])}</div>` : ''}
+      ${visitaHtml}
+      ${l['Mensaje'] ? `<div class="notes"><strong>Mensaje:</strong> ${escVenta(l['Mensaje'])}</div>` : ''}
+      <div class="actions">
+        ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+        ${l['Propiedad'] ? '' : ''}
+        <button class="sema-toggle sema-verde ${sema==='verde'?'active-verde':''}">🟢 Habilitar</button>
+        <button class="sema-toggle sema-rojo ${sema==='rojo'?'active-rojo':''}">🔴 Descartar</button>
+      </div>
+      <div class="actions" style="margin-top:8px;">
+        <button class="move-btn">${moveTarget === '2' ? 'Pasar a Nivel 2 →' : '← Volver a Nivel 1'}</button>
+        <button class="edit-lead-btn">✎ Editar</button>
+        <button class="del-btn">Eliminar</button>
+      </div>
+    `;
+
+    card.querySelector('.sema-verde').addEventListener('click', async (e)=>{
+      const btn = e.currentTarget;
+      if(btn.disabled) return;
+      btn.disabled = true;
+      const nuevo = sema === 'verde' ? '' : 'verde';
+      try{
+        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_venta', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
+        sema = nuevo; l['Semáforo'] = nuevo;
+        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'Semáforo': nuevo });
+        card.className = 'lead-card venta' + (sema ? ' semaforo-' + sema : '');
+        card.querySelector('.sema-verde').classList.toggle('active-verde', sema === 'verde');
+        card.querySelector('.sema-rojo').classList.toggle('active-rojo', sema === 'rojo');
+      } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+      btn.disabled = false;
+    });
+    card.querySelector('.sema-rojo').addEventListener('click', async (e)=>{
+      const btn = e.currentTarget;
+      if(btn.disabled) return;
+      btn.disabled = true;
+      const nuevo = sema === 'rojo' ? '' : 'rojo';
+      try{
+        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_venta', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
+        sema = nuevo; l['Semáforo'] = nuevo;
+        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'Semáforo': nuevo });
+        card.className = 'lead-card venta' + (sema ? ' semaforo-' + sema : '');
+        card.querySelector('.sema-verde').classList.toggle('active-verde', sema === 'verde');
+        card.querySelector('.sema-rojo').classList.toggle('active-rojo', sema === 'rojo');
+      } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+      btn.disabled = false;
+    });
+
+    card.querySelector('.move-btn').addEventListener('click', async (e)=>{
+      const btn = e.currentTarget;
+      if(btn.disabled) return;
+      if(moveTarget === '2'){
+        const faltan = [];
+        if(!l['Día visita']) faltan.push('elegir el día de la visita');
+        if(!l['Hora visita']) faltan.push('poner la hora de la visita');
+        if(faltan.length > 0){
+          alert('Antes de pasarlo a Nivel 2, falta:\n\n– ' + faltan.join('\n– ') + '\n\nEdítalo para completarlo.');
+          openLeadVentaEdit(l);
+          return;
+        }
+      }
+      btn.disabled = true;
+      try{
+        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'mover_nivel_venta', fecha: l['Fecha'], telefono: l['Teléfono'], nivel: moveTarget }) });
+        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'Nivel': moveTarget });
+        renderLeadsVenta();
+      } catch(err){ alert('No se pudo mover. Revisa tu conexión.'); btn.disabled = false; }
+    });
+
+    card.querySelector('.edit-lead-btn').addEventListener('click', ()=> openLeadVentaEdit(l));
+
+    card.querySelector('.del-btn').addEventListener('click', ()=>{
+      openConfirmVenta(
+        async ()=>{
+          try{
+            await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'eliminar_lead_venta', fecha: l['Fecha'], telefono: l['Teléfono'] }) });
+            cachedLeadsVenta = cachedLeadsVenta.filter(x => leadVentaKey(x) !== leadVentaKey(l));
+            renderLeadsVenta();
+          } catch(err){ alert('No se pudo eliminar. Revisa tu conexión.'); }
+        },
+        '¿Eliminar este lead de venta?',
+        'Esta acción borra la fila de tu hoja de forma permanente. No se puede deshacer.'
+      );
+    });
+
+    return card;
+  }
+
+  // ---- Pestañas móviles (Entrada / Visitas) propias del tab Venta ----
+  const tabVenta = document.getElementById('tab-venta');
+  tabVenta.querySelectorAll('.leads-mtab-venta').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      tabVenta.querySelectorAll('.leads-mtab-venta').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      tabVenta.querySelectorAll('.leads-column').forEach(c=>c.classList.remove('mobile-active'));
+      document.getElementById(btn.dataset.target).classList.add('mobile-active');
+    });
+  });
+  document.getElementById('leadsVentaColN1').classList.add('mobile-active');
+})();
 </script>
 
 <script>
