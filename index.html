@@ -752,6 +752,28 @@
   .propiedad-venta-card .idealista-link{background:#fbf3dc;color:var(--gold-dark);}
   .propiedad-venta-card .idealista-link:hover{background:#f5e8bd;}
 
+  .propiedad-venta-card{position:relative;}
+  .venta-ribbon{
+    position:absolute;top:16px;left:-38px;width:150px;text-align:center;
+    transform:rotate(-40deg);font-family:'Montserrat',sans-serif;font-weight:800;font-size:12px;
+    letter-spacing:0.06em;text-transform:uppercase;padding:6px 0;color:#fff;
+    box-shadow:0 3px 8px rgba(0,0,0,0.28);z-index:2;
+  }
+  .venta-ribbon.reservada{background:#c97a1e;}
+  .venta-ribbon.vendida{background:var(--red);}
+  .propiedad-venta-card.vendida img{filter:grayscale(0.5);opacity:0.75;}
+  .propiedad-venta-card.vendida .body{opacity:0.85;}
+  .estado-venta-group{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
+  .estado-venta-btn{
+    flex:1;font-size:11px;font-weight:700;padding:7px 6px;border-radius:6px;cursor:pointer;
+    font-family:'Inter',sans-serif;border:1.5px solid var(--border);background:var(--white);color:var(--muted);
+    transition:all .2s var(--ease);
+  }
+  .estado-venta-btn:hover{border-color:var(--gold-dark);color:var(--gold-dark);}
+  .estado-venta-btn.active-disponible{background:#e5f3ec;color:var(--green);border-color:var(--green);}
+  .estado-venta-btn.active-reservada{background:#fdf0dc;color:#c97a1e;border-color:#c97a1e;}
+  .estado-venta-btn.active-vendida{background:#fbeaea;color:var(--red);border-color:var(--red);}
+
   .lead-card.venta{
     border-color:#ecdfae;border-left:4px solid var(--gold);
     background:linear-gradient(180deg,#fffdf6,#ffffff);
@@ -3555,18 +3577,48 @@
     }
     emptyPropVenta.style.display = 'none';
     cachedPropiedadesVenta.forEach(p=>{
+      const estado = (p['Estado'] || '').trim(); // '' = Disponible, 'Reservada', 'Vendida'
       const card = document.createElement('div');
-      card.className = 'propiedad-venta-card';
+      card.className = 'propiedad-venta-card' + (estado === 'Vendida' ? ' vendida' : '');
+      const ribbon = estado === 'Vendida'
+        ? `<div class="venta-ribbon vendida">Vendido</div>`
+        : estado === 'Reservada'
+          ? `<div class="venta-ribbon reservada">Reservada</div>`
+          : '';
+      // Una vez vendida, ya no se puede tocar el estado — solo eliminar.
+      const estadoBotones = estado === 'Vendida' ? '' : `
+        <div class="estado-venta-group">
+          <button class="estado-venta-btn ${estado === '' ? 'active-disponible' : ''}" data-estado="">Disponible</button>
+          <button class="estado-venta-btn ${estado === 'Reservada' ? 'active-reservada' : ''}" data-estado="Reservada">Reservada</button>
+          <button class="estado-venta-btn" data-estado="Vendida">Vendida</button>
+        </div>
+      `;
       card.innerHTML = `
+        ${ribbon}
         <img src="${p['Imagen'] || ''}" alt="${escVenta(p['Dirección'] || '')}">
         <div class="body">
           <div class="dir">${escVenta(p['Dirección'] || 'Sin dirección')}</div>
-          <div class="actions">
+          ${estadoBotones}
+          <div class="actions" style="margin-top:9px;">
             ${p['Link'] ? `<a class="idealista-link" href="${p['Link']}" target="_blank" rel="noopener">Ver en Idealista</a>` : ''}
             <button class="delete-piso-btn" style="flex:1;">Eliminar</button>
           </div>
         </div>
       `;
+      card.querySelectorAll('.estado-venta-btn').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const nuevoEstado = btn.dataset.estado;
+          if(nuevoEstado === 'Vendida'){
+            openConfirmVenta(
+              ()=> guardarEstadoPropiedadVenta(p, nuevoEstado),
+              '¿Marcar como vendida?',
+              'Ya no podrás cambiarle el estado ni elegirla para leads — solo podrás eliminarla más adelante si quieres.'
+            );
+          } else {
+            await guardarEstadoPropiedadVenta(p, nuevoEstado);
+          }
+        });
+      });
       card.querySelector('.delete-piso-btn').addEventListener('click', ()=>{
         openConfirmVenta(
           async ()=>{
@@ -3588,11 +3640,25 @@
     });
   }
 
+  async function guardarEstadoPropiedadVenta(p, nuevoEstado){
+    try{
+      await fetch(APPS_SCRIPT_URL_VENTA, {
+        method:'POST', mode:'no-cors',
+        body: JSON.stringify({ action:'actualizar_estado_propiedad_venta', direccion: p['Dirección'], link: p['Link'], estado: nuevoEstado })
+      });
+      p['Estado'] = nuevoEstado;
+      renderPropiedadesVentaCards();
+      populateLvPropiedadSelect();
+    } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+  }
+
   function populateLvPropiedadSelect(){
     const sel = document.getElementById('lvPropiedad');
     const current = sel.value;
+    // Las reservadas o vendidas no se pueden elegir para un lead nuevo — solo las disponibles.
+    const disponibles = cachedPropiedadesVenta.filter(p => !(p['Estado'] || '').trim());
     sel.innerHTML = '<option value="">Sin seleccionar</option>' +
-      cachedPropiedadesVenta.map(p => `<option value="${escVenta(p['Dirección'])}">${escVenta(p['Dirección'])}</option>`).join('');
+      disponibles.map(p => `<option value="${escVenta(p['Dirección'])}">${escVenta(p['Dirección'])}</option>`).join('');
     if([...sel.options].some(o=>o.value === current)) sel.value = current;
   }
 
