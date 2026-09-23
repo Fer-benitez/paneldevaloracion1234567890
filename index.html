@@ -798,6 +798,11 @@
   .lead-card.venta .lead-number{background:var(--gold-dark);}
   .leads-num.venta-num{background:var(--gold-dark);}
   .lead-card.venta .hora-pill{background:var(--gold);color:#241d05;}
+  .lead-card.venta.baro-1{background:linear-gradient(180deg,#f6fbf2,#ffffff);}
+  .lead-card.venta.baro-2{background:linear-gradient(180deg,#eaf7e2,#ffffff);box-shadow:0 4px 14px -9px rgba(60,150,40,0.35);}
+  .lead-card.venta.baro-3{background:linear-gradient(180deg,#d8f2c8,#ffffff);box-shadow:0 5px 16px -8px rgba(45,140,30,0.5);}
+  .lead-card.venta.baro-3:not(.semaforo-rojo){border-left-color:var(--green);}
+  .baro-badge{background:var(--green);color:#fff;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:700;letter-spacing:.02em;}
 
   .leads-mtab-venta{
     flex:1;background:transparent;border:none;padding:11px;border-radius:8px;
@@ -3955,13 +3960,32 @@
     }
   };
 
+  function claveLeadVenta(l){
+    return String(l['Fecha']) + '|' + String(l['Teléfono']);
+  }
+
+  function numerosEntradaLeadsVenta(){
+    // Número de entrada: 1 = el primero que entró (más antiguo). Se calcula
+    // sobre todos los leads de venta (Nivel 1 + Nivel 2) por orden cronológico.
+    const ordenAsc = cachedLeadsVenta.slice().sort((a,b)=>{
+      const da = parseFechaVenta(a['Fecha']); const db = parseFechaVenta(b['Fecha']);
+      if(!da && !db) return 0; if(!da) return 1; if(!db) return -1;
+      return da - db;
+    });
+    const mapa = new Map();
+    ordenAsc.forEach((l, idx) => mapa.set(claveLeadVenta(l), idx + 1));
+    return mapa;
+  }
+
   function renderLeadsVenta(){
     leadsVentaGridN1.innerHTML = ''; leadsVentaGridN2.innerHTML = '';
     emptyLeadsVentaN1.style.display = 'none'; emptyLeadsVentaN2.style.display = 'none';
 
+    const numeros = numerosEntradaLeadsVenta();
     const n1 = cachedLeadsVenta.filter(l => String(l['Nivel']) !== '2');
     const n2 = cachedLeadsVenta.filter(l => String(l['Nivel']) === '2');
 
+    // Los últimos en entrar arriba, los primeros abajo.
     n1.sort((a,b)=>{
       const da = parseFechaVenta(a['Fecha']); const db = parseFechaVenta(b['Fecha']);
       if(!da && !db) return 0; if(!da) return 1; if(!db) return -1;
@@ -3972,7 +3996,7 @@
       emptyLeadsVentaN1.textContent = 'Sin leads en Nivel 1.';
       emptyLeadsVentaN1.style.display = 'block';
     }
-    n1.forEach(l => leadsVentaGridN1.appendChild(buildLeadVentaCard(l, '2')));
+    n1.forEach(l => leadsVentaGridN1.appendChild(buildLeadVentaCard(l, '2', numeros.get(claveLeadVenta(l)))));
 
     if(n2.length === 0){
       emptyLeadsVentaN2.textContent = 'Sin leads en Nivel 2.';
@@ -3988,32 +4012,92 @@
         groupTitle.className = 'leads-group-title';
         groupTitle.textContent = grupo;
         leadsVentaGridN2.appendChild(groupTitle);
-        enGrupo.forEach(l => leadsVentaGridN2.appendChild(buildLeadVentaCard(l, '1')));
+        enGrupo.forEach(l => leadsVentaGridN2.appendChild(buildLeadVentaCard(l, '1', numeros.get(claveLeadVenta(l)))));
       });
     }
   }
 
-  function buildLeadVentaCard(l, moveTarget){
+  function calcularBarometroVenta(l){
+    // Cuanto más completas y "positivas" las respuestas de la fase de
+    // investigación, más puntos — esto es lo que pinta la tarjeta de verde.
+    let puntos = 0;
+    if((l['InvBuscan'] || '').toString().trim()) puntos += 1;
+    if((l['InvPara'] || '').toString().trim()) puntos += 1;
+    if((l['InvPresupuesto'] || '').toString().trim()) puntos += 1;
+    const hip = (l['InvHipoteca'] || '').toString().trim();
+    if(hip === 'Sí') puntos += 2;
+    else if(hip === 'En trámite') puntos += 1;
+    const urg = (l['InvUrgencia'] || '').toString().trim();
+    if(urg === 'Inmediata') puntos += 2;
+    else if(urg === '1-3 meses') puntos += 1;
+    const maximo = 7;
+    if(puntos <= 0) return { nivel: 0, puntos, maximo };
+    if(puntos <= 2) return { nivel: 1, puntos, maximo };
+    if(puntos <= 4) return { nivel: 2, puntos, maximo };
+    return { nivel: 3, puntos, maximo };
+  }
+
+  function buildLeadVentaCard(l, moveTarget, numeroEntrada){
     const card = document.createElement('div');
     let sema = l['Semáforo'] || '';
-    card.className = 'lead-card venta' + (sema ? ' semaforo-' + sema : '');
+    const baro = calcularBarometroVenta(l);
+    card.className = 'lead-card venta' + (sema ? ' semaforo-' + sema : '') + (baro.nivel > 0 ? ' baro-' + baro.nivel : '');
     const waPhone = String(l['Teléfono'] || '').replace(/[^0-9]/g, '');
     const horaLimpia = formatHoraVenta(l['Hora visita']);
     const visitaHtml = (l['Día visita'] || horaLimpia)
       ? `<div class="meta visita-programada">📅 Visita: <strong>${escVenta(l['Día visita'] || '')}</strong>${horaLimpia ? ` <span class="hora-pill">${escVenta(horaLimpia)}</span>` : ''}</div>`
       : '';
+    const invBuscan = (l['InvBuscan'] || '').toString();
+    const invPara = (l['InvPara'] || '').toString();
+    const invHipoteca = (l['InvHipoteca'] || '').toString();
+    const invPresupuesto = (l['InvPresupuesto'] || '').toString();
+    const invUrgencia = (l['InvUrgencia'] || '').toString();
     card.innerHTML = `
-      <div class="lead-number">€ Venta</div>
+      <div class="lead-number">€ Venta${numeroEntrada ? ' · #' + numeroEntrada : ''}${baro.nivel === 3 ? ' · <span class="baro-badge">🔥 Alto valor</span>' : ''}</div>
       <div class="name">${escVenta(l['Nombre'] || 'Sin nombre')}</div>
       <div class="meta">${l['Fecha'] ? formatDateVenta(l['Fecha']) : '—'} · ${escVenta(l['Teléfono'] || '—')}${l['Propiedad'] ? ' · ' + escVenta(l['Propiedad']) : ''}</div>
       ${l['Email'] ? `<div class="meta">✉️ ${escVenta(l['Email'])}</div>` : ''}
       ${visitaHtml}
       ${l['Mensaje'] ? `<div class="notes"><strong>Mensaje:</strong> ${escVenta(l['Mensaje'])}</div>` : ''}
-      <div class="actions">
+      <button class="inv-toggle" style="margin-top:9px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">🔍 Fase de investigación</button>
+      <div class="inv-box" style="margin-top:8px;display:none;">
+        <div class="add-piso-field" style="margin-bottom:8px;">
+          <label style="margin-bottom:4px;">¿Qué están buscando?</label>
+          <input type="text" class="inv-buscan" value="${escVenta(invBuscan)}" placeholder="Ej. piso 3 hab. con terraza, zona Sant Gervasi..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
+        </div>
+        <div class="add-piso-field" style="margin-bottom:8px;">
+          <label style="margin-bottom:4px;">¿Es para vosotros, una familia, una persona sola?</label>
+          <input type="text" class="inv-para" value="${escVenta(invPara)}" placeholder="Ej. pareja joven, familia con 2 hijos..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
+        </div>
+        <div class="add-piso-field" style="margin-bottom:8px;">
+          <label style="margin-bottom:4px;">¿Tenéis hipoteca aprobada?</label>
+          <select class="inv-hipoteca" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
+            <option value="" ${invHipoteca===''?'selected':''}>— Sin responder —</option>
+            <option value="Sí" ${invHipoteca==='Sí'?'selected':''}>Sí</option>
+            <option value="En trámite" ${invHipoteca==='En trámite'?'selected':''}>En trámite</option>
+            <option value="No" ${invHipoteca==='No'?'selected':''}>No</option>
+          </select>
+        </div>
+        <div class="add-piso-field" style="margin-bottom:8px;">
+          <label style="margin-bottom:4px;">¿Qué presupuesto manejáis?</label>
+          <input type="text" class="inv-presupuesto" value="${escVenta(invPresupuesto)}" placeholder="Ej. 300.000 - 350.000 €" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
+        </div>
+        <div class="add-piso-field" style="margin-bottom:0;">
+          <label style="margin-bottom:4px;">¿Para cuándo queréis comprar? (urgencia)</label>
+          <select class="inv-urgencia" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
+            <option value="" ${invUrgencia===''?'selected':''}>— Sin responder —</option>
+            <option value="Inmediata" ${invUrgencia==='Inmediata'?'selected':''}>Inmediata</option>
+            <option value="1-3 meses" ${invUrgencia==='1-3 meses'?'selected':''}>1-3 meses</option>
+            <option value="Más adelante" ${invUrgencia==='Más adelante'?'selected':''}>Más adelante</option>
+          </select>
+        </div>
+        <button class="inv-guardar-btn edit-reco-btn" style="width:auto;padding:8px 14px;margin-top:8px;margin-bottom:0;font-size:12px;">Guardar respuestas</button>
+      </div>
+      <div class="actions" style="margin-top:9px;">
         ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
         ${l['Propiedad'] ? '' : ''}
-        <button class="sema-toggle sema-verde ${sema==='verde'?'active-verde':''}">🟢 Habilitar</button>
-        <button class="sema-toggle sema-rojo ${sema==='rojo'?'active-rojo':''}">🔴 Descartar</button>
+        <button class="sema-toggle sema-verde ${sema==='verde'?'active-verde':''}">🟢 Responde</button>
+        <button class="sema-toggle sema-rojo ${sema==='rojo'?'active-rojo':''}">🔴 No responde</button>
       </div>
       <div class="actions" style="margin-top:8px;">
         <button class="move-btn">${moveTarget === '2' ? 'Pasar a Nivel 2 →' : '← Volver a Nivel 1'}</button>
@@ -4021,6 +4105,35 @@
         <button class="del-btn">Eliminar</button>
       </div>
     `;
+
+    const invBox = card.querySelector('.inv-box');
+    card.querySelector('.inv-toggle').addEventListener('click', ()=>{
+      const showing = invBox.style.display !== 'none';
+      invBox.style.display = showing ? 'none' : 'block';
+    });
+    card.querySelector('.inv-guardar-btn').addEventListener('click', async (e)=>{
+      const btn = e.currentTarget;
+      const cambios = {
+        InvBuscan: card.querySelector('.inv-buscan').value.trim(),
+        InvPara: card.querySelector('.inv-para').value.trim(),
+        InvHipoteca: card.querySelector('.inv-hipoteca').value,
+        InvPresupuesto: card.querySelector('.inv-presupuesto').value.trim(),
+        InvUrgencia: card.querySelector('.inv-urgencia').value
+      };
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+      try{
+        await fetch(APPS_SCRIPT_URL_VENTA, {
+          method:'POST', mode:'no-cors',
+          body: JSON.stringify(Object.assign({ action:'actualizar_investigacion_venta', fecha: l['Fecha'], telefono: l['Teléfono'] }, cambios))
+        });
+        Object.assign(l, cambios);
+        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], cambios);
+        renderLeadsVenta();
+      } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+      btn.disabled = false;
+      btn.textContent = 'Guardar respuestas';
+    });
 
     card.querySelector('.sema-verde').addEventListener('click', async (e)=>{
       const btn = e.currentTarget;
