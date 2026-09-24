@@ -1375,9 +1375,12 @@
       <div class="add-piso-field" style="margin-bottom:14px;"><label>Habitaciones (opcional)</label><input type="text" id="pvHabitaciones" placeholder="Ej. 3" style="max-width:160px;"></div>
       <div class="add-piso-field" style="margin-bottom:14px;"><label>Descripción (opcional)</label><textarea id="pvDescripcion" rows="3" placeholder="Notas sobre el piso: distribución, estado, orientación..."></textarea></div>
       <div class="add-piso-field" style="margin-bottom:14px;">
-        <label>Ubicación en el mapa (necesaria para que salga en el mapa público de venta)</label>
+        <label>Ubicación en el mapa (necesaria para que salga en el mapa público de venta — no hace falta que sea exacta, solo aproximada)</label>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button type="button" id="pvBuscarDireccion" class="edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12.5px;white-space:nowrap;">🔍 Buscar la dirección de arriba en el mapa</button>
+        </div>
         <div id="pvMapPicker" style="height:220px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:6px;cursor:crosshair;"></div>
-        <p style="font-size:12px;color:var(--muted,#8a8a8a);margin:0;">Toca el mapa para colocar el pin en la propiedad (puedes moverlo tocando otra vez). <span id="pvLatLngTxt">Sin ubicación seleccionada.</span></p>
+        <p style="font-size:12px;color:var(--muted,#8a8a8a);margin:0;">Pulsa "Buscar dirección" y coloca ahí el pin automáticamente; si no queda bien, tócalo en el mapa para ajustarlo (no hace falta precisión, solo que quede cerca). <span id="pvLatLngTxt">Sin ubicación seleccionada.</span></p>
         <input type="hidden" id="pvLat"><input type="hidden" id="pvLng">
       </div>
       <div id="pvUploadStatus" class="piso-upload-status"></div>
@@ -3529,12 +3532,106 @@
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap' }).addTo(pvMap);
     pvMap.on('click', (e)=> setPvLocation(e.latlng.lat, e.latlng.lng));
   }
-  function setPvLocation(lat, lng){
+  function setPvLocation(lat, lng, zoom){
     pvLat.value = lat.toFixed(6);
     pvLng.value = lng.toFixed(6);
     pvLatLngTxt.textContent = 'Ubicación: ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
     if(pvMarker){ pvMarker.setLatLng([lat, lng]); } else { pvMarker = L.marker([lat, lng]).addTo(pvMap); }
+    if(pvMap){ pvMap.setView([lat, lng], zoom || Math.max(pvMap.getZoom(), 16)); }
     checkAddPropVentaReady();
+  }
+
+  // Busca una dirección de forma aproximada (OpenStreetMap/Nominatim, gratis, sin API key)
+  // y coloca el pin ahí solo. No hace falta que sea exacta — el usuario puede
+  // luego tocar el mapa para ajustarlo si hace falta.
+  async function geocodarDireccion(direccion, btn, statusEl){
+    if(!direccion) { alert('Escribe primero la dirección arriba.'); return; }
+    const textoOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Buscando...';
+    try{
+      const q = encodeURIComponent(direccion + ', Barcelona, España');
+      const resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=es&q=' + q);
+      const results = await resp.json();
+      if(results && results.length > 0){
+        const lat = parseFloat(results[0].lat), lng = parseFloat(results[0].lon);
+        if(statusEl) statusEl(lat, lng);
+        return { lat, lng };
+      } else {
+        alert('No se encontró esa dirección. Prueba a escribirla de forma más simple (ej. "Calle Nación 48") o coloca el pin tocando el mapa.');
+      }
+    } catch(err){
+      alert('No se pudo buscar la dirección. Revisa tu conexión, o coloca el pin tocando el mapa.');
+    }
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  }
+
+  document.getElementById('pvBuscarDireccion').addEventListener('click', async ()=>{
+    ensurePvMap();
+    setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 50);
+    const btn = document.getElementById('pvBuscarDireccion');
+    await geocodarDireccion(pvDireccion.value.trim(), btn, (lat, lng)=> setPvLocation(lat, lng, 16));
+  });
+
+  // Automático: en cuanto Fer termina de escribir la dirección (sin tener que pulsar nada),
+  // se busca sola y se coloca el pin. El botón de arriba sigue disponible por si hay que
+  // repetir la búsqueda o la dirección no se encontró.
+  pvDireccion.addEventListener('blur', async ()=>{
+    const direccion = pvDireccion.value.trim();
+    if(!direccion || pvLat.value) return; // ya tiene ubicación o no hay nada que buscar
+    ensurePvMap();
+    setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 50);
+    await geocodarSilencioso(direccion, '').then(res=>{ if(res) setPvLocation(res.lat, res.lng, 16); });
+  });
+
+  // Versión "silenciosa" de la búsqueda de dirección: sin alerts ni botones, para
+  // usar en segundo plano (autocompletar ubicación de propiedades ya existentes,
+  // o al escribir la dirección al dar de alta una nueva).
+  async function geocodarSilencioso(direccion, extra){
+    if(!direccion) return null;
+    try{
+      const q = encodeURIComponent(direccion + (extra ? (', ' + extra) : '') + ', Barcelona, España');
+      const resp = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=es&q=' + q);
+      const results = await resp.json();
+      if(results && results.length > 0){
+        return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+      }
+    } catch(err){ /* se puede reintentar más adelante, a mano o en la próxima carga */ }
+    return null;
+  }
+
+  // Rellena solas, en segundo plano, las propiedades que ya existen en la hoja y
+  // todavía no tienen Lat/Lng — así Fer no tiene que entrar en cada una a mano.
+  // Va una por una y espera >1s entre cada búsqueda para no saturar el servicio
+  // gratuito de geocodificación (Nominatim/OpenStreetMap).
+  let autoGeoEnMarcha = false;
+  async function autoGeolocalizarPendientes(){
+    if(autoGeoEnMarcha) return;
+    autoGeoEnMarcha = true;
+    try{
+      const pendientes = cachedPropiedadesVenta.filter(p=>
+        String(p['Estado']||'').trim() !== 'Vendida' &&
+        !(p['Lat'] && p['Lng']) &&
+        String(p['Dirección']||'').trim() &&
+        !p.__geoIntentado
+      );
+      for(const p of pendientes){
+        p.__geoIntentado = true;
+        const res = await geocodarSilencioso(String(p['Dirección']).trim(), String(p['Barrio']||'').trim());
+        if(res){
+          try{
+            await fetch(APPS_SCRIPT_URL_VENTA, {
+              method:'POST', mode:'no-cors',
+              body: JSON.stringify({ action:'actualizar_ubicacion_propiedad_venta', direccion: p['Dirección'], link: p['Link'], lat: res.lat.toFixed(6), lng: res.lng.toFixed(6) })
+            });
+            p['Lat'] = res.lat.toFixed(6); p['Lng'] = res.lng.toFixed(6);
+            renderPropiedadesVentaCards();
+          } catch(err){ /* se reintentará en la próxima carga del panel */ }
+        }
+        await new Promise(r=>setTimeout(r, 1200)); // 1 búsqueda por segundo aprox., límite del servicio gratuito
+      }
+    } finally { autoGeoEnMarcha = false; }
   }
 
   let uploadedPropVentaImageUrls = []; // todas las fotos subidas; la primera es la de portada
@@ -3657,6 +3754,7 @@
       cachedPropiedadesVenta = json.data;
       renderPropiedadesVentaCards();
       populateLvPropiedadSelect();
+      autoGeolocalizarPendientes(); // rellena en segundo plano las que no tengan ubicación aún
     } catch(err){
       loadingPropVenta.style.display = 'none';
       emptyPropVenta.textContent = 'No se pudo conectar con la hoja.';
@@ -3728,9 +3826,10 @@
           </div>
           <button class="pv-ubic-toggle" style="margin-top:6px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">✎ ${(p['Lat'] && p['Lng']) ? 'Editar ubicación' : 'Falta ubicación en el mapa · añadir'}</button>
           <div class="add-piso-field pv-ubic-box" style="margin-top:8px;margin-bottom:0;display:none;">
-            <label style="margin-bottom:4px;">Ubicación en el mapa</label>
+            <label style="margin-bottom:4px;">Ubicación en el mapa (aproximada, no hace falta exacta)</label>
+            <button type="button" class="pv-ubic-buscar edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:8px;font-size:12.5px;">🔍 Buscar "${escVenta(p['Dirección'] || '')}" en el mapa</button>
             <div class="pv-ubic-map" style="height:180px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:6px;cursor:crosshair;"></div>
-            <p class="pv-ubic-txt" style="font-size:12px;color:var(--muted,#8a8a8a);margin:0 0 6px;">${(p['Lat'] && p['Lng']) ? ('Ubicación: ' + p['Lat'] + ', ' + p['Lng']) : 'Toca el mapa para colocar el pin.'}</p>
+            <p class="pv-ubic-txt" style="font-size:12px;color:var(--muted,#8a8a8a);margin:0 0 6px;">${(p['Lat'] && p['Lng']) ? ('Ubicación: ' + p['Lat'] + ', ' + p['Lng']) : 'Pulsa "Buscar" o toca el mapa para colocar el pin.'}</p>
             <button class="pv-ubic-guardar edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12px;" disabled>Guardar ubicación</button>
           </div>
           ${descripcion ? `<button class="pv-desc-toggle" style="margin-top:6px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">✎ Ver descripción</button>
@@ -3779,7 +3878,15 @@
       const pvUbicMapDiv = card.querySelector('.pv-ubic-map');
       const pvUbicTxt = card.querySelector('.pv-ubic-txt');
       const pvUbicGuardar = card.querySelector('.pv-ubic-guardar');
+      const pvUbicBuscar = card.querySelector('.pv-ubic-buscar');
       let cardMap = null, cardMarker = null, cardLat = p['Lat'] || null, cardLng = p['Lng'] || null;
+      function setCardLocation(lat, lng, zoom){
+        cardLat = lat.toFixed(6); cardLng = lng.toFixed(6);
+        pvUbicTxt.textContent = 'Ubicación: ' + cardLat + ', ' + cardLng;
+        if(cardMarker){ cardMarker.setLatLng([lat, lng]); } else { cardMarker = L.marker([lat, lng]).addTo(cardMap); }
+        if(cardMap) cardMap.setView([lat, lng], zoom || Math.max(cardMap.getZoom(), 16));
+        pvUbicGuardar.disabled = false;
+      }
       pvUbicToggle.addEventListener('click', ()=>{
         const showing = pvUbicBox.style.display !== 'none';
         pvUbicBox.style.display = showing ? 'none' : 'block';
@@ -3790,17 +3897,18 @@
               cardMap = L.map(pvUbicMapDiv, { zoomControl:true }).setView([startLat, startLng], cardLat ? 15 : 13);
               L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'&copy; OpenStreetMap' }).addTo(cardMap);
               if(cardLat && cardLng){ cardMarker = L.marker([parseFloat(cardLat), parseFloat(cardLng)]).addTo(cardMap); }
-              cardMap.on('click', (e)=>{
-                cardLat = e.latlng.lat.toFixed(6); cardLng = e.latlng.lng.toFixed(6);
-                pvUbicTxt.textContent = 'Ubicación: ' + cardLat + ', ' + cardLng;
-                if(cardMarker){ cardMarker.setLatLng(e.latlng); } else { cardMarker = L.marker(e.latlng).addTo(cardMap); }
-                pvUbicGuardar.disabled = false;
-              });
+              cardMap.on('click', (e)=> setCardLocation(e.latlng.lat, e.latlng.lng));
             }
             cardMap.invalidateSize();
           }, 150);
         }
       });
+      if(pvUbicBuscar){
+        pvUbicBuscar.addEventListener('click', async ()=>{
+          if(!cardMap){ pvUbicToggle.click(); await new Promise(r=>setTimeout(r, 200)); }
+          await geocodarDireccion(p['Dirección'], pvUbicBuscar, (lat, lng)=> setCardLocation(lat, lng, 16));
+        });
+      }
       pvUbicGuardar.addEventListener('click', async (e)=>{
         const btn = e.currentTarget;
         btn.disabled = true;
