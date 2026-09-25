@@ -1348,6 +1348,7 @@
           <button type="button" class="choice-btn">Otro</button>
         </div>
       </div>
+      <div class="add-piso-field" id="fechaOtroField" style="display:none;margin-bottom:14px;"><label>Fecha</label><input type="date" id="fechaOtro"></div>
       <div class="add-piso-field" style="margin-bottom:14px;"><label>Hora de la visita</label><input type="time" id="lHoraVisita"></div>
       <button id="addLeadBtn" class="add-piso-btn" disabled>Añadir lead</button>
       <button id="cancelLeadEditBtn" class="edit-reco-btn" style="display:none;">Cancelar edición</button>
@@ -1449,41 +1450,46 @@
     <div class="cards-grid" id="propVentaGrid" style="margin-bottom:28px;"></div>
     <div class="empty-state" id="emptyPropVenta" style="display:none;margin-bottom:28px;">Todavía no has añadido ninguna propiedad en venta. Añade una arriba (foto + dirección) para poder asociarle leads.</div>
 
-    <!-- Pegar contacto de Idealista -->
-    <div class="paste-idealista-box">
-      <div class="paste-idealista-label">📋 Pega aquí el contacto de Idealista</div>
-      <textarea id="pasteIdealista" placeholder="Pega aquí tal cual el nombre, teléfono+email y mensaje que te llega de Idealista..."></textarea>
-      <p class="paste-hint">Se rellenan solos el nombre, el teléfono, el email y el mensaje abajo. Revisa, elige la propiedad y guarda.</p>
-      <div id="pasteStatus" class="paste-status"></div>
-    </div>
+    <button id="toggleAddLeadVentaBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;margin-bottom:16px;">+ Añadir lead de venta a mano</button>
 
-    <div class="add-piso-card" id="addLeadVentaCard">
-      <div class="reco-row-2">
-        <div class="add-piso-field"><label>Nombre</label><input type="text" id="lvNombre"></div>
-        <div class="add-piso-field"><label>Teléfono</label><input type="text" id="lvTelefono"></div>
+    <div id="addLeadVentaWrapper" style="display:none;">
+      <!-- Pegar contacto de Idealista -->
+      <div class="paste-idealista-box">
+        <div class="paste-idealista-label">📋 Pega aquí el contacto de Idealista</div>
+        <textarea id="pasteIdealista" placeholder="Pega aquí tal cual el nombre, teléfono+email y mensaje que te llega de Idealista..."></textarea>
+        <p class="paste-hint">Se rellenan solos el nombre, el teléfono, el email y el mensaje abajo. Revisa, elige la propiedad y guarda.</p>
+        <div id="pasteStatus" class="paste-status"></div>
       </div>
-      <div class="reco-row-2">
-        <div class="add-piso-field"><label>Email</label><input type="text" id="lvEmail"></div>
+
+      <div class="add-piso-card" id="addLeadVentaCard">
+        <div class="reco-row-2">
+          <div class="add-piso-field"><label>Nombre</label><input type="text" id="lvNombre"></div>
+          <div class="add-piso-field"><label>Teléfono</label><input type="text" id="lvTelefono"></div>
+        </div>
+        <div class="reco-row-2">
+          <div class="add-piso-field"><label>Email</label><input type="text" id="lvEmail"></div>
+          <div class="add-piso-field">
+            <label>Propiedad de interés</label>
+            <select id="lvPropiedad" class="piso-select">
+              <option value="">Sin seleccionar</option>
+            </select>
+          </div>
+        </div>
+        <div class="add-piso-field" style="margin-bottom:14px;"><label>Mensaje</label><textarea id="lvMensaje" rows="2"></textarea></div>
         <div class="add-piso-field">
-          <label>Propiedad de interés</label>
-          <select id="lvPropiedad" class="piso-select">
-            <option value="">Sin seleccionar</option>
-          </select>
+          <label>Día de la visita <span style="color:var(--muted);font-weight:400;text-transform:none;">(necesario para pasar a Nivel 2)</span></label>
+          <div class="choice-group" id="diaVisitaVentaGroup">
+            <button type="button" class="choice-btn">Hoy</button>
+            <button type="button" class="choice-btn">Mañana</button>
+            <button type="button" class="choice-btn">Otro</button>
+          </div>
         </div>
+        <div class="add-piso-field" id="lvFechaOtroField" style="display:none;margin-bottom:14px;"><label>Fecha</label><input type="date" id="lvFechaOtro"></div>
+        <div class="add-piso-field" style="margin-bottom:14px;"><label>Hora de la visita</label><input type="time" id="lvHoraVisita"></div>
+        <button id="addLeadVentaBtn" class="add-piso-btn" disabled>Añadir lead de venta</button>
+        <button id="cancelLeadVentaEditBtn" class="edit-reco-btn" style="display:none;">Cancelar edición</button>
+        <p class="piso-hint" id="leadVentaHint">Escribe al menos el nombre y el teléfono (o pega el contacto arriba).</p>
       </div>
-      <div class="add-piso-field" style="margin-bottom:14px;"><label>Mensaje</label><textarea id="lvMensaje" rows="2"></textarea></div>
-      <div class="add-piso-field">
-        <label>Día de la visita <span style="color:var(--muted);font-weight:400;text-transform:none;">(necesario para pasar a Nivel 2)</span></label>
-        <div class="choice-group" id="diaVisitaVentaGroup">
-          <button type="button" class="choice-btn">Hoy</button>
-          <button type="button" class="choice-btn">Mañana</button>
-          <button type="button" class="choice-btn">Otro</button>
-        </div>
-      </div>
-      <div class="add-piso-field" style="margin-bottom:14px;"><label>Hora de la visita</label><input type="time" id="lvHoraVisita"></div>
-      <button id="addLeadVentaBtn" class="add-piso-btn" disabled>Añadir lead de venta</button>
-      <button id="cancelLeadVentaEditBtn" class="edit-reco-btn" style="display:none;">Cancelar edición</button>
-      <p class="piso-hint" id="leadVentaHint">Escribe al menos el nombre y el teléfono (o pega el contacto arriba).</p>
     </div>
 
     <p id="loadingLeadsVenta" class="section-desc">Cargando leads...</p>
@@ -2836,15 +2842,48 @@
   const emptyLeadsN1 = document.getElementById('emptyLeadsN1');
   const emptyLeadsN2 = document.getElementById('emptyLeadsN2');
 
+  // ---- Fecha específica cuando el día de la visita es "Otro" (Leads WhatsApp y Leads Idealista) ----
+  function formatFechaOtro(iso){
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso||'').trim());
+    if(!m) return iso || '';
+    return m[3] + '/' + m[2] + '/' + m[1];
+  }
+  function fechaOtroParaInput(s){
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s||'').trim());
+    if(!m) return '';
+    return m[3] + '-' + m[2] + '-' + m[1];
+  }
+  function parseFechaOtroDisplay(s){
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s||'').trim());
+    if(!m) return null;
+    return new Date(+m[3], +m[2]-1, +m[1]);
+  }
+  function grupoDeVisita(diaVisita){
+    return (diaVisita === 'Hoy' || diaVisita === 'Mañana') ? diaVisita : 'Otro';
+  }
+
   const lHoraVisita = document.getElementById('lHoraVisita');
   const diaVisitaGroup = document.getElementById('diaVisitaGroup');
+  const fechaOtroField = document.getElementById('fechaOtroField');
+  const fechaOtro = document.getElementById('fechaOtro');
   let diaVisitaSeleccionado = '';
   diaVisitaGroup.querySelectorAll('.choice-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       diaVisitaGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      diaVisitaSeleccionado = btn.textContent.trim();
+      const texto = btn.textContent.trim();
+      if(texto === 'Otro'){
+        fechaOtroField.style.display = 'block';
+        diaVisitaSeleccionado = fechaOtro.value ? formatFechaOtro(fechaOtro.value) : 'Otro';
+      } else {
+        fechaOtroField.style.display = 'none';
+        fechaOtro.value = '';
+        diaVisitaSeleccionado = texto;
+      }
     });
+  });
+  fechaOtro.addEventListener('change', ()=>{
+    diaVisitaSeleccionado = fechaOtro.value ? formatFechaOtro(fechaOtro.value) : 'Otro';
   });
 
   function checkLeadReady(){
@@ -2958,10 +2997,20 @@
     lPisoInteres.value = l['Piso interés'] || '';
     lNotas.value = l['Notas'] || '';
     lHoraVisita.value = formatHora(l['Hora visita']);
+    const diaGuardado = l['Día visita'] || '';
+    const esFechaEspecifica = diaGuardado && diaGuardado !== 'Hoy' && diaGuardado !== 'Mañana' && diaGuardado !== 'Otro';
     diaVisitaGroup.querySelectorAll('.choice-btn').forEach(b=>{
-      b.classList.toggle('active', b.textContent.trim() === l['Día visita']);
+      const texto = b.textContent.trim();
+      b.classList.toggle('active', esFechaEspecifica ? texto === 'Otro' : texto === diaGuardado);
     });
-    diaVisitaSeleccionado = l['Día visita'] || '';
+    if(esFechaEspecifica || diaGuardado === 'Otro'){
+      fechaOtroField.style.display = 'block';
+      fechaOtro.value = esFechaEspecifica ? fechaOtroParaInput(diaGuardado) : '';
+    } else {
+      fechaOtroField.style.display = 'none';
+      fechaOtro.value = '';
+    }
+    diaVisitaSeleccionado = diaGuardado;
     editingLeadFecha = l['Fecha'];
     addLeadBtn.textContent = 'Guardar cambios';
     cancelLeadEditBtn.style.display = 'block';
@@ -2973,6 +3022,7 @@
   function resetLeadForm(){
     lNombre.value = ''; lTelefono.value = ''; lPisoInteres.value = ''; lNotas.value = ''; lHoraVisita.value = '';
     diaVisitaGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+    fechaOtroField.style.display = 'none'; fechaOtro.value = '';
     diaVisitaSeleccionado = '';
     editingLeadFecha = null;
     addLeadBtn.textContent = 'Añadir lead';
@@ -3219,10 +3269,17 @@
       emptyLeadsN2.style.display = 'block';
     } else {
       ['Hoy','Mañana','Otro'].forEach(grupo=>{
-        const enGrupo = n2.filter(l => (l['Día visita'] || 'Otro') === grupo);
+        const enGrupo = n2.filter(l => grupoDeVisita(l['Día visita'] || 'Otro') === grupo);
         if(enGrupo.length === 0) return;
         if(grupo !== 'Otro'){
           enGrupo.sort((a,b) => (formatHora(a['Hora visita']) || '99:99').localeCompare(formatHora(b['Hora visita']) || '99:99'));
+        } else {
+          enGrupo.sort((a,b)=>{
+            const da = parseFechaOtroDisplay(a['Día visita']); const db = parseFechaOtroDisplay(b['Día visita']);
+            if(!da && !db) return (formatHora(a['Hora visita'])||'99:99').localeCompare(formatHora(b['Hora visita'])||'99:99');
+            if(!da) return 1; if(!db) return -1;
+            return da - db;
+          });
         }
         const groupTitle = document.createElement('div');
         groupTitle.className = 'leads-group-title';
@@ -4193,6 +4250,22 @@
     if([...sel.options].some(o=>o.value === current)) sel.value = current;
   }
 
+  // ---- Mostrar/ocultar el formulario de "Añadir lead de venta a mano" (igual que "+ Añadir propiedad") ----
+  const toggleAddLeadVentaBtn = document.getElementById('toggleAddLeadVentaBtn');
+  const addLeadVentaWrapper = document.getElementById('addLeadVentaWrapper');
+  function showAddLeadVentaCard(){
+    addLeadVentaWrapper.style.display = 'block';
+    toggleAddLeadVentaBtn.textContent = '– Ocultar formulario';
+  }
+  function hideAddLeadVentaCard(){
+    addLeadVentaWrapper.style.display = 'none';
+    toggleAddLeadVentaBtn.textContent = '+ Añadir lead de venta a mano';
+  }
+  toggleAddLeadVentaBtn.addEventListener('click', ()=>{
+    if(addLeadVentaWrapper.style.display === 'none') showAddLeadVentaCard();
+    else { hideAddLeadVentaCard(); resetLeadVentaForm(); }
+  });
+
   // ---- Pegar contacto de Idealista ----
   const pasteIdealista = document.getElementById('pasteIdealista');
   const pasteStatus = document.getElementById('pasteStatus');
@@ -4224,6 +4297,7 @@
       pasteStatus.textContent = '';
       return;
     }
+    showAddLeadVentaCard();
     lvNombre.value = parsed.nombre;
     if(parsed.telefono) lvTelefono.value = parsed.telefono;
     if(parsed.email) lvEmail.value = parsed.email;
@@ -4246,13 +4320,26 @@
   const diaVisitaVentaGroup = document.getElementById('diaVisitaVentaGroup');
   const cancelLeadVentaEditBtn = document.getElementById('cancelLeadVentaEditBtn');
 
+  const lvFechaOtroField = document.getElementById('lvFechaOtroField');
+  const lvFechaOtro = document.getElementById('lvFechaOtro');
   let diaVisitaVentaSeleccionado = '';
   diaVisitaVentaGroup.querySelectorAll('.choice-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       diaVisitaVentaGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      diaVisitaVentaSeleccionado = btn.textContent.trim();
+      const texto = btn.textContent.trim();
+      if(texto === 'Otro'){
+        lvFechaOtroField.style.display = 'block';
+        diaVisitaVentaSeleccionado = lvFechaOtro.value ? formatFechaOtro(lvFechaOtro.value) : 'Otro';
+      } else {
+        lvFechaOtroField.style.display = 'none';
+        lvFechaOtro.value = '';
+        diaVisitaVentaSeleccionado = texto;
+      }
     });
+  });
+  lvFechaOtro.addEventListener('change', ()=>{
+    diaVisitaVentaSeleccionado = lvFechaOtro.value ? formatFechaOtro(lvFechaOtro.value) : 'Otro';
   });
 
   function checkLeadVentaReady(){
@@ -4268,25 +4355,37 @@
     lvPropiedad.value = ''; lvHoraVisita.value = '';
     pasteIdealista.value = ''; pasteStatus.textContent = '';
     diaVisitaVentaGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+    lvFechaOtroField.style.display = 'none'; lvFechaOtro.value = '';
     diaVisitaVentaSeleccionado = '';
     editingLeadVentaFecha = null;
     addLeadVentaBtn.textContent = 'Añadir lead de venta';
     cancelLeadVentaEditBtn.style.display = 'none';
     checkLeadVentaReady();
   }
-  cancelLeadVentaEditBtn.addEventListener('click', resetLeadVentaForm);
+  cancelLeadVentaEditBtn.addEventListener('click', ()=>{ resetLeadVentaForm(); hideAddLeadVentaCard(); });
 
   function openLeadVentaEdit(l){
+    showAddLeadVentaCard();
     lvNombre.value = l['Nombre'] || '';
     lvTelefono.value = l['Teléfono'] || '';
     lvEmail.value = l['Email'] || '';
     lvMensaje.value = l['Mensaje'] || '';
     lvPropiedad.value = l['Propiedad'] || '';
     lvHoraVisita.value = formatHoraVenta(l['Hora visita']);
+    const diaGuardadoVenta = l['Día visita'] || '';
+    const esFechaEspecificaVenta = diaGuardadoVenta && diaGuardadoVenta !== 'Hoy' && diaGuardadoVenta !== 'Mañana' && diaGuardadoVenta !== 'Otro';
     diaVisitaVentaGroup.querySelectorAll('.choice-btn').forEach(b=>{
-      b.classList.toggle('active', b.textContent.trim() === l['Día visita']);
+      const texto = b.textContent.trim();
+      b.classList.toggle('active', esFechaEspecificaVenta ? texto === 'Otro' : texto === diaGuardadoVenta);
     });
-    diaVisitaVentaSeleccionado = l['Día visita'] || '';
+    if(esFechaEspecificaVenta || diaGuardadoVenta === 'Otro'){
+      lvFechaOtroField.style.display = 'block';
+      lvFechaOtro.value = esFechaEspecificaVenta ? fechaOtroParaInput(diaGuardadoVenta) : '';
+    } else {
+      lvFechaOtroField.style.display = 'none';
+      lvFechaOtro.value = '';
+    }
+    diaVisitaVentaSeleccionado = diaGuardadoVenta;
     editingLeadVentaFecha = l['Fecha'];
     addLeadVentaBtn.textContent = 'Guardar cambios';
     cancelLeadVentaEditBtn.style.display = 'block';
@@ -4317,6 +4416,7 @@
       await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
       resetLeadVentaForm();
       if(wasEditing){
+        hideAddLeadVentaCard();
         updateCachedLeadVentaByFecha(payload.fecha, {
           'Nombre': payload.nombre, 'Teléfono': payload.telefono, 'Email': payload.email,
           'Propiedad': payload.propiedad, 'Mensaje': payload.mensaje,
@@ -4609,10 +4709,17 @@
       emptyLeadsVentaN2.style.display = 'block';
     } else {
       ['Hoy','Mañana','Otro'].forEach(grupo=>{
-        const enGrupo = n2.filter(l => (l['Día visita'] || 'Otro') === grupo);
+        const enGrupo = n2.filter(l => grupoDeVisita(l['Día visita'] || 'Otro') === grupo);
         if(enGrupo.length === 0) return;
         if(grupo !== 'Otro'){
           enGrupo.sort((a,b)=> (formatHoraVenta(a['Hora visita']) || '99:99').localeCompare(formatHoraVenta(b['Hora visita']) || '99:99'));
+        } else {
+          enGrupo.sort((a,b)=>{
+            const da = parseFechaOtroDisplay(a['Día visita']); const db = parseFechaOtroDisplay(b['Día visita']);
+            if(!da && !db) return (formatHoraVenta(a['Hora visita'])||'99:99').localeCompare(formatHoraVenta(b['Hora visita'])||'99:99');
+            if(!da) return 1; if(!db) return -1;
+            return da - db;
+          });
         }
         const groupTitle = document.createElement('div');
         groupTitle.className = 'leads-group-title';
