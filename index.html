@@ -3621,6 +3621,17 @@
     d.textContent = s == null ? '' : String(s);
     return d.innerHTML;
   }
+  function formatPrecioVenta(valor){
+    // Convierte "100000" (o "100000 €", "100.000€", etc.) en "100.000€".
+    // Si no hay dígitos (texto libre tipo "A consultar"), se muestra tal cual.
+    const raw = (valor == null ? '' : String(valor)).trim();
+    if(!raw) return '';
+    const soloDigitos = raw.replace(/[^\d]/g, '');
+    if(!soloDigitos) return raw;
+    const numero = parseInt(soloDigitos, 10);
+    if(isNaN(numero)) return raw;
+    return numero.toLocaleString('es-ES') + '€';
+  }
   function openConfirmVenta(onConfirm, title, text){
     // Reutiliza el mismo popup de confirmación que el resto del panel.
     if(typeof openConfirm === 'function') return openConfirm(onConfirm, title, text);
@@ -4159,7 +4170,7 @@
       `;
       const precio = (p['Precio'] || '').toString().trim();
       const precioTag = precio
-        ? `<div class="venta-photo-scrim"></div><div class="venta-price-tag">${escVenta(precio)}</div>`
+        ? `<div class="venta-photo-scrim"></div><div class="venta-price-tag">${escVenta(formatPrecioVenta(precio))}</div>`
         : '';
       const barrio = (p['Barrio'] || '').toString().trim();
       const metros = (p['Metros'] || '').toString().trim();
