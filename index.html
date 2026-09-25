@@ -795,6 +795,15 @@
   }
   .venta-ribbon.reservada{background:#c97a1e;}
   .venta-ribbon.vendida{background:var(--red);}
+  /* Origen del piso (uso interno, nunca sale en el mapa público): cinta naranja
+     "APIALIA" en la esquina opuesta a la de Reservada/Vendida cuando es de
+     colaboración, o una estrellita verde discreta cuando es propio de AG Núñez. */
+  .venta-ribbon.apialia{left:auto;right:-38px;top:16px;transform:rotate(40deg);background:#ff8c1a;}
+  .venta-origen-star{
+    position:absolute;top:10px;right:10px;z-index:2;background:#1f8f4e;color:#fff;
+    font-family:'Inter',sans-serif;font-weight:700;font-size:11px;padding:4px 9px;
+    border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,0.28);
+  }
   .propiedad-venta-card.vendida img{filter:grayscale(0.5);opacity:0.75;}
   .propiedad-venta-card.vendida .body{opacity:0.85;}
   .venta-photo-scrim{
@@ -1412,6 +1421,13 @@
           <button type="button" class="choice-btn" data-subtipo="Local">🏬 Local</button>
         </div>
       </div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Origen <span style="color:var(--muted);font-weight:400;text-transform:none;">(uso interno tuyo — nunca se muestra en el mapa público)</span></label>
+        <div class="choice-group" id="pvOrigenGroup">
+          <button type="button" class="choice-btn active" data-origen="AGN">⭐ AG Núñez (propio)</button>
+          <button type="button" class="choice-btn" data-origen="Apialia">🤝 Apialia (colaboración)</button>
+        </div>
+      </div>
       <div class="add-piso-row">
         <div class="add-piso-field"><label>Dirección</label><input type="text" id="pvDireccion" placeholder="Ej. Aribau 218, 3r 1a"></div>
         <div class="add-piso-field"><label>Fotos (puedes elegir varias)</label><input type="file" id="pvFoto" accept="image/*" multiple></div>
@@ -1444,6 +1460,7 @@
       </div>
       <div id="pvUploadStatus" class="piso-upload-status"></div>
       <button id="addPropVentaBtn" class="add-piso-btn" disabled>Añadir propiedad</button>
+      <button id="pvCancelEditBtn" class="edit-reco-btn" style="display:none;">Cancelar edición</button>
       <p class="piso-hint" id="pvHint">Escribe la dirección, sube una foto y coloca el pin en el mapa para poder añadirla.</p>
     </div>
     <p id="loadingPropVenta" class="section-desc">Cargando propiedades...</p>
@@ -3653,9 +3670,15 @@
 
   togglePropVentaBtn.addEventListener('click', ()=>{
     const showing = addPropVentaCard.style.display !== 'none';
-    addPropVentaCard.style.display = showing ? 'none' : 'block';
-    togglePropVentaBtn.textContent = showing ? '+ Añadir propiedad en venta' : '– Ocultar formulario';
-    if(!showing){ ensurePvMap(); setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 150); }
+    if(showing){
+      addPropVentaCard.style.display = 'none';
+      togglePropVentaBtn.textContent = '+ Añadir propiedad en venta';
+      resetPvAddForm();
+    } else {
+      addPropVentaCard.style.display = 'block';
+      togglePropVentaBtn.textContent = '– Ocultar formulario';
+      ensurePvMap(); setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 150);
+    }
   });
 
   // ---- Filtro Venta/Alquiler del catálogo de propiedades ----
@@ -3727,6 +3750,21 @@
     pvSubtipoGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.toggle('active', b.dataset.subtipo === 'Vivienda'));
     pvFianza.value = ''; pvGastosIbi.value = ''; pvTipoNegocio.value = '';
     actualizarCamposPorOperacion();
+  }
+
+  // ---- Origen (AG Núñez propio / colaboración Apialia) — solo uso interno ----
+  const pvOrigenGroup = document.getElementById('pvOrigenGroup');
+  let pvOrigenSeleccionado = 'AGN';
+  pvOrigenGroup.querySelectorAll('.choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      pvOrigenGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      pvOrigenSeleccionado = btn.dataset.origen;
+    });
+  });
+  function resetPvOrigenForm(){
+    pvOrigenSeleccionado = 'AGN';
+    pvOrigenGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.toggle('active', b.dataset.origen === 'AGN'));
   }
 
   // ---- Selector de ubicación (lat/lng) para el mapa público de venta ----
@@ -3921,6 +3959,86 @@
     }
   }
 
+  // ---- Edición completa de una propiedad ya existente (Idealista: venta y alquiler) ----
+  const pvCancelEditBtn = document.getElementById('pvCancelEditBtn');
+  let editingPropVentaOriginal = null; // { direccion, link } de la propiedad que se está editando
+
+  function resetPvAddForm(){
+    pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = '';
+    pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
+    uploadedPropVentaImageUrls = [];
+    pvUploadStatus.textContent = ''; pvUploadStatus.className = 'piso-upload-status';
+    pvLat.value = ''; pvLng.value = '';
+    pvLatLngTxt.textContent = 'Sin ubicación seleccionada.';
+    pvBuscarTexto.value = ''; mostrarPvBuscarEstado('');
+    if(pvMarker && pvMap){ pvMap.removeLayer(pvMarker); pvMarker = null; }
+    pvHint.textContent = 'Escribe la dirección, sube una foto y coloca el pin en el mapa para poder añadirla.';
+    resetPvOperacionForm();
+    resetPvOrigenForm();
+    editingPropVentaOriginal = null;
+    addPropVentaBtn.textContent = 'Añadir propiedad';
+    pvCancelEditBtn.style.display = 'none';
+    addPropVentaBtn.disabled = true;
+  }
+
+  function openPropVentaEdit(p){
+    addPropVentaCard.style.display = 'block';
+    togglePropVentaBtn.textContent = '– Ocultar formulario';
+    ensurePvMap();
+    setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 150);
+
+    pvDireccion.value = p['Dirección'] || '';
+    pvLink.value = p['Link'] || '';
+    pvPrecio.value = p['Precio'] || '';
+    pvBarrio.value = p['Barrio'] || '';
+    pvMetros.value = p['Metros'] || '';
+    pvHabitaciones.value = p['Habitaciones'] || '';
+    pvDescripcion.value = p['Descripción'] || '';
+
+    const operacion = (p['Operación'] || 'Venta').trim() || 'Venta';
+    pvOperacionSeleccionada = operacion;
+    pvOperacionGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.toggle('active', b.dataset.operacion === operacion));
+    const subtipo = (p['Subtipo'] || 'Vivienda').trim() || 'Vivienda';
+    pvSubtipoSeleccionado = subtipo;
+    pvSubtipoGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.toggle('active', b.dataset.subtipo === subtipo));
+    pvFianza.value = p['Fianza'] || '';
+    pvGastosIbi.value = p['GastosIbi'] || '';
+    pvTipoNegocio.value = p['TipoNegocio'] || '';
+    actualizarCamposPorOperacion();
+
+    const origen = (p['Colaboracion'] || '').trim() === 'Apialia' ? 'Apialia' : 'AGN';
+    pvOrigenSeleccionado = origen;
+    pvOrigenGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.toggle('active', b.dataset.origen === origen));
+
+    uploadedPropVentaImageUrls = (p['Fotos'] || '').toString().split('|').map(s=>s.trim()).filter(Boolean);
+    if(uploadedPropVentaImageUrls.length === 0 && p['Imagen']) uploadedPropVentaImageUrls = [p['Imagen']];
+    pvUploadStatus.textContent = uploadedPropVentaImageUrls.length ? uploadedPropVentaImageUrls.length + ' foto(s) ya guardada(s) — sube nuevas para sustituirlas' : '';
+    pvUploadStatus.className = 'piso-upload-status ok';
+
+    if(ubicacionValida(p['Lat'], p['Lng'])){
+      const latN = parseFloat(p['Lat']), lngN = parseFloat(p['Lng']);
+      pvLat.value = latN.toFixed(6); pvLng.value = lngN.toFixed(6);
+      pvLatLngTxt.textContent = 'Ubicación: ' + latN.toFixed(5) + ', ' + lngN.toFixed(5);
+      setTimeout(()=>{ setPvLocation(latN, lngN, 15); }, 200);
+    } else {
+      pvLat.value = ''; pvLng.value = '';
+      pvLatLngTxt.textContent = 'Sin ubicación seleccionada.';
+    }
+    pvBuscarTexto.value = ''; mostrarPvBuscarEstado('');
+
+    editingPropVentaOriginal = { direccion: p['Dirección'], link: p['Link'] };
+    addPropVentaBtn.textContent = 'Guardar cambios';
+    pvCancelEditBtn.style.display = 'block';
+    checkAddPropVentaReady();
+    addPropVentaCard.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  pvCancelEditBtn.addEventListener('click', ()=>{
+    resetPvAddForm();
+    addPropVentaCard.style.display = 'none';
+    togglePropVentaBtn.textContent = '+ Añadir propiedad en venta';
+  });
+
   addPropVentaBtn.addEventListener('click', async ()=>{
     const direccion = pvDireccion.value.trim();
     const link = pvLink.value.trim();
@@ -3936,39 +4054,39 @@
     const fianza = operacion === 'Alquiler' ? pvFianza.value.trim() : '';
     const gastosIbi = operacion === 'Alquiler' ? pvGastosIbi.value.trim() : '';
     const tipoNegocio = (operacion === 'Alquiler' && subtipo === 'Local') ? pvTipoNegocio.value.trim() : '';
+    const colaboracion = pvOrigenSeleccionado === 'Apialia' ? 'Apialia' : '';
     if(!direccion || uploadedPropVentaImageUrls.length === 0 || !lat) return;
+    const wasEditingProp = !!editingPropVentaOriginal;
     addPropVentaBtn.disabled = true;
-    addPropVentaBtn.textContent = 'Añadiendo...';
+    addPropVentaBtn.textContent = wasEditingProp ? 'Guardando...' : 'Añadiendo...';
     try{
-      await fetch(APPS_SCRIPT_URL_VENTA, {
-        method:'POST', mode:'no-cors',
-        body: JSON.stringify({
-          action:'nueva_propiedad_venta',
-          direccion: direccion,
-          imagen: uploadedPropVentaImageUrls[0],
-          fotos: uploadedPropVentaImageUrls.join('|'),
-          link: link, precio: precio,
-          barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
-          lat: lat, lng: lng,
-          operacion: operacion, subtipo: subtipo, fianza: fianza, gastosIbi: gastosIbi, tipoNegocio: tipoNegocio
-        })
-      });
-      pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = '';
-      pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
-      uploadedPropVentaImageUrls = [];
-      pvUploadStatus.textContent = '';
-      pvLat.value = ''; pvLng.value = '';
-      pvLatLngTxt.textContent = 'Sin ubicación seleccionada.';
-      pvBuscarTexto.value = ''; mostrarPvBuscarEstado('');
-      if(pvMarker && pvMap){ pvMap.removeLayer(pvMarker); pvMarker = null; }
-      pvHint.textContent = 'Escribe la dirección, sube una foto y coloca el pin en el mapa para poder añadirla.';
-      resetPvOperacionForm();
+      const payload = {
+        action: wasEditingProp ? 'actualizar_propiedad_venta' : 'nueva_propiedad_venta',
+        direccion: direccion,
+        imagen: uploadedPropVentaImageUrls[0],
+        fotos: uploadedPropVentaImageUrls.join('|'),
+        link: link, precio: precio,
+        barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
+        lat: lat, lng: lng,
+        operacion: operacion, subtipo: subtipo, fianza: fianza, gastosIbi: gastosIbi, tipoNegocio: tipoNegocio,
+        colaboracion: colaboracion
+      };
+      if(wasEditingProp){
+        payload.direccionOriginal = editingPropVentaOriginal.direccion;
+        payload.linkOriginal = editingPropVentaOriginal.link;
+      }
+      await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
+      resetPvAddForm();
+      if(wasEditingProp){
+        addPropVentaCard.style.display = 'none';
+        togglePropVentaBtn.textContent = '+ Añadir propiedad en venta';
+      }
       await loadPropiedadesVenta();
     } catch(err){
-      alert('No se pudo añadir la propiedad. Revisa tu conexión.');
+      alert('No se pudo guardar. Revisa tu conexión.');
+      addPropVentaBtn.disabled = false;
+      addPropVentaBtn.textContent = wasEditingProp ? 'Guardar cambios' : 'Añadir propiedad';
     }
-    addPropVentaBtn.textContent = 'Añadir propiedad';
-    addPropVentaBtn.disabled = true;
   });
 
   let cachedPropiedadesVenta = [];
@@ -4025,6 +4143,12 @@
         : estado === 'Reservada'
           ? `<div class="venta-ribbon reservada">Reservada</div>`
           : '';
+      // Origen (uso interno, nunca en el mapa público): cinta naranja "APIALIA"
+      // si es colaboración, o una estrellita verde si es propio de AG Núñez.
+      const esApialia = (p['Colaboracion'] || '').trim() === 'Apialia';
+      const origenBadge = esApialia
+        ? `<div class="venta-ribbon apialia">Apialia</div>`
+        : `<span class="venta-origen-star">⭐ AG Núñez</span>`;
       // Una vez vendida, ya no se puede tocar el estado — solo eliminar.
       const estadoBotones = estado === 'Vendida' ? '' : `
         <div class="estado-venta-group">
@@ -4063,6 +4187,7 @@
         <div class="venta-photo-wrap">
           <img src="${p['Imagen'] || ''}" alt="${escVenta(p['Dirección'] || '')}">
           ${ribbon}
+          ${origenBadge}
           ${precioTag}
         </div>
         <div class="body">
@@ -4095,10 +4220,12 @@
           <div class="pv-desc-box" style="margin-top:6px;display:none;font-size:12.5px;color:var(--text,#444);line-height:1.4;white-space:pre-wrap;">${escVenta(descripcion)}</div>` : ''}
           <div class="actions" style="margin-top:9px;">
             ${p['Link'] ? `<a class="idealista-link" href="${p['Link']}" target="_blank" rel="noopener">Ver en Idealista</a>` : ''}
+            <button class="pv-editar-btn edit-reco-btn" style="flex:1;width:auto;margin-top:0;">✎ Editar propiedad</button>
             <button class="delete-piso-btn" style="flex:1;">Eliminar</button>
           </div>
         </div>
       `;
+      card.querySelector('.pv-editar-btn').addEventListener('click', ()=> openPropVentaEdit(p));
       const pvDescToggle = card.querySelector('.pv-desc-toggle');
       if(pvDescToggle){
         pvDescToggle.addEventListener('click', ()=>{
