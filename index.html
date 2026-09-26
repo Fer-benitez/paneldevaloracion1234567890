@@ -492,6 +492,7 @@
   .sema-toggle:hover{border-color:var(--navy) !important;}
   .sema-toggle.active-verde{background:#e5f3ec;color:var(--green);border-color:var(--green) !important;}
   .sema-toggle.active-rojo{background:#fbeaea;color:var(--red);border-color:var(--red) !important;}
+  .sema-toggle.active-amarillo{background:#fff3d6;color:#8a5a00;border-color:#e0a41a !important;}
   .lead-card .saludo-btn.pendiente{background:#f5a623;color:#4a3200;}
   .lead-card .saludo-btn.pendiente:hover{background:#e0951a;}
   .lead-card .saludo-btn.enviado{background:#e5f3ec;color:var(--green);}
@@ -841,6 +842,7 @@
   .lead-card.venta .name{color:#4a3b0e;}
   .lead-card.venta.semaforo-verde{border-left-color:var(--green);}
   .lead-card.venta.semaforo-rojo{border-left-color:var(--red);}
+  .lead-card.venta.semaforo-amarillo{border-left-color:#e0a41a;}
   .lead-card.venta .move-btn{background:var(--gold-dark);}
   .lead-card.venta .move-btn:hover{background:#6e5710;}
   .lead-card.venta .lead-number{background:var(--gold-dark);}
@@ -5064,6 +5066,7 @@
       <div class="actions" style="margin-top:8px;">
         <button class="sema-toggle sema-verde ${sema==='verde'?'active-verde':''}">🟢 Responde</button>
         <button class="sema-toggle sema-rojo ${sema==='rojo'?'active-rojo':''}">🔴 No responde</button>
+        <button class="sema-toggle sema-amarillo ${sema==='amarillo'?'active-amarillo':''}">🟡 Esperando</button>
       </div>
       <div class="actions" style="margin-top:8px;">
         ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
@@ -5219,36 +5222,24 @@
       });
     }
 
-    card.querySelector('.sema-verde').addEventListener('click', async (e)=>{
-      const btn = e.currentTarget;
+    async function aplicarSemaVenta(btn, valor){
       if(btn.disabled) return;
       btn.disabled = true;
-      const nuevo = sema === 'verde' ? '' : 'verde';
+      const nuevo = sema === valor ? '' : valor;
       try{
         await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_venta', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
         sema = nuevo; l['Semáforo'] = nuevo;
         updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'Semáforo': nuevo });
-        card.className = 'lead-card venta' + (esAlquilerLead ? ' alquiler' : '') + (sema ? ' semaforo-' + sema : '') + (selectModeVenta ? ' selecting' : '') + (card.classList.contains('select-checked') ? ' select-checked' : '');
+        card.className = 'lead-card venta' + (esAlquilerLead ? ' alquiler' : '') + (sema ? ' semaforo-' + sema : '') + (selectModeVenta ? ' selecting' : '') + (card.classList.contains('select-checked') ? ' select-checked' : '') + (card.classList.contains('visita-hecha') ? ' visita-hecha' : '') + (card.classList.contains('colapsada') ? ' colapsada' : '');
         card.querySelector('.sema-verde').classList.toggle('active-verde', sema === 'verde');
         card.querySelector('.sema-rojo').classList.toggle('active-rojo', sema === 'rojo');
+        card.querySelector('.sema-amarillo').classList.toggle('active-amarillo', sema === 'amarillo');
       } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
       btn.disabled = false;
-    });
-    card.querySelector('.sema-rojo').addEventListener('click', async (e)=>{
-      const btn = e.currentTarget;
-      if(btn.disabled) return;
-      btn.disabled = true;
-      const nuevo = sema === 'rojo' ? '' : 'rojo';
-      try{
-        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_semaforo_venta', fecha: l['Fecha'], telefono: l['Teléfono'], semaforo: nuevo }) });
-        sema = nuevo; l['Semáforo'] = nuevo;
-        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'Semáforo': nuevo });
-        card.className = 'lead-card venta' + (esAlquilerLead ? ' alquiler' : '') + (sema ? ' semaforo-' + sema : '') + (selectModeVenta ? ' selecting' : '') + (card.classList.contains('select-checked') ? ' select-checked' : '');
-        card.querySelector('.sema-verde').classList.toggle('active-verde', sema === 'verde');
-        card.querySelector('.sema-rojo').classList.toggle('active-rojo', sema === 'rojo');
-      } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
-      btn.disabled = false;
-    });
+    }
+    card.querySelector('.sema-verde').addEventListener('click', (e)=> aplicarSemaVenta(e.currentTarget, 'verde'));
+    card.querySelector('.sema-rojo').addEventListener('click', (e)=> aplicarSemaVenta(e.currentTarget, 'rojo'));
+    card.querySelector('.sema-amarillo').addEventListener('click', (e)=> aplicarSemaVenta(e.currentTarget, 'amarillo'));
 
     card.querySelector('.move-btn').addEventListener('click', async (e)=>{
       const btn = e.currentTarget;
