@@ -492,6 +492,12 @@
   .sema-toggle:hover{border-color:var(--navy) !important;}
   .sema-toggle.active-verde{background:#e5f3ec;color:var(--green);border-color:var(--green) !important;}
   .sema-toggle.active-rojo{background:#fbeaea;color:var(--red);border-color:var(--red) !important;}
+  .lead-card .saludo-btn.pendiente{background:#f5a623;color:#4a3200;}
+  .lead-card .saludo-btn.pendiente:hover{background:#e0951a;}
+  .lead-card .saludo-btn.enviado{background:#e5f3ec;color:var(--green);}
+  .lead-card .saludo-btn.enviado:hover{background:#d5ebe0;}
+  .wa-enviado-check-label{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px;font-weight:600;color:var(--navy-dark);font-family:'Inter',sans-serif;cursor:pointer;}
+  .wa-enviado-check-label input{width:17px;height:17px;accent-color:var(--gold-dark);cursor:pointer;}
   .leads-group-title{
     font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;color:var(--navy);
     text-transform:uppercase;letter-spacing:0.05em;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--border);
@@ -1401,11 +1407,10 @@
     <p class="section-desc">Propiedades y leads que llegan por Idealista — tanto de venta como de alquiler (pisos y locales). Cada lead se trata según el tipo de la propiedad de la que viene. Empiezan en Nivel 1 — cuando confirmas la visita, los subes a Nivel 2 y se agenda solo en tu calendario de Google.</p>
 
     <!-- Catálogo de propiedades (venta y alquiler) -->
-    <div class="pv-filtro-operacion" style="display:flex;gap:8px;margin-bottom:16px;">
-      <button type="button" class="pv-filtro-btn pv-filtro-venta active" data-filtro="Venta">€ Venta</button>
-      <button type="button" class="pv-filtro-btn pv-filtro-alquiler active" data-filtro="Alquiler">🔑 Alquiler</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      <button id="togglePropVentaBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;">+ Añadir propiedad</button>
+      <button id="togglePropVentaListBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;">👁 Ver propiedades</button>
     </div>
-    <button id="togglePropVentaBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;margin-bottom:16px;">+ Añadir propiedad</button>
     <div class="add-piso-card" id="addPropVentaCard" style="display:none;">
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Operación</label>
@@ -1468,9 +1473,15 @@
       <button id="pvCancelEditBtn" class="edit-reco-btn" style="display:none;">Cancelar edición</button>
       <p class="piso-hint" id="pvHint">Escribe la dirección, sube una foto y coloca el pin en el mapa para poder añadirla.</p>
     </div>
-    <p id="loadingPropVenta" class="section-desc">Cargando propiedades...</p>
-    <div class="cards-grid" id="propVentaGrid" style="margin-bottom:28px;"></div>
-    <div class="empty-state" id="emptyPropVenta" style="display:none;margin-bottom:28px;">Todavía no has añadido ninguna propiedad en venta. Añade una arriba (foto + dirección) para poder asociarle leads.</div>
+    <div id="propVentaListWrapper" style="display:none;">
+      <div class="pv-filtro-operacion" style="display:flex;gap:8px;margin-bottom:16px;">
+        <button type="button" class="pv-filtro-btn pv-filtro-venta active" data-filtro="Venta">€ Venta</button>
+        <button type="button" class="pv-filtro-btn pv-filtro-alquiler active" data-filtro="Alquiler">🔑 Alquiler</button>
+      </div>
+      <p id="loadingPropVenta" class="section-desc">Cargando propiedades...</p>
+      <div class="cards-grid" id="propVentaGrid" style="margin-bottom:28px;"></div>
+      <div class="empty-state" id="emptyPropVenta" style="display:none;margin-bottom:28px;">Todavía no has añadido ninguna propiedad en venta. Añade una arriba (foto + dirección) para poder asociarle leads.</div>
+    </div>
 
     <button id="toggleAddLeadVentaBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;margin-bottom:16px;">+ Añadir lead de venta a mano</button>
 
@@ -3648,6 +3659,12 @@
     if(isNaN(d)) return val;
     return d.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric'});
   }
+  function formatFechaHoraVenta(val){
+    if(!val) return '';
+    const d = new Date(val);
+    if(isNaN(d)) return String(val);
+    return d.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric'}) + ' ' + d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+  }
   function formatHoraVenta(val){
     if(!val) return '';
     const str = String(val);
@@ -3694,6 +3711,20 @@
       addPropVentaCard.style.display = 'block';
       togglePropVentaBtn.textContent = '– Ocultar formulario';
       ensurePvMap(); setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 150);
+    }
+  });
+
+  // ---- Mostrar/ocultar el catálogo de propiedades (para no saturar la pantalla cuando no hace falta verlas) ----
+  const propVentaListWrapper = document.getElementById('propVentaListWrapper');
+  const togglePropVentaListBtn = document.getElementById('togglePropVentaListBtn');
+  togglePropVentaListBtn.addEventListener('click', ()=>{
+    const showing = propVentaListWrapper.style.display !== 'none';
+    if(showing){
+      propVentaListWrapper.style.display = 'none';
+      togglePropVentaListBtn.textContent = '👁 Ver propiedades';
+    } else {
+      propVentaListWrapper.style.display = 'block';
+      togglePropVentaListBtn.textContent = '🙈 Ocultar propiedades';
     }
   });
 
@@ -4924,6 +4955,7 @@
       : 'Hola {nombre}, soy Fer. Gracias por tu interés en el piso, ¿cuándo te vendría bien concretar una visita?';
     const mensajeWaCompuesto = plantillaWa.replace(/\{nombre\}/gi, (l['Nombre']||'').trim()).replace(/ {2,}/g, ' ').trim();
     const waEnviado = (l['WhatsappEnviado'] || '').trim() === 'Sí';
+    const waEnviadoFecha = (l['WhatsappEnviadoFecha'] || '').toString().trim();
     card.innerHTML = `
       <div class="lead-number">${esAlquilerLead ? '🔑 Alquiler' : '€ Venta'}${numeroEntrada ? ' · #' + numeroEntrada : ''}${baro.nivel === 3 ? ' · <span class="baro-badge">🔥 Alto valor</span>' : ''}</div>
       <label class="lead-select-check"><input type="checkbox" class="lead-checkbox"> Seleccionar</label>
@@ -4967,12 +4999,19 @@
         <button class="inv-guardar-btn edit-reco-btn" style="width:auto;padding:8px 14px;margin-top:8px;margin-bottom:0;font-size:12px;">Guardar respuestas</button>
       </div>
       <div class="actions" style="margin-top:9px;">
-        ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+        <button class="saludo-btn wa-msg-toggle ${waEnviado ? 'enviado' : 'pendiente'}">💬 Saludo</button>
+      </div>
+      <label class="wa-enviado-check-label">
+        <input type="checkbox" class="wa-enviado-check" ${waEnviado ? 'checked' : ''}> Mensaje enviado
+        <span class="wa-enviado-fecha" style="font-weight:400;color:var(--muted,#8a8a8a);${waEnviadoFecha ? '' : 'display:none;'}">${waEnviadoFecha ? '· ' + escVenta(formatFechaHoraVenta(waEnviadoFecha)) : ''}</span>
+      </label>
+      <div class="actions" style="margin-top:8px;">
         <button class="sema-toggle sema-verde ${sema==='verde'?'active-verde':''}">🟢 Responde</button>
         <button class="sema-toggle sema-rojo ${sema==='rojo'?'active-rojo':''}">🔴 No responde</button>
       </div>
-      <label class="lead-select-check" style="margin-top:8px;"><input type="checkbox" class="wa-enviado-check" ${waEnviado ? 'checked' : ''}> Mensaje de WhatsApp enviado</label>
-      <button class="wa-msg-toggle" style="margin-top:6px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">💬 Mensaje de WhatsApp</button>
+      <div class="actions" style="margin-top:8px;">
+        ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+      </div>
       <div class="add-piso-field wa-msg-box" style="margin-top:8px;margin-bottom:0;display:none;">
         <label style="margin-bottom:4px;">Mensaje a enviar (se rellena solo con el nombre del lead; puedes tocarlo antes de enviar)</label>
         <textarea class="wa-msg-textarea" rows="3" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(mensajeWaCompuesto)}</textarea>
@@ -5025,11 +5064,24 @@
     card.querySelector('.wa-enviado-check').addEventListener('change', async (e)=>{
       const cb = e.currentTarget;
       const nuevo = cb.checked;
+      const nuevaFecha = nuevo ? new Date().toISOString() : '';
       cb.disabled = true;
       try{
-        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_whatsapp_enviado_venta', fecha: l['Fecha'], telefono: l['Teléfono'], enviado: nuevo }) });
+        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_whatsapp_enviado_venta', fecha: l['Fecha'], telefono: l['Teléfono'], enviado: nuevo, fechaEnvio: nuevaFecha }) });
         l['WhatsappEnviado'] = nuevo ? 'Sí' : '';
-        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'WhatsappEnviado': nuevo ? 'Sí' : '' });
+        l['WhatsappEnviadoFecha'] = nuevaFecha;
+        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'WhatsappEnviado': nuevo ? 'Sí' : '', 'WhatsappEnviadoFecha': nuevaFecha });
+        const saludoBtn = card.querySelector('.saludo-btn');
+        saludoBtn.classList.toggle('enviado', nuevo);
+        saludoBtn.classList.toggle('pendiente', !nuevo);
+        const fechaSpan = card.querySelector('.wa-enviado-fecha');
+        if(nuevaFecha){
+          fechaSpan.textContent = '· ' + formatFechaHoraVenta(nuevaFecha);
+          fechaSpan.style.display = '';
+        } else {
+          fechaSpan.textContent = '';
+          fechaSpan.style.display = 'none';
+        }
       } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); cb.checked = !nuevo; }
       cb.disabled = false;
     });
