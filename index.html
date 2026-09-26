@@ -853,10 +853,18 @@
   .baro-badge{background:var(--green);color:#fff;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:700;letter-spacing:.02em;}
   /* Tarjeta de visita realizada (Leads Idealista) — se colapsa a una barra resumen: piso + fecha */
   .visita-resumen{display:none;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;}
+  .lead-card.venta.visita-hecha > .visita-resumen{display:flex;margin-bottom:2px;}
   .lead-card.venta.colapsada{padding:12px 16px;}
-  .lead-card.venta.colapsada > *{display:none;}
-  .lead-card.venta.colapsada > .visita-resumen{display:flex;}
+  .lead-card.venta.colapsada > *:not(.visita-resumen){display:none;}
   .visita-resumen-chevron{font-size:11.5px;font-weight:700;color:var(--gold-dark);flex-shrink:0;white-space:nowrap;}
+
+  /* Estado de seguimiento (Leads Idealista, columna Visitas) */
+  .seguimiento-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:9px;margin:2px 0 8px;background:#eef0f4;color:var(--navy-dark);}
+  .seguimiento-badge.seg-esperando{background:#fff3d6;color:#8a5a00;}
+  .seguimiento-badge.seg-en_proceso{background:#e3edfb;color:#1d4f91;}
+  .seguimiento-badge.seg-descartado_lead,.seguimiento-badge.seg-oferta_otra{background:#fbeaea;color:var(--red);}
+  .seguimiento-badge.seg-descartado_mio{background:#f3e9fb;color:#6a3c96;}
+  .seguimiento-badge.seg-descartado_mutuo{background:#2a2a2a;color:#fff;}
 
   .leads-mtab-venta{
     flex:1;background:transparent;border:none;padding:11px;border-radius:8px;
@@ -3640,6 +3648,20 @@
   // ==================== TAB VENTA: propiedades + leads de venta (Idealista) ====================
   const APPS_SCRIPT_URL_VENTA = 'https://script.google.com/macros/s/AKfycbzwJe2nw_bpxIqsZKvW3mj1eMkG4OkTSPYjrkD6BvPbXze5Q1z0e90kUMqcsB-k-hlgMw/exec';
 
+  // Estados de seguimiento para las tarjetas de la columna "Visitas" (Nivel 2) de
+  // Leads Idealista — para dejar anotado en qué punto quedó cada visita: si el
+  // piso ya se descartó (por quién y por qué), si estás esperando respuesta, o si
+  // el lead se fue a otra propiedad que no es tuya.
+  const SEGUIMIENTO_ESTADOS = {
+    '': '— Sin estado —',
+    'esperando': '⏳ Esperando respuesta',
+    'en_proceso': '🔵 En proceso / negociando',
+    'descartado_lead': '🚫 Descartado por el lead',
+    'descartado_mio': '🔄 Descartado por mí — buscándole otra opción',
+    'descartado_mutuo': '❌ Descartado por ambos — cerrado',
+    'oferta_otra': '📤 Ofertó en otra propiedad (no mía)'
+  };
+
   function escVenta(s){
     const d = document.createElement('div');
     d.textContent = s == null ? '' : String(s);
@@ -4971,18 +4993,23 @@
     const waEnviado = (l['WhatsappEnviado'] || '').trim() === 'Sí';
     const waEnviadoFecha = (l['WhatsappEnviadoFecha'] || '').toString().trim();
     let visitaRealizadaFecha = (l['VisitaRealizadaFecha'] || '').toString().trim();
+    let seguimientoEstado = (l['SeguimientoEstado'] || '').toString().trim();
+    let seguimientoNota = (l['SeguimientoNota'] || '').toString().trim();
+    const seguimientoLabel = () => SEGUIMIENTO_ESTADOS[seguimientoEstado] || '';
     card.innerHTML = `
       <div class="visita-resumen">
-        <div><strong>${escVenta(l['Propiedad'] || l['Nombre'] || 'Sin piso')}</strong><br><span class="visita-resumen-fecha" style="font-size:12px;color:var(--muted,#8a8a8a);">✓ Visita realizada${visitaRealizadaFecha ? ' · ' + escVenta(formatFechaHoraVenta(visitaRealizadaFecha)) : ''}</span></div>
+        <div><strong>${escVenta(l['Propiedad'] || l['Nombre'] || 'Sin piso')}</strong><br><span class="visita-resumen-fecha" style="font-size:12px;color:var(--muted,#8a8a8a);">✓ Visita realizada${visitaRealizadaFecha ? ' · ' + escVenta(formatFechaHoraVenta(visitaRealizadaFecha)) : ''}${seguimientoEstado ? ' · ' + escVenta(seguimientoLabel()) : ''}</span></div>
         <span class="visita-resumen-chevron">▼ Ver ficha</span>
       </div>
       <div class="lead-number">${esAlquilerLead ? '🔑 Alquiler' : '€ Venta'}${numeroEntrada ? ' · #' + numeroEntrada : ''}${baro.nivel === 3 ? ' · <span class="baro-badge">🔥 Alto valor</span>' : ''}</div>
       <label class="lead-select-check"><input type="checkbox" class="lead-checkbox"> Seleccionar</label>
       <div class="name">${escVenta(l['Nombre'] || 'Sin nombre')}</div>
+      ${seguimientoEstado ? `<div class="seguimiento-badge seg-${escVenta(seguimientoEstado)}">${escVenta(seguimientoLabel())}</div>` : ''}
       <div class="meta">${l['Fecha'] ? formatDateVenta(l['Fecha']) : '—'} · ${escVenta(l['Teléfono'] || '—')}${l['Propiedad'] ? ' · ' + escVenta(l['Propiedad']) : ''}</div>
       ${l['Email'] ? `<div class="meta">✉️ ${escVenta(l['Email'])}</div>` : ''}
       ${visitaHtml}
       ${l['Mensaje'] ? `<div class="notes"><strong>Mensaje:</strong> ${escVenta(l['Mensaje'])}</div>` : ''}
+      ${seguimientoNota ? `<div class="notes"><strong>Seguimiento:</strong> ${escVenta(seguimientoNota)}</div>` : ''}
       <button class="inv-toggle" style="margin-top:9px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">🔍 Fase de investigación</button>
       <div class="inv-box" style="margin-top:8px;display:none;">
         <div class="add-piso-field" style="margin-bottom:8px;">
@@ -5020,6 +5047,12 @@
       <div class="actions" style="margin-top:9px;">
         <button class="saludo-btn wa-msg-toggle ${waEnviado ? 'enviado' : 'pendiente'}">💬 Saludo</button>
       </div>
+      <div class="add-piso-field wa-msg-box" style="margin-top:8px;margin-bottom:0;display:none;">
+        <label style="margin-bottom:4px;">Mensaje a enviar (se rellena solo con el nombre del lead; puedes tocarlo antes de enviar)</label>
+        <textarea class="wa-msg-textarea" rows="3" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(mensajeWaCompuesto)}</textarea>
+        <p style="font-size:11.5px;color:var(--muted,#8a8a8a);margin:4px 0 8px;">${propiedadLead ? 'Plantilla del piso ' + escVenta(l['Propiedad']||'') + '. Para cambiarla siempre, edítala en la ficha de la propiedad.' : 'Este lead no está vinculado a un piso con plantilla propia — se usa el mensaje genérico.'}</p>
+        ${waPhone ? `<button type="button" class="wa-msg-enviar edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12px;">📱 Abrir en WhatsApp</button>` : `<p style="font-size:12px;color:#b23b3b;margin:0;">Este lead no tiene teléfono guardado.</p>`}
+      </div>
       <label class="wa-enviado-check-label">
         <input type="checkbox" class="wa-enviado-check" ${waEnviado ? 'checked' : ''}> Mensaje enviado
         <span class="wa-enviado-fecha" style="font-weight:400;color:var(--muted,#8a8a8a);${waEnviadoFecha ? '' : 'display:none;'}">${waEnviadoFecha ? '· ' + escVenta(formatFechaHoraVenta(waEnviadoFecha)) : ''}</span>
@@ -5031,12 +5064,18 @@
       <div class="actions" style="margin-top:8px;">
         ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
       </div>
-      <div class="add-piso-field wa-msg-box" style="margin-top:8px;margin-bottom:0;display:none;">
-        <label style="margin-bottom:4px;">Mensaje a enviar (se rellena solo con el nombre del lead; puedes tocarlo antes de enviar)</label>
-        <textarea class="wa-msg-textarea" rows="3" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(mensajeWaCompuesto)}</textarea>
-        <p style="font-size:11.5px;color:var(--muted,#8a8a8a);margin:4px 0 8px;">${propiedadLead ? 'Plantilla del piso ' + escVenta(l['Propiedad']||'') + '. Para cambiarla siempre, edítala en la ficha de la propiedad.' : 'Este lead no está vinculado a un piso con plantilla propia — se usa el mensaje genérico.'}</p>
-        ${waPhone ? `<button type="button" class="wa-msg-enviar edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12px;">📱 Abrir en WhatsApp</button>` : `<p style="font-size:12px;color:#b23b3b;margin:0;">Este lead no tiene teléfono guardado.</p>`}
+      ${moveTarget === '1' ? `
+      <button class="seg-toggle" style="margin-top:9px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">📋 Seguimiento</button>
+      <div class="add-piso-field seg-box" style="margin-top:8px;margin-bottom:0;display:none;">
+        <label style="margin-bottom:4px;">Estado</label>
+        <select class="seg-estado" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;margin-bottom:8px;">
+          ${Object.keys(SEGUIMIENTO_ESTADOS).map(k => `<option value="${k}" ${seguimientoEstado===k?'selected':''}>${escVenta(SEGUIMIENTO_ESTADOS[k])}</option>`).join('')}
+        </select>
+        <label style="margin-bottom:4px;">Nota (lo que quieras dejar anotado)</label>
+        <textarea class="seg-nota" rows="3" placeholder="Ej. Descartado por humedad. No quiere saber nada más, no insistir." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(seguimientoNota)}</textarea>
+        <button type="button" class="seg-guardar edit-reco-btn" style="width:auto;padding:8px 12px;margin-top:8px;margin-bottom:0;font-size:12px;">Guardar seguimiento</button>
       </div>
+      ` : ''}
       <div class="actions" style="margin-top:8px;">
         ${moveTarget === '1' ? `<button class="visita-realizada-venta-btn ${visitaRealizada ? 'active-realizada' : ''}">${visitaRealizada ? '✓ Visita realizada' : 'Marcar visita realizada'}</button>` : ''}
         <button class="move-btn">${moveTarget === '2' ? 'Pasar a Nivel 2 →' : '← Volver a Nivel 1'}</button>
@@ -5064,14 +5103,42 @@
           btn.textContent = visitaRealizada ? '✓ Visita realizada' : 'Marcar visita realizada';
           btn.classList.toggle('active-realizada', visitaRealizada);
           const resumenTxt = card.querySelector('.visita-resumen-fecha');
-          if(resumenTxt) resumenTxt.innerHTML = '✓ Visita realizada' + (visitaRealizadaFecha ? ' · ' + escVenta(formatFechaHoraVenta(visitaRealizadaFecha)) : '');
+          if(resumenTxt) resumenTxt.innerHTML = '✓ Visita realizada' + (visitaRealizadaFecha ? ' · ' + escVenta(formatFechaHoraVenta(visitaRealizadaFecha)) : '') + (seguimientoEstado ? ' · ' + escVenta(seguimientoLabel()) : '');
+          const chevron = card.querySelector('.visita-resumen-chevron');
+          if(chevron) chevron.textContent = visitaRealizada ? '▼ Ver ficha' : '▲ Ocultar ficha';
         } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
         btn.disabled = false;
+      });
+
+      const segBox = card.querySelector('.seg-box');
+      card.querySelector('.seg-toggle').addEventListener('click', ()=>{
+        const showing = segBox.style.display !== 'none';
+        segBox.style.display = showing ? 'none' : 'block';
+      });
+      card.querySelector('.seg-guardar').addEventListener('click', async (e)=>{
+        const btn = e.currentTarget;
+        const nuevoEstado = card.querySelector('.seg-estado').value;
+        const nuevaNota = card.querySelector('.seg-nota').value.trim();
+        btn.disabled = true;
+        btn.textContent = 'Guardando...';
+        try{
+          await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_seguimiento_venta', fecha: l['Fecha'], telefono: l['Teléfono'], estado: nuevoEstado, nota: nuevaNota }) });
+          seguimientoEstado = nuevoEstado;
+          seguimientoNota = nuevaNota;
+          l['SeguimientoEstado'] = nuevoEstado;
+          l['SeguimientoNota'] = nuevaNota;
+          updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'SeguimientoEstado': nuevoEstado, 'SeguimientoNota': nuevaNota });
+          renderLeadsVenta();
+        } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+        btn.disabled = false;
+        btn.textContent = 'Guardar seguimiento';
       });
     }
 
     card.querySelector('.visita-resumen').addEventListener('click', ()=>{
-      card.classList.toggle('colapsada');
+      const ahoraColapsada = card.classList.toggle('colapsada');
+      const chevron = card.querySelector('.visita-resumen-chevron');
+      if(chevron) chevron.textContent = ahoraColapsada ? '▼ Ver ficha' : '▲ Ocultar ficha';
     });
 
     card.querySelector('.lead-checkbox').addEventListener('change', (e)=>{
