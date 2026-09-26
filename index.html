@@ -1468,6 +1468,10 @@
       <div class="add-piso-field" id="pvTipoNegocioField" style="margin-bottom:14px;display:none;"><label>Tipo de negocio permitido (opcional)</label><input type="text" id="pvTipoNegocio" placeholder="Ej. Hostelería, oficinas, cualquier actividad..."></div>
       <div class="add-piso-field" id="pvHabitacionesField" style="margin-bottom:14px;"><label>Habitaciones (opcional)</label><input type="text" id="pvHabitaciones" placeholder="Ej. 3" style="max-width:160px;"></div>
       <div class="add-piso-field" style="margin-bottom:14px;"><label>Descripción (opcional)</label><textarea id="pvDescripcion" rows="3" placeholder="Notas sobre el piso: distribución, estado, orientación..."></textarea></div>
+      <div class="add-piso-row">
+        <div class="add-piso-field"><label>Certificado energético — CEE <span style="color:var(--muted);font-weight:400;text-transform:none;">(se muestra en el mapa público)</span></label><input type="text" id="pvCee" placeholder="Ej. D o D (72 kWh/m² año)"></div>
+        <div class="add-piso-field"><label>Cédula de habitabilidad <span style="color:var(--muted);font-weight:400;text-transform:none;">(uso interno, no se publica)</span></label><input type="text" id="pvCedula" placeholder="Ej. Vigente hasta 2032 / En trámite"></div>
+      </div>
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Mensaje de WhatsApp para los leads de este piso (opcional)</label>
         <textarea id="pvMensajeWhatsapp" rows="3" placeholder="Ej. Hola {nombre}, gracias por tu interés en el piso de Aribau 218. ¿Te viene bien concretar una visita esta semana?"></textarea>
@@ -3779,6 +3783,8 @@
   const pvMetros = document.getElementById('pvMetros');
   const pvHabitaciones = document.getElementById('pvHabitaciones');
   const pvDescripcion = document.getElementById('pvDescripcion');
+  const pvCee = document.getElementById('pvCee');
+  const pvCedula = document.getElementById('pvCedula');
   const pvMensajeWhatsapp = document.getElementById('pvMensajeWhatsapp');
 
   // ---- Operación (Venta/Alquiler) y Subtipo (Vivienda/Local) al añadir una propiedad ----
@@ -4046,6 +4052,7 @@
   function resetPvAddForm(){
     pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = '';
     pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
+    pvCee.value = ''; pvCedula.value = '';
     pvMensajeWhatsapp.value = '';
     uploadedPropVentaImageUrls = [];
     pvUploadStatus.textContent = ''; pvUploadStatus.className = 'piso-upload-status';
@@ -4075,6 +4082,8 @@
     pvMetros.value = p['Metros'] || '';
     pvHabitaciones.value = p['Habitaciones'] || '';
     pvDescripcion.value = p['Descripción'] || '';
+    pvCee.value = p['Certificado energético'] || '';
+    pvCedula.value = p['Cédula habitabilidad'] || '';
     pvMensajeWhatsapp.value = p['MensajeWhatsapp'] || '';
 
     const operacion = (p['Operación'] || 'Venta').trim() || 'Venta';
@@ -4129,6 +4138,8 @@
     const metros = pvMetros.value.trim();
     const habitaciones = pvHabitaciones.value.trim();
     const descripcion = pvDescripcion.value.trim();
+    const cee = pvCee.value.trim();
+    const cedula = pvCedula.value.trim();
     const mensajeWhatsapp = pvMensajeWhatsapp.value.trim();
     const lat = pvLat.value;
     const lng = pvLng.value;
@@ -4150,6 +4161,7 @@
         fotos: uploadedPropVentaImageUrls.join('|'),
         link: link, precio: precio,
         barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
+        cee: cee, cedula: cedula,
         mensajeWhatsapp: mensajeWhatsapp,
         lat: lat, lng: lng,
         operacion: operacion, subtipo: subtipo, fianza: fianza, gastosIbi: gastosIbi, tipoNegocio: tipoNegocio,
@@ -4253,6 +4265,8 @@
       const metros = (p['Metros'] || '').toString().trim();
       const habitaciones = (p['Habitaciones'] || '').toString().trim();
       const descripcion = (p['Descripción'] || '').toString().trim();
+      const cee = (p['Certificado energético'] || '').toString().trim();
+      const cedula = (p['Cédula habitabilidad'] || '').toString().trim();
       const fotos = (p['Fotos'] || '').toString().split('|').map(u=>u.trim()).filter(Boolean);
       const metaParts = [];
       if(barrio) metaParts.push(escVenta(barrio));
@@ -4264,6 +4278,8 @@
       }
       if(esAlquilerCard && fianza) metaParts.push('Fianza: ' + escVenta(fianza));
       if(esAlquilerCard && gastosIbi) metaParts.push(escVenta(gastosIbi));
+      if(cee) metaParts.push('CEE: ' + escVenta(cee));
+      if(cedula) metaParts.push('Cédula: ' + escVenta(cedula));
       const operacionBadge = `<span class="operacion-badge ${esAlquilerCard ? 'op-alquiler' : 'op-venta'}">${esAlquilerCard ? '🔑 Alquiler' + (subtipo ? ' · ' + escVenta(subtipo) : '') : '€ Venta'}</span>`;
       const metaLine = metaParts.length
         ? `<div class="pv-meta" style="margin-top:2px;font-size:12px;color:var(--text-light,#8a8a8a);">${metaParts.join(' · ')}</div>`
