@@ -1448,6 +1448,11 @@
       <div class="add-piso-field" id="pvHabitacionesField" style="margin-bottom:14px;"><label>Habitaciones (opcional)</label><input type="text" id="pvHabitaciones" placeholder="Ej. 3" style="max-width:160px;"></div>
       <div class="add-piso-field" style="margin-bottom:14px;"><label>Descripción (opcional)</label><textarea id="pvDescripcion" rows="3" placeholder="Notas sobre el piso: distribución, estado, orientación..."></textarea></div>
       <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Mensaje de WhatsApp para los leads de este piso (opcional)</label>
+        <textarea id="pvMensajeWhatsapp" rows="3" placeholder="Ej. Hola {nombre}, gracias por tu interés en el piso de Aribau 218. ¿Te viene bien concretar una visita esta semana?"></textarea>
+        <p style="font-size:11.5px;color:var(--muted,#8a8a8a);margin:4px 0 0;">Usa <code>{nombre}</code> donde quieras que aparezca el nombre del lead — se rellena solo al enviar. Se puede editar cuando quieras y se guarda para todos tus dispositivos.</p>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Ubicación en el mapa (necesaria para que salga en el mapa público — no hace falta que sea exacta, solo aproximada)</label>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
           <input type="text" id="pvBuscarTexto" placeholder="Texto a buscar (por defecto, la dirección de arriba)" style="flex:1;padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
@@ -3711,6 +3716,7 @@
   const pvMetros = document.getElementById('pvMetros');
   const pvHabitaciones = document.getElementById('pvHabitaciones');
   const pvDescripcion = document.getElementById('pvDescripcion');
+  const pvMensajeWhatsapp = document.getElementById('pvMensajeWhatsapp');
 
   // ---- Operación (Venta/Alquiler) y Subtipo (Vivienda/Local) al añadir una propiedad ----
   const pvOperacionGroup = document.getElementById('pvOperacionGroup');
@@ -3977,6 +3983,7 @@
   function resetPvAddForm(){
     pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = '';
     pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
+    pvMensajeWhatsapp.value = '';
     uploadedPropVentaImageUrls = [];
     pvUploadStatus.textContent = ''; pvUploadStatus.className = 'piso-upload-status';
     pvLat.value = ''; pvLng.value = '';
@@ -4005,6 +4012,7 @@
     pvMetros.value = p['Metros'] || '';
     pvHabitaciones.value = p['Habitaciones'] || '';
     pvDescripcion.value = p['Descripción'] || '';
+    pvMensajeWhatsapp.value = p['MensajeWhatsapp'] || '';
 
     const operacion = (p['Operación'] || 'Venta').trim() || 'Venta';
     pvOperacionSeleccionada = operacion;
@@ -4058,6 +4066,7 @@
     const metros = pvMetros.value.trim();
     const habitaciones = pvHabitaciones.value.trim();
     const descripcion = pvDescripcion.value.trim();
+    const mensajeWhatsapp = pvMensajeWhatsapp.value.trim();
     const lat = pvLat.value;
     const lng = pvLng.value;
     const operacion = pvOperacionSeleccionada;
@@ -4078,6 +4087,7 @@
         fotos: uploadedPropVentaImageUrls.join('|'),
         link: link, precio: precio,
         barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
+        mensajeWhatsapp: mensajeWhatsapp,
         lat: lat, lng: lng,
         operacion: operacion, subtipo: subtipo, fianza: fianza, gastosIbi: gastosIbi, tipoNegocio: tipoNegocio,
         colaboracion: colaboracion
@@ -4908,6 +4918,12 @@
     const invHipoteca = (l['InvHipoteca'] || '').toString();
     const invPresupuesto = (l['InvPresupuesto'] || '').toString();
     const invUrgencia = (l['InvUrgencia'] || '').toString();
+    const propiedadLead = cachedPropiedadesVenta.find(p => (p['Dirección']||'').trim() && (p['Dirección']||'').trim() === (l['Propiedad']||'').trim());
+    const plantillaWa = (propiedadLead && (propiedadLead['MensajeWhatsapp']||'').trim())
+      ? propiedadLead['MensajeWhatsapp'].trim()
+      : 'Hola {nombre}, soy Fer. Gracias por tu interés en el piso, ¿cuándo te vendría bien concretar una visita?';
+    const mensajeWaCompuesto = plantillaWa.replace(/\{nombre\}/gi, (l['Nombre']||'').trim()).replace(/ {2,}/g, ' ').trim();
+    const waEnviado = (l['WhatsappEnviado'] || '').trim() === 'Sí';
     card.innerHTML = `
       <div class="lead-number">${esAlquilerLead ? '🔑 Alquiler' : '€ Venta'}${numeroEntrada ? ' · #' + numeroEntrada : ''}${baro.nivel === 3 ? ' · <span class="baro-badge">🔥 Alto valor</span>' : ''}</div>
       <label class="lead-select-check"><input type="checkbox" class="lead-checkbox"> Seleccionar</label>
@@ -4952,9 +4968,16 @@
       </div>
       <div class="actions" style="margin-top:9px;">
         ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
-        ${l['Propiedad'] ? '' : ''}
         <button class="sema-toggle sema-verde ${sema==='verde'?'active-verde':''}">🟢 Responde</button>
         <button class="sema-toggle sema-rojo ${sema==='rojo'?'active-rojo':''}">🔴 No responde</button>
+      </div>
+      <label class="lead-select-check" style="margin-top:8px;"><input type="checkbox" class="wa-enviado-check" ${waEnviado ? 'checked' : ''}> Mensaje de WhatsApp enviado</label>
+      <button class="wa-msg-toggle" style="margin-top:6px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">💬 Mensaje de WhatsApp</button>
+      <div class="add-piso-field wa-msg-box" style="margin-top:8px;margin-bottom:0;display:none;">
+        <label style="margin-bottom:4px;">Mensaje a enviar (se rellena solo con el nombre del lead; puedes tocarlo antes de enviar)</label>
+        <textarea class="wa-msg-textarea" rows="3" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(mensajeWaCompuesto)}</textarea>
+        <p style="font-size:11.5px;color:var(--muted,#8a8a8a);margin:4px 0 8px;">${propiedadLead ? 'Plantilla del piso ' + escVenta(l['Propiedad']||'') + '. Para cambiarla siempre, edítala en la ficha de la propiedad.' : 'Este lead no está vinculado a un piso con plantilla propia — se usa el mensaje genérico.'}</p>
+        ${waPhone ? `<button type="button" class="wa-msg-enviar edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12px;">📱 Abrir en WhatsApp</button>` : `<p style="font-size:12px;color:#b23b3b;margin:0;">Este lead no tiene teléfono guardado.</p>`}
       </div>
       <div class="actions" style="margin-top:8px;">
         <button class="move-btn">${moveTarget === '2' ? 'Pasar a Nivel 2 →' : '← Volver a Nivel 1'}</button>
@@ -4998,6 +5021,31 @@
       btn.disabled = false;
       btn.textContent = 'Guardar respuestas';
     });
+
+    card.querySelector('.wa-enviado-check').addEventListener('change', async (e)=>{
+      const cb = e.currentTarget;
+      const nuevo = cb.checked;
+      cb.disabled = true;
+      try{
+        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'actualizar_whatsapp_enviado_venta', fecha: l['Fecha'], telefono: l['Teléfono'], enviado: nuevo }) });
+        l['WhatsappEnviado'] = nuevo ? 'Sí' : '';
+        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'WhatsappEnviado': nuevo ? 'Sí' : '' });
+      } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); cb.checked = !nuevo; }
+      cb.disabled = false;
+    });
+
+    const waMsgBox = card.querySelector('.wa-msg-box');
+    card.querySelector('.wa-msg-toggle').addEventListener('click', ()=>{
+      const showing = waMsgBox.style.display !== 'none';
+      waMsgBox.style.display = showing ? 'none' : 'block';
+    });
+    const waMsgEnviarBtn = card.querySelector('.wa-msg-enviar');
+    if(waMsgEnviarBtn){
+      waMsgEnviarBtn.addEventListener('click', ()=>{
+        const texto = card.querySelector('.wa-msg-textarea').value.trim();
+        window.open('https://wa.me/' + waPhone + (texto ? '?text=' + encodeURIComponent(texto) : ''), '_blank', 'noopener');
+      });
+    }
 
     card.querySelector('.sema-verde').addEventListener('click', async (e)=>{
       const btn = e.currentTarget;
