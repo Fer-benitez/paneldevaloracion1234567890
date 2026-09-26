@@ -4998,7 +4998,11 @@
     const seguimientoLabel = () => SEGUIMIENTO_ESTADOS[seguimientoEstado] || '';
     card.innerHTML = `
       <div class="visita-resumen">
-        <div><strong>${escVenta(l['Propiedad'] || l['Nombre'] || 'Sin piso')}</strong><br><span class="visita-resumen-fecha" style="font-size:12px;color:var(--muted,#8a8a8a);">✓ Visita realizada${visitaRealizadaFecha ? ' · ' + escVenta(formatFechaHoraVenta(visitaRealizadaFecha)) : ''}${seguimientoEstado ? ' · ' + escVenta(seguimientoLabel()) : ''}</span></div>
+        <div>
+          <strong style="font-size:15px;">${escVenta(l['Nombre'] || 'Sin nombre')}</strong>
+          <div style="font-size:12.5px;color:var(--text,#444);">${escVenta(l['Propiedad'] || 'Sin piso')}</div>
+          <span class="visita-resumen-fecha" style="font-size:12px;color:var(--muted,#8a8a8a);">✓ Visita realizada${visitaRealizadaFecha ? ' · ' + escVenta(formatFechaHoraVenta(visitaRealizadaFecha)) : ''}${seguimientoEstado ? ' · ' + escVenta(seguimientoLabel()) : ''}</span>
+        </div>
         <span class="visita-resumen-chevron">▼ Ver ficha</span>
       </div>
       <div class="lead-number">${esAlquilerLead ? '🔑 Alquiler' : '€ Venta'}${numeroEntrada ? ' · #' + numeroEntrada : ''}${baro.nivel === 3 ? ' · <span class="baro-badge">🔥 Alto valor</span>' : ''}</div>
