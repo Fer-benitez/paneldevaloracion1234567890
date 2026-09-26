@@ -1681,8 +1681,10 @@
       }
       if(btn.dataset.tab === 'venta' && !ventaLoaded){
         ventaLoaded = true;
-        loadPropiedadesVenta();
-        loadLeadsVenta();
+        // Las propiedades se cargan primero: los leads necesitan el catálogo ya
+        // en memoria (cachedPropiedadesVenta) para poder mostrar el mensaje de
+        // WhatsApp guardado en su piso en vez del genérico por defecto.
+        loadPropiedadesVenta().then(()=> loadLeadsVenta());
       }
     });
   });
@@ -4134,6 +4136,10 @@
         togglePropVentaBtn.textContent = '+ Añadir propiedad en venta';
       }
       await loadPropiedadesVenta();
+      // Si ya había leads pintados en pantalla, se vuelven a pintar para que el
+      // mensaje de WhatsApp (u otro dato del piso) se actualice al momento, sin
+      // tener que cambiar de pestaña o recargar la página.
+      if(typeof renderLeadsVenta === 'function' && cachedLeadsVenta.length) renderLeadsVenta();
     } catch(err){
       alert('No se pudo guardar. Revisa tu conexión.');
       addPropVentaBtn.disabled = false;
