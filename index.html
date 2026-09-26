@@ -851,6 +851,12 @@
   .lead-card.venta.baro-3{background:linear-gradient(180deg,#d8f2c8,#ffffff);box-shadow:0 5px 16px -8px rgba(45,140,30,0.5);}
   .lead-card.venta.baro-3:not(.semaforo-rojo){border-left-color:var(--green);}
   .baro-badge{background:var(--green);color:#fff;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:700;letter-spacing:.02em;}
+  /* Tarjeta de visita realizada (Leads Idealista) — se colapsa a una barra resumen: piso + fecha */
+  .visita-resumen{display:none;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;}
+  .lead-card.venta.colapsada{padding:12px 16px;}
+  .lead-card.venta.colapsada > *{display:none;}
+  .lead-card.venta.colapsada > .visita-resumen{display:flex;}
+  .visita-resumen-chevron{font-size:11.5px;font-weight:700;color:var(--gold-dark);flex-shrink:0;white-space:nowrap;}
 
   .leads-mtab-venta{
     flex:1;background:transparent;border:none;padding:11px;border-radius:8px;
@@ -4941,7 +4947,9 @@
     const baro = calcularBarometroVenta(l);
     const operacionLead = (l['Operación'] || 'Venta').trim() || 'Venta';
     const esAlquilerLead = operacionLead === 'Alquiler';
-    card.className = 'lead-card venta' + (esAlquilerLead ? ' alquiler' : '') + (sema ? ' semaforo-' + sema : '') + (baro.nivel > 0 ? ' baro-' + baro.nivel : '') + (selectModeVenta ? ' selecting' : '');
+    let visitaRealizada = (l['VisitaRealizada'] || '').trim() === 'Sí';
+    const claseColapsada = () => (visitaRealizada ? ' visita-hecha colapsada' : '');
+    card.className = 'lead-card venta' + (esAlquilerLead ? ' alquiler' : '') + (sema ? ' semaforo-' + sema : '') + (baro.nivel > 0 ? ' baro-' + baro.nivel : '') + (selectModeVenta ? ' selecting' : '') + claseColapsada();
     card.dataset.fecha = l['Fecha'];
     card.dataset.telefono = l['Teléfono'];
     card.dataset.numero = numeroEntrada || '';
@@ -4962,7 +4970,12 @@
     const mensajeWaCompuesto = plantillaWa.replace(/\{nombre\}/gi, (l['Nombre']||'').trim()).replace(/ {2,}/g, ' ').trim();
     const waEnviado = (l['WhatsappEnviado'] || '').trim() === 'Sí';
     const waEnviadoFecha = (l['WhatsappEnviadoFecha'] || '').toString().trim();
+    let visitaRealizadaFecha = (l['VisitaRealizadaFecha'] || '').toString().trim();
     card.innerHTML = `
+      <div class="visita-resumen">
+        <div><strong>${escVenta(l['Propiedad'] || l['Nombre'] || 'Sin piso')}</strong><br><span class="visita-resumen-fecha" style="font-size:12px;color:var(--muted,#8a8a8a);">✓ Visita realizada${visitaRealizadaFecha ? ' · ' + escVenta(formatFechaHoraVenta(visitaRealizadaFecha)) : ''}</span></div>
+        <span class="visita-resumen-chevron">▼ Ver ficha</span>
+      </div>
       <div class="lead-number">${esAlquilerLead ? '🔑 Alquiler' : '€ Venta'}${numeroEntrada ? ' · #' + numeroEntrada : ''}${baro.nivel === 3 ? ' · <span class="baro-badge">🔥 Alto valor</span>' : ''}</div>
       <label class="lead-select-check"><input type="checkbox" class="lead-checkbox"> Seleccionar</label>
       <div class="name">${escVenta(l['Nombre'] || 'Sin nombre')}</div>
@@ -5025,11 +5038,41 @@
         ${waPhone ? `<button type="button" class="wa-msg-enviar edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12px;">📱 Abrir en WhatsApp</button>` : `<p style="font-size:12px;color:#b23b3b;margin:0;">Este lead no tiene teléfono guardado.</p>`}
       </div>
       <div class="actions" style="margin-top:8px;">
+        ${moveTarget === '1' ? `<button class="visita-realizada-venta-btn ${visitaRealizada ? 'active-realizada' : ''}">${visitaRealizada ? '✓ Visita realizada' : 'Marcar visita realizada'}</button>` : ''}
         <button class="move-btn">${moveTarget === '2' ? 'Pasar a Nivel 2 →' : '← Volver a Nivel 1'}</button>
         <button class="edit-lead-btn">✎ Editar</button>
         <button class="del-btn">Eliminar</button>
       </div>
     `;
+
+    if(moveTarget === '1'){
+      card.querySelector('.visita-realizada-venta-btn').addEventListener('click', async (e)=>{
+        const btn = e.currentTarget;
+        if(btn.disabled) return;
+        btn.disabled = true;
+        const nuevo = visitaRealizada ? '' : 'Sí';
+        const nuevaFecha = nuevo ? new Date().toISOString() : '';
+        try{
+          await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'marcar_visita_realizada_venta', fecha: l['Fecha'], telefono: l['Teléfono'], realizada: nuevo, fechaRealizada: nuevaFecha }) });
+          visitaRealizada = !!nuevo;
+          visitaRealizadaFecha = nuevaFecha;
+          l['VisitaRealizada'] = nuevo;
+          l['VisitaRealizadaFecha'] = nuevaFecha;
+          updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'VisitaRealizada': nuevo, 'VisitaRealizadaFecha': nuevaFecha });
+          card.classList.toggle('visita-hecha', visitaRealizada);
+          card.classList.toggle('colapsada', visitaRealizada);
+          btn.textContent = visitaRealizada ? '✓ Visita realizada' : 'Marcar visita realizada';
+          btn.classList.toggle('active-realizada', visitaRealizada);
+          const resumenTxt = card.querySelector('.visita-resumen-fecha');
+          if(resumenTxt) resumenTxt.innerHTML = '✓ Visita realizada' + (visitaRealizadaFecha ? ' · ' + escVenta(formatFechaHoraVenta(visitaRealizadaFecha)) : '');
+        } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+        btn.disabled = false;
+      });
+    }
+
+    card.querySelector('.visita-resumen').addEventListener('click', ()=>{
+      card.classList.toggle('colapsada');
+    });
 
     card.querySelector('.lead-checkbox').addEventListener('change', (e)=>{
       const key = claveLeadVenta(l);
