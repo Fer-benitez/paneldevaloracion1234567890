@@ -1509,12 +1509,28 @@
             <select id="pvTren3"></select>
           </div>
         </div>
-        <div class="pv-transporte-block" style="margin-bottom:0;">
+        <div class="pv-transporte-block">
           <label class="pv-sub">🚌 Autobús (hasta 3 líneas — escribe el número/nombre)</label>
           <div class="pv-transporte-group">
             <input type="text" id="pvBus1" placeholder="Ej. H16">
             <input type="text" id="pvBus2" placeholder="Ej. V21">
             <input type="text" id="pvBus3" placeholder="Ej. 92">
+          </div>
+        </div>
+        <div class="pv-transporte-block">
+          <label class="pv-sub">🚇 Estaciones de Metro cercanas (hasta 3 — escribe el nombre)</label>
+          <div class="pv-transporte-group">
+            <input type="text" id="pvMetroEst1" placeholder="Ej. Clot">
+            <input type="text" id="pvMetroEst2" placeholder="Ej. Navas">
+            <input type="text" id="pvMetroEst3" placeholder="Ej. Encants">
+          </div>
+        </div>
+        <div class="pv-transporte-block" style="margin-bottom:0;">
+          <label class="pv-sub">🚉 Estaciones de Cercanías / Renfe cercanas (hasta 3 — escribe el nombre)</label>
+          <div class="pv-transporte-group">
+            <input type="text" id="pvCercaniasEst1" placeholder="Ej. Clot-Aragó">
+            <input type="text" id="pvCercaniasEst2" placeholder="Ej. Sant Andreu Arenal">
+            <input type="text" id="pvCercaniasEst3" placeholder="Ej. Sants Estació">
           </div>
         </div>
       </div>
@@ -3896,6 +3912,8 @@
   [pvMetro1, pvMetro2, pvMetro3].forEach(s=>llenarSelectorLineas(s, PV_METRO_LINEAS));
   [pvTren1, pvTren2, pvTren3].forEach(s=>llenarSelectorLineas(s, PV_TREN_LINEAS));
   const pvBus1 = document.getElementById('pvBus1'), pvBus2 = document.getElementById('pvBus2'), pvBus3 = document.getElementById('pvBus3');
+  const pvMetroEst1 = document.getElementById('pvMetroEst1'), pvMetroEst2 = document.getElementById('pvMetroEst2'), pvMetroEst3 = document.getElementById('pvMetroEst3');
+  const pvCercaniasEst1 = document.getElementById('pvCercaniasEst1'), pvCercaniasEst2 = document.getElementById('pvCercaniasEst2'), pvCercaniasEst3 = document.getElementById('pvCercaniasEst3');
   const pvHospitales = document.getElementById('pvHospitales');
   const pvOrientacion = document.getElementById('pvOrientacion');
   const pvEstadoPropiedad = document.getElementById('pvEstadoPropiedad');
@@ -4174,6 +4192,8 @@
     pvMetro1.value = ''; pvMetro2.value = ''; pvMetro3.value = '';
     pvTren1.value = ''; pvTren2.value = ''; pvTren3.value = '';
     pvBus1.value = ''; pvBus2.value = ''; pvBus3.value = '';
+    pvMetroEst1.value = ''; pvMetroEst2.value = ''; pvMetroEst3.value = '';
+    pvCercaniasEst1.value = ''; pvCercaniasEst2.value = ''; pvCercaniasEst3.value = '';
     pvHospitales.value = ''; pvOrientacion.value = ''; pvEstadoPropiedad.value = '';
     pvAscensor.value = ''; pvAnyoConstruccion.value = ''; pvIte.value = '';
     pvIbi.value = ''; pvGastosComunidad.value = '';
@@ -4211,6 +4231,8 @@
     pvMetro1.value = p['Metro1'] || ''; pvMetro2.value = p['Metro2'] || ''; pvMetro3.value = p['Metro3'] || '';
     pvTren1.value = p['Tren1'] || ''; pvTren2.value = p['Tren2'] || ''; pvTren3.value = p['Tren3'] || '';
     pvBus1.value = p['Bus1'] || ''; pvBus2.value = p['Bus2'] || ''; pvBus3.value = p['Bus3'] || '';
+    pvMetroEst1.value = p['MetroEst1'] || ''; pvMetroEst2.value = p['MetroEst2'] || ''; pvMetroEst3.value = p['MetroEst3'] || '';
+    pvCercaniasEst1.value = p['CercaniasEst1'] || ''; pvCercaniasEst2.value = p['CercaniasEst2'] || ''; pvCercaniasEst3.value = p['CercaniasEst3'] || '';
     pvHospitales.value = p['Hospitales'] || '';
     pvOrientacion.value = p['Orientación'] || '';
     pvEstadoPropiedad.value = p['EstadoPropiedad'] || '';
@@ -4278,6 +4300,8 @@
     const metro1 = pvMetro1.value, metro2 = pvMetro2.value, metro3 = pvMetro3.value;
     const tren1 = pvTren1.value, tren2 = pvTren2.value, tren3 = pvTren3.value;
     const bus1 = pvBus1.value.trim(), bus2 = pvBus2.value.trim(), bus3 = pvBus3.value.trim();
+    const metroEst1 = pvMetroEst1.value.trim(), metroEst2 = pvMetroEst2.value.trim(), metroEst3 = pvMetroEst3.value.trim();
+    const cercaniasEst1 = pvCercaniasEst1.value.trim(), cercaniasEst2 = pvCercaniasEst2.value.trim(), cercaniasEst3 = pvCercaniasEst3.value.trim();
     const hospitales = pvHospitales.value.trim();
     const orientacion = pvOrientacion.value;
     const estadoPropiedad = pvEstadoPropiedad.value;
@@ -4311,6 +4335,8 @@
         metro1: metro1, metro2: metro2, metro3: metro3,
         tren1: tren1, tren2: tren2, tren3: tren3,
         bus1: bus1, bus2: bus2, bus3: bus3,
+        metroEst1: metroEst1, metroEst2: metroEst2, metroEst3: metroEst3,
+        cercaniasEst1: cercaniasEst1, cercaniasEst2: cercaniasEst2, cercaniasEst3: cercaniasEst3,
         hospitales: hospitales, orientacion: orientacion, estadoPropiedad: estadoPropiedad,
         ascensor: ascensor, anyoConstruccion: anyoConstruccion, ite: ite,
         ibi: ibi, gastosComunidad: gastosComunidad,
