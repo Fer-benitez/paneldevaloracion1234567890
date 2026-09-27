@@ -101,14 +101,18 @@
     font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;
     color:var(--navy-dark);margin-bottom:7px;display:block;
   }
-  .add-piso-field input[type="text"], .add-piso-field input[type="number"], .add-piso-field input[type="time"]{
+  .add-piso-field input[type="text"], .add-piso-field input[type="number"], .add-piso-field input[type="time"], .add-piso-field select{
     width:100%;background:var(--white);border:1.5px solid var(--border);color:var(--text);
     padding:12px 14px;font-family:'Inter',sans-serif;font-size:14.5px;border-radius:8px;
     transition:border-color .2s var(--ease);
   }
-  .add-piso-field input[type="text"]:focus, .add-piso-field input[type="number"]:focus, .add-piso-field input[type="time"]:focus{
+  .add-piso-field input[type="text"]:focus, .add-piso-field input[type="number"]:focus, .add-piso-field input[type="time"]:focus, .add-piso-field select:focus{
     outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(52,107,147,0.12);
   }
+  .pv-transporte-group{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+  .pv-transporte-group label.pv-sub{font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block;}
+  .pv-transporte-block{margin-bottom:10px;}
+  @media (max-width:640px){ .pv-transporte-group{grid-template-columns:1fr;} }
   .add-piso-field input[type="file"]{font-size:13px;width:100%;}
   .piso-upload-status{font-size:12.5px;color:var(--muted);margin-bottom:12px;min-height:16px;}
   .piso-upload-status.ok{color:var(--green);}
@@ -1485,6 +1489,86 @@
         <div class="add-piso-field"><label>Certificado energético — CEE <span style="color:var(--muted);font-weight:400;text-transform:none;">(se muestra en el mapa público)</span></label><input type="text" id="pvCee" placeholder="Ej. D o D (72 kWh/m² año)"></div>
         <div class="add-piso-field"><label>Cédula de habitabilidad <span style="color:var(--muted);font-weight:400;text-transform:none;">(uso interno, no se publica)</span></label><input type="text" id="pvCedula" placeholder="Ej. Vigente hasta 2032 / En trámite"></div>
       </div>
+
+      <!-- ---- Datos extra del inmueble: solo aparecen en la ficha pública si se rellenan ---- -->
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Transporte público cercano <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional — solo se muestran los que rellenes, con icono)</span></label>
+        <div class="pv-transporte-block">
+          <label class="pv-sub">🚇 Metro (hasta 3 líneas)</label>
+          <div class="pv-transporte-group">
+            <select id="pvMetro1"></select>
+            <select id="pvMetro2"></select>
+            <select id="pvMetro3"></select>
+          </div>
+        </div>
+        <div class="pv-transporte-block">
+          <label class="pv-sub">🚆 Tren / Rodalies / FGC (hasta 3 líneas)</label>
+          <div class="pv-transporte-group">
+            <select id="pvTren1"></select>
+            <select id="pvTren2"></select>
+            <select id="pvTren3"></select>
+          </div>
+        </div>
+        <div class="pv-transporte-block" style="margin-bottom:0;">
+          <label class="pv-sub">🚌 Autobús (hasta 3 líneas — escribe el número/nombre)</label>
+          <div class="pv-transporte-group">
+            <input type="text" id="pvBus1" placeholder="Ej. H16">
+            <input type="text" id="pvBus2" placeholder="Ej. V21">
+            <input type="text" id="pvBus3" placeholder="Ej. 92">
+          </div>
+        </div>
+      </div>
+      <div class="add-piso-row">
+        <div class="add-piso-field"><label>Hospitales cercanos (opcional)</label><input type="text" id="pvHospitales" placeholder="Ej. Hospital de Sant Pau"></div>
+        <div class="add-piso-field"><label>Orientación (opcional)</label>
+          <select id="pvOrientacion">
+            <option value="">— Selecciona —</option>
+            <option value="Norte">Norte</option>
+            <option value="Sur">Sur</option>
+            <option value="Este">Este</option>
+            <option value="Oeste">Oeste</option>
+            <option value="Noreste">Noreste</option>
+            <option value="Noroeste">Noroeste</option>
+            <option value="Sureste">Sureste</option>
+            <option value="Suroeste">Suroeste</option>
+          </select>
+        </div>
+      </div>
+      <div class="add-piso-row">
+        <div class="add-piso-field"><label>Estado de la propiedad (opcional)</label>
+          <select id="pvEstadoPropiedad">
+            <option value="">— Selecciona —</option>
+            <option value="A reformar">A reformar</option>
+            <option value="Buen estado">Buen estado</option>
+            <option value="Reformado">Reformado</option>
+            <option value="Obra nueva">Obra nueva</option>
+          </select>
+        </div>
+        <div class="add-piso-field"><label>Ascensor (opcional)</label>
+          <select id="pvAscensor">
+            <option value="">— Selecciona —</option>
+            <option value="Sí">Sí</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+      </div>
+      <div class="add-piso-row">
+        <div class="add-piso-field"><label>Año de construcción (opcional)</label><input type="text" id="pvAnyoConstruccion" placeholder="Ej. 1975"></div>
+        <div class="add-piso-field"><label>ITE — Inspección Técnica del Edificio (opcional)</label>
+          <select id="pvIte">
+            <option value="">— Selecciona —</option>
+            <option value="No requiere">No requiere</option>
+            <option value="Pasada">Pasada</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="En trámite">En trámite</option>
+          </select>
+        </div>
+      </div>
+      <div class="add-piso-row">
+        <div class="add-piso-field"><label>IBI (opcional)</label><input type="text" id="pvIbi" placeholder="Ej. 450 €/año"></div>
+        <div class="add-piso-field"><label>Gastos de comunidad (opcional)</label><input type="text" id="pvGastosComunidad" placeholder="Ej. 60 €/mes"></div>
+      </div>
+
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Mensaje de WhatsApp para los leads de este piso (opcional)</label>
         <textarea id="pvMensajeWhatsapp" rows="3" placeholder="Ej. Hola {nombre}, gracias por tu interés en el piso de Aribau 218. ¿Te viene bien concretar una visita esta semana?"></textarea>
@@ -3800,6 +3884,27 @@
   const pvCedula = document.getElementById('pvCedula');
   const pvMensajeWhatsapp = document.getElementById('pvMensajeWhatsapp');
 
+  // ---- Datos extra del inmueble (transporte, hospitales, orientación, estado, ascensor, año, ITE, IBI, gastos) ----
+  const PV_METRO_LINEAS = ['L1','L2','L3','L4','L5','L9 Nord','L9 Sud','L10 Nord','L10 Sud','L11'];
+  const PV_TREN_LINEAS = ['R1','R2','R2 Nord','R2 Sud','R3','R4','R7','R8','R11','R13','R14','R16','R17','FGC L6','FGC L7','FGC L8','FGC L12','FGC S1','FGC S2','FGC S5','FGC S55','FGC S6','FGC S7','FGC S8'];
+  function llenarSelectorLineas(sel, lineas){
+    if(!sel) return;
+    sel.innerHTML = '<option value="">—</option>' + lineas.map(l=>'<option value="'+l+'">'+l+'</option>').join('');
+  }
+  const pvMetro1 = document.getElementById('pvMetro1'), pvMetro2 = document.getElementById('pvMetro2'), pvMetro3 = document.getElementById('pvMetro3');
+  const pvTren1 = document.getElementById('pvTren1'), pvTren2 = document.getElementById('pvTren2'), pvTren3 = document.getElementById('pvTren3');
+  [pvMetro1, pvMetro2, pvMetro3].forEach(s=>llenarSelectorLineas(s, PV_METRO_LINEAS));
+  [pvTren1, pvTren2, pvTren3].forEach(s=>llenarSelectorLineas(s, PV_TREN_LINEAS));
+  const pvBus1 = document.getElementById('pvBus1'), pvBus2 = document.getElementById('pvBus2'), pvBus3 = document.getElementById('pvBus3');
+  const pvHospitales = document.getElementById('pvHospitales');
+  const pvOrientacion = document.getElementById('pvOrientacion');
+  const pvEstadoPropiedad = document.getElementById('pvEstadoPropiedad');
+  const pvAscensor = document.getElementById('pvAscensor');
+  const pvAnyoConstruccion = document.getElementById('pvAnyoConstruccion');
+  const pvIte = document.getElementById('pvIte');
+  const pvIbi = document.getElementById('pvIbi');
+  const pvGastosComunidad = document.getElementById('pvGastosComunidad');
+
   // ---- Operación (Venta/Alquiler) y Subtipo (Vivienda/Local) al añadir una propiedad ----
   const pvOperacionGroup = document.getElementById('pvOperacionGroup');
   const pvSubtipoField = document.getElementById('pvSubtipoField');
@@ -4066,6 +4171,12 @@
     pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = '';
     pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
     pvCee.value = ''; pvCedula.value = '';
+    pvMetro1.value = ''; pvMetro2.value = ''; pvMetro3.value = '';
+    pvTren1.value = ''; pvTren2.value = ''; pvTren3.value = '';
+    pvBus1.value = ''; pvBus2.value = ''; pvBus3.value = '';
+    pvHospitales.value = ''; pvOrientacion.value = ''; pvEstadoPropiedad.value = '';
+    pvAscensor.value = ''; pvAnyoConstruccion.value = ''; pvIte.value = '';
+    pvIbi.value = ''; pvGastosComunidad.value = '';
     pvMensajeWhatsapp.value = '';
     uploadedPropVentaImageUrls = [];
     pvUploadStatus.textContent = ''; pvUploadStatus.className = 'piso-upload-status';
@@ -4097,6 +4208,17 @@
     pvDescripcion.value = p['Descripción'] || '';
     pvCee.value = p['Certificado energético'] || '';
     pvCedula.value = p['Cédula habitabilidad'] || '';
+    pvMetro1.value = p['Metro1'] || ''; pvMetro2.value = p['Metro2'] || ''; pvMetro3.value = p['Metro3'] || '';
+    pvTren1.value = p['Tren1'] || ''; pvTren2.value = p['Tren2'] || ''; pvTren3.value = p['Tren3'] || '';
+    pvBus1.value = p['Bus1'] || ''; pvBus2.value = p['Bus2'] || ''; pvBus3.value = p['Bus3'] || '';
+    pvHospitales.value = p['Hospitales'] || '';
+    pvOrientacion.value = p['Orientación'] || '';
+    pvEstadoPropiedad.value = p['EstadoPropiedad'] || '';
+    pvAscensor.value = p['Ascensor'] || '';
+    pvAnyoConstruccion.value = p['AñoConstrucción'] || '';
+    pvIte.value = p['ITE'] || '';
+    pvIbi.value = p['IBI'] || '';
+    pvGastosComunidad.value = p['GastosComunidad'] || '';
     pvMensajeWhatsapp.value = p['MensajeWhatsapp'] || '';
 
     const operacion = (p['Operación'] || 'Venta').trim() || 'Venta';
@@ -4153,6 +4275,17 @@
     const descripcion = pvDescripcion.value.trim();
     const cee = pvCee.value.trim();
     const cedula = pvCedula.value.trim();
+    const metro1 = pvMetro1.value, metro2 = pvMetro2.value, metro3 = pvMetro3.value;
+    const tren1 = pvTren1.value, tren2 = pvTren2.value, tren3 = pvTren3.value;
+    const bus1 = pvBus1.value.trim(), bus2 = pvBus2.value.trim(), bus3 = pvBus3.value.trim();
+    const hospitales = pvHospitales.value.trim();
+    const orientacion = pvOrientacion.value;
+    const estadoPropiedad = pvEstadoPropiedad.value;
+    const ascensor = pvAscensor.value;
+    const anyoConstruccion = pvAnyoConstruccion.value.trim();
+    const ite = pvIte.value;
+    const ibi = pvIbi.value.trim();
+    const gastosComunidad = pvGastosComunidad.value.trim();
     const mensajeWhatsapp = pvMensajeWhatsapp.value.trim();
     const lat = pvLat.value;
     const lng = pvLng.value;
@@ -4175,6 +4308,12 @@
         link: link, precio: precio,
         barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
         cee: cee, cedula: cedula,
+        metro1: metro1, metro2: metro2, metro3: metro3,
+        tren1: tren1, tren2: tren2, tren3: tren3,
+        bus1: bus1, bus2: bus2, bus3: bus3,
+        hospitales: hospitales, orientacion: orientacion, estadoPropiedad: estadoPropiedad,
+        ascensor: ascensor, anyoConstruccion: anyoConstruccion, ite: ite,
+        ibi: ibi, gastosComunidad: gastosComunidad,
         mensajeWhatsapp: mensajeWhatsapp,
         lat: lat, lng: lng,
         operacion: operacion, subtipo: subtipo, fianza: fianza, gastosIbi: gastosIbi, tipoNegocio: tipoNegocio,
