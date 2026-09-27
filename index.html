@@ -1470,6 +1470,15 @@
         <div class="add-piso-field"><label>Dirección</label><input type="text" id="pvDireccion" placeholder="Ej. Aribau 218, 3r 1a"></div>
         <div class="add-piso-field"><label>Fotos (puedes elegir varias)</label><input type="file" id="pvFoto" accept="image/*" multiple></div>
       </div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Referencia catastral <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional — autocompleta Dirección, Metros, Año de construcción y el punto del mapa)</span></label>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="pvRefCatastral" placeholder="Ej. 9872023VH5797S0001WX" style="flex:1;">
+          <button type="button" id="pvBuscarCatastro" class="edit-reco-btn" style="width:auto;padding:8px 12px;margin-bottom:0;font-size:12.5px;white-space:nowrap;">🔍 Buscar en catastro</button>
+        </div>
+        <p id="pvCatastroEstado" style="font-size:12px;color:#b23b3b;margin:6px 0 0;display:none;"></p>
+        <p style="font-size:11.5px;color:var(--muted,#8a8a8a);margin:4px 0 0;">El catastro solo rellena dirección, metros, año de construcción y ubicación — el resto (precio, CEE, IBI, etc.) lo sigues rellenando tú.</p>
+      </div>
       <div class="add-piso-row">
         <div class="add-piso-field"><label>Link de Idealista</label><input type="text" id="pvLink" placeholder="https://www.idealista.com/inmueble/..."></div>
         <div class="add-piso-field"><label id="pvPrecioLabel">Precio de venta (opcional)</label><input type="text" id="pvPrecio" placeholder="Ej. 320.000 €"></div>
@@ -3840,6 +3849,7 @@
   const pvDireccion = document.getElementById('pvDireccion');
   const pvFoto = document.getElementById('pvFoto');
   const pvLink = document.getElementById('pvLink');
+  const pvRefCatastral = document.getElementById('pvRefCatastral');
   const pvPrecio = document.getElementById('pvPrecio');
   const pvUploadStatus = document.getElementById('pvUploadStatus');
   const addPropVentaBtn = document.getElementById('addPropVentaBtn');
@@ -4044,6 +4054,45 @@
     if(!msg){ pvBuscarEstado.style.display = 'none'; pvBuscarEstado.textContent = ''; return; }
     pvBuscarEstado.style.display = 'block'; pvBuscarEstado.textContent = msg;
   }
+  // Autorrellenar Dirección/Metros/Año de construcción/ubicación a partir de la
+  // referencia catastral, consultando el Catastro a través del Apps Script
+  // (el catastro no admite llamadas directas desde el navegador). Solo rellena
+  // esos 4 campos — precio, CEE, IBI, etc. los sigue poniendo Fer a mano.
+  const pvCatastroEstado = document.getElementById('pvCatastroEstado');
+  function mostrarPvCatastroEstado(msg, ok){
+    if(!msg){ pvCatastroEstado.style.display = 'none'; pvCatastroEstado.textContent = ''; return; }
+    pvCatastroEstado.style.display = 'block'; pvCatastroEstado.textContent = msg;
+    pvCatastroEstado.style.color = ok ? 'var(--green,#2e8b57)' : '#b23b3b';
+  }
+  document.getElementById('pvBuscarCatastro').addEventListener('click', async ()=>{
+    const rc = pvRefCatastral.value.trim().toUpperCase();
+    const btn = document.getElementById('pvBuscarCatastro');
+    if(!rc){ mostrarPvCatastroEstado('Escribe primero la referencia catastral.'); return; }
+    const textoOriginal = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Consultando...';
+    mostrarPvCatastroEstado('');
+    try{
+      const res = await fetch(APPS_SCRIPT_URL_VENTA + '?tipo=catastro&rc=' + encodeURIComponent(rc));
+      const json = await res.json();
+      if(json.success){
+        if(json.direccion) pvDireccion.value = json.direccion;
+        if(json.metros) pvMetros.value = json.metros;
+        if(json.anyoConstruccion) pvAnyoConstruccion.value = json.anyoConstruccion;
+        if(json.lat!=null && json.lng!=null){
+          ensurePvMap();
+          setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 50);
+          setTimeout(()=>{ setPvLocation(json.lat, json.lng, 17); }, 120);
+        }
+        mostrarPvCatastroEstado('Datos del catastro cargados ✓ Revisa que estén bien antes de guardar.', true);
+      } else {
+        mostrarPvCatastroEstado(json.error || 'No se encontró esa referencia catastral. Revisa que esté bien escrita.');
+      }
+    } catch(err){
+      mostrarPvCatastroEstado('No se pudo consultar el catastro (revisa tu conexión).');
+    }
+    btn.disabled = false; btn.textContent = textoOriginal;
+  });
+
   document.getElementById('pvBuscarDireccion').addEventListener('click', async ()=>{
     ensurePvMap();
     setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 50);
@@ -4186,7 +4235,7 @@
   let editingPropVentaOriginal = null; // { direccion, link } de la propiedad que se está editando
 
   function resetPvAddForm(){
-    pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = '';
+    pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = ''; pvRefCatastral.value = ''; mostrarPvCatastroEstado('');
     pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
     pvCee.value = ''; pvCedula.value = '';
     pvMetro1.value = ''; pvMetro2.value = ''; pvMetro3.value = '';
