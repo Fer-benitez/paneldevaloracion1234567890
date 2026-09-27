@@ -835,6 +835,7 @@
   .estado-venta-btn.active-vendida{background:#fbeaea;color:var(--red);border-color:var(--red);}
 
   .lead-card.venta{
+    position:relative;
     border-color:#ecdfae;border-left:4px solid var(--gold);
     background:linear-gradient(180deg,#fffdf6,#ffffff);
     box-shadow:0 4px 14px -9px rgba(156,122,30,0.4);
@@ -843,6 +844,18 @@
   .lead-card.venta.semaforo-verde{border-left-color:var(--green);}
   .lead-card.venta.semaforo-rojo{border-left-color:var(--red);}
   .lead-card.venta.semaforo-amarillo{border-left-color:#e0a41a;}
+  /* Punto de color en la esquina superior derecha de la tarjeta (Nivel 1), reflejando
+     el semáforo elegido (verde=Responde, rojo=No responde, amarillo=Esperando), para
+     verlo de un vistazo sin tener que bajar hasta los botones. */
+  .lead-card.venta.semaforo-verde::before,
+  .lead-card.venta.semaforo-rojo::before,
+  .lead-card.venta.semaforo-amarillo::before{
+    content:'';position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;
+    border:2px solid var(--white);box-shadow:0 2px 6px rgba(0,0,0,.18);z-index:2;
+  }
+  .lead-card.venta.semaforo-verde::before{background:var(--green);}
+  .lead-card.venta.semaforo-rojo::before{background:var(--red);}
+  .lead-card.venta.semaforo-amarillo::before{background:#e0a41a;}
   .lead-card.venta .move-btn{background:var(--gold-dark);}
   .lead-card.venta .move-btn:hover{background:#6e5710;}
   .lead-card.venta .lead-number{background:var(--gold-dark);}
