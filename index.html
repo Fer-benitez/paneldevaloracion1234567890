@@ -1499,6 +1499,10 @@
       <div class="add-piso-field" style="margin-bottom:14px;"><label>Descripción (opcional)</label><textarea id="pvDescripcion" rows="3" placeholder="Notas sobre el piso: distribución, estado, orientación..."></textarea></div>
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Certificado energético <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional — se muestra en el mapa como un mini certificado que se puede ampliar)</span></label>
+        <div class="add-piso-field" style="margin-bottom:8px;">
+          <label style="font-weight:600;text-transform:none;letter-spacing:0;font-size:12px;">Código de registro del certificado</label>
+          <input type="text" id="pvCeeCodigo" placeholder="Ej. 0812-0001923">
+        </div>
         <div class="add-piso-row" style="margin-bottom:8px;">
           <div class="add-piso-field">
             <label style="font-weight:600;text-transform:none;letter-spacing:0;font-size:12px;">Consumo de energía</label>
@@ -3959,6 +3963,7 @@
   const pvMetros = document.getElementById('pvMetros');
   const pvHabitaciones = document.getElementById('pvHabitaciones');
   const pvDescripcion = document.getElementById('pvDescripcion');
+  const pvCeeCodigo = document.getElementById('pvCeeCodigo');
   const pvCeeConsumoLetra = document.getElementById('pvCeeConsumoLetra');
   const pvCeeConsumoValor = document.getElementById('pvCeeConsumoValor');
   const pvCeeEmisionesLetra = document.getElementById('pvCeeEmisionesLetra');
@@ -4337,6 +4342,7 @@
   function resetPvAddForm(){
     pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = ''; pvRefCatastral.value = ''; mostrarPvCatastroEstado('');
     pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
+    pvCeeCodigo.value = '';
     pvCeeConsumoLetra.value = ''; pvCeeConsumoValor.value = '';
     pvCeeEmisionesLetra.value = ''; pvCeeEmisionesValor.value = '';
     pvCedula.value = '';
@@ -4380,6 +4386,7 @@
     pvMetros.value = p['Metros'] || '';
     pvHabitaciones.value = p['Habitaciones'] || '';
     pvDescripcion.value = p['Descripción'] || '';
+    pvCeeCodigo.value = p['CEE Código Registro'] || '';
     pvCeeConsumoLetra.value = p['CEE Consumo Letra'] || '';
     pvCeeConsumoValor.value = p['CEE Consumo Valor'] || '';
     pvCeeEmisionesLetra.value = p['CEE Emisiones Letra'] || '';
@@ -4459,6 +4466,7 @@
     const metros = pvMetros.value.trim();
     const habitaciones = pvHabitaciones.value.trim();
     const descripcion = pvDescripcion.value.trim();
+    const ceeCodigo = pvCeeCodigo.value.trim();
     const ceeConsumoLetra = pvCeeConsumoLetra.value;
     const ceeConsumoValor = pvCeeConsumoValor.value.trim();
     const ceeEmisionesLetra = pvCeeEmisionesLetra.value;
@@ -4504,6 +4512,7 @@
         fotos: uploadedPropVentaImageUrls.join('|'),
         link: link, precio: precio,
         barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
+        ceeCodigo: ceeCodigo,
         ceeConsumoLetra: ceeConsumoLetra, ceeConsumoValor: ceeConsumoValor,
         ceeEmisionesLetra: ceeEmisionesLetra, ceeEmisionesValor: ceeEmisionesValor,
         cedula: cedula,
