@@ -4367,18 +4367,55 @@
       const res = await fetch(APPS_SCRIPT_URL_VENTA + '?tipo=transportes_cercanos&lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng));
       const json = await res.json();
       if(json.success){
+        function rellenarSelectLinea(select, valor){
+          if(!select || !valor) return false;
+          const opciones = [...select.options];
+          // Coincidencia exacta primero, luego tolerante (sin espacios/mayúsculas,
+          // con o sin prefijo "L"), porque OSM y el desplegable no siempre usan
+          // exactamente el mismo formato para el número de línea.
+          let opt = opciones.find(o => o.value === valor);
+          if(!opt){
+            const norm = s => String(s).trim().toUpperCase().replace(/^L/, '');
+            opt = opciones.find(o => norm(o.value) === norm(valor));
+          }
+          if(opt){ select.value = opt.value; return true; }
+          return false;
+        }
+
         const metroEstCampos = [pvMetroEst1, pvMetroEst2, pvMetroEst3];
-        (json.metroEstaciones||[]).forEach((n,i)=>{ if(metroEstCampos[i]) metroEstCampos[i].value = n; });
+        let nEstMetro = 0;
+        (json.metroEstaciones||[]).forEach((n,i)=>{ if(metroEstCampos[i]){ metroEstCampos[i].value = n; nEstMetro++; } });
+
         const cercaniasCampos = [pvCercaniasEst1, pvCercaniasEst2, pvCercaniasEst3];
-        (json.cercaniasEstaciones||[]).forEach((n,i)=>{ if(cercaniasCampos[i]) cercaniasCampos[i].value = n; });
+        let nEstCercanias = 0;
+        (json.cercaniasEstaciones||[]).forEach((n,i)=>{ if(cercaniasCampos[i]){ cercaniasCampos[i].value = n; nEstCercanias++; } });
+
         const metroSelects = [pvMetro1, pvMetro2, pvMetro3];
-        (json.metroLineas||[]).forEach((l,i)=>{ if(metroSelects[i] && [...metroSelects[i].options].some(o=>o.value===l)) metroSelects[i].value = l; });
+        let nLineasMetro = 0;
+        (json.metroLineas||[]).forEach((l,i)=>{ if(rellenarSelectLinea(metroSelects[i], l)) nLineasMetro++; });
+
         const trenSelects = [pvTren1, pvTren2, pvTren3];
-        (json.trenLineas||[]).forEach((l,i)=>{ if(trenSelects[i] && [...trenSelects[i].options].some(o=>o.value===l)) trenSelects[i].value = l; });
+        let nLineasTren = 0;
+        (json.trenLineas||[]).forEach((l,i)=>{ if(rellenarSelectLinea(trenSelects[i], l)) nLineasTren++; });
+
         const busCampos = [pvBus1, pvBus2, pvBus3];
-        (json.busLineas||[]).forEach((l,i)=>{ if(busCampos[i]) busCampos[i].value = l; });
+        let nBus = 0;
+        (json.busLineas||[]).forEach((l,i)=>{ if(busCampos[i]){ busCampos[i].value = l; nBus++; } });
+
         PV_REPEAT_GROUPS.forEach(mostrarCamposConValor);
-        mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'Transporte cercano detectado ✓ Revisa antes de guardar.', true);
+
+        const totalRellenado = nEstMetro + nEstCercanias + nLineasMetro + nLineasTren + nBus;
+        if(totalRellenado === 0){
+          mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'No se ha encontrado transporte público cerca de este punto en OpenStreetMap. Puedes rellenarlo tú a mano.');
+        } else {
+          const partes = [];
+          if(nEstMetro) partes.push(nEstMetro + ' estación' + (nEstMetro>1?'es':'') + ' de metro');
+          if(nEstCercanias) partes.push(nEstCercanias + ' estación' + (nEstCercanias>1?'es':'') + ' de cercanías');
+          if(nLineasMetro) partes.push(nLineasMetro + ' línea' + (nLineasMetro>1?'s':'') + ' de metro');
+          if(nLineasTren) partes.push(nLineasTren + ' línea' + (nLineasTren>1?'s':'') + ' de tren/rodalies');
+          if(nBus) partes.push(nBus + ' línea' + (nBus>1?'s':'') + ' de bus');
+          mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'Detectado y rellenado: ' + partes.join(', ') + '. Revisa antes de guardar.', true);
+        }
       } else {
         mostrarPvEstadoGenerico('pvTransporteAutoStatus', json.error || 'No se pudo detectar transporte cercano.');
       }
