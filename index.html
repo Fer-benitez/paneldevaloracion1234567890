@@ -116,6 +116,11 @@
   .pv-repeat-group{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
   .pv-repeat-add{background:none;border:1.5px dashed var(--border);color:var(--navy);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:8px;cursor:pointer;width:100%;text-align:center;font-family:'Inter',sans-serif;transition:background .2s var(--ease);}
   .pv-repeat-add:hover{background:rgba(0,0,0,.04);}
+  .pv-lang-tabs{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+  .pv-lang-tab{background:none;border:1.5px solid var(--border);color:var(--muted);font-weight:700;font-size:12px;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s var(--ease);}
+  .pv-lang-tab.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .pv-lang-tab:hover:not(.active){background:rgba(0,0,0,.04);}
+  [data-lang-field]{margin-top:0;}
   .add-piso-field input[type="file"]{font-size:13px;width:100%;}
   .piso-upload-status{font-size:12.5px;color:var(--muted);margin-bottom:12px;min-height:16px;}
   .piso-upload-status.ok{color:var(--green);}
@@ -1340,8 +1345,17 @@
         <input type="text" id="rTituloAnuncio" placeholder="Ej. Piso luminoso con terraza junto al metro">
       </div>
       <div class="add-piso-field" style="margin-bottom:14px;">
-        <label>Descripción del anuncio</label>
-        <textarea id="rDescripcion" rows="4" placeholder="Características, zona, ventajas — el texto que verá el público"></textarea>
+        <label>Descripción del anuncio <span style="color:var(--muted);font-weight:400;text-transform:none;">(se muestra en el mapa en el idioma que el visitante tenga elegido)</span></label>
+        <div class="pv-lang-tabs" data-lang-tabs="rDescripcion">
+          <button type="button" class="pv-lang-tab active" data-lang-tab="es">🇪🇸 ES</button>
+          <button type="button" class="pv-lang-tab" data-lang-tab="en">🇬🇧 EN</button>
+          <button type="button" class="pv-lang-tab" data-lang-tab="de">🇩🇪 DE</button>
+          <button type="button" class="pv-lang-tab" data-lang-tab="fr">🇫🇷 FR</button>
+        </div>
+        <textarea id="rDescripcion" data-lang-field="rDescripcion" data-lang="es" rows="4" placeholder="Características, zona, ventajas — el texto que verá el público"></textarea>
+        <textarea id="rDescripcionEn" data-lang-field="rDescripcion" data-lang="en" rows="4" placeholder="English: features, area, advantages..." hidden></textarea>
+        <textarea id="rDescripcionDe" data-lang-field="rDescripcion" data-lang="de" rows="4" placeholder="Deutsch: Merkmale, Lage, Vorteile..." hidden></textarea>
+        <textarea id="rDescripcionFr" data-lang-field="rDescripcion" data-lang="fr" rows="4" placeholder="Français : caractéristiques, quartier, atouts..." hidden></textarea>
       </div>
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Notas internas (croquis, medidas, incidencias)</label>
@@ -1496,7 +1510,19 @@
       </div>
       <div class="add-piso-field" id="pvTipoNegocioField" style="margin-bottom:14px;display:none;"><label>Tipo de negocio permitido (opcional)</label><input type="text" id="pvTipoNegocio" placeholder="Ej. Hostelería, oficinas, cualquier actividad..."></div>
       <div class="add-piso-field" id="pvHabitacionesField" style="margin-bottom:14px;"><label>Habitaciones (opcional)</label><input type="text" id="pvHabitaciones" placeholder="Ej. 3" style="max-width:160px;"></div>
-      <div class="add-piso-field" style="margin-bottom:14px;"><label>Descripción (opcional)</label><textarea id="pvDescripcion" rows="3" placeholder="Notas sobre el piso: distribución, estado, orientación..."></textarea></div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Descripción (opcional) <span style="color:var(--muted);font-weight:400;text-transform:none;">(se muestra en el mapa en el idioma que el visitante tenga elegido)</span></label>
+        <div class="pv-lang-tabs" data-lang-tabs="pvDescripcion">
+          <button type="button" class="pv-lang-tab active" data-lang-tab="es">🇪🇸 ES</button>
+          <button type="button" class="pv-lang-tab" data-lang-tab="en">🇬🇧 EN</button>
+          <button type="button" class="pv-lang-tab" data-lang-tab="de">🇩🇪 DE</button>
+          <button type="button" class="pv-lang-tab" data-lang-tab="fr">🇫🇷 FR</button>
+        </div>
+        <textarea id="pvDescripcion" data-lang-field="pvDescripcion" data-lang="es" rows="3" placeholder="Notas sobre el piso: distribución, estado, orientación..."></textarea>
+        <textarea id="pvDescripcionEn" data-lang-field="pvDescripcion" data-lang="en" rows="3" placeholder="English: layout, condition, orientation..." hidden></textarea>
+        <textarea id="pvDescripcionDe" data-lang-field="pvDescripcion" data-lang="de" rows="3" placeholder="Deutsch: Aufteilung, Zustand, Ausrichtung..." hidden></textarea>
+        <textarea id="pvDescripcionFr" data-lang-field="pvDescripcion" data-lang="fr" rows="3" placeholder="Français : distribution, état, orientation..." hidden></textarea>
+      </div>
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Certificado energético <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional — se muestra en el mapa como un mini certificado que se puede ampliar)</span></label>
         <div class="add-piso-field" style="margin-bottom:8px;">
@@ -2688,6 +2714,9 @@
       motivo: document.getElementById('rMotivo').value,
       tituloAnuncio: document.getElementById('rTituloAnuncio').value,
       descripcion: document.getElementById('rDescripcion').value,
+      descripcionEn: document.getElementById('rDescripcionEn').value,
+      descripcionDe: document.getElementById('rDescripcionDe').value,
+      descripcionFr: document.getElementById('rDescripcionFr').value,
       notas: document.getElementById('rNotas').value,
       fotos: editingExistingPhotos.map(p=> p.name + ': ' + p.url).concat(recoPhotoLinks).join(' | ')
     };
@@ -2990,11 +3019,14 @@
       rSuelos:'Suelos', rVentanas:'Ventanas', rConsumoEnergetico:'Consumo energético',
       rPrecio:'Precio', rGastosComunidad:'Gastos comunidad', rFianzaMeses:'Fianza meses',
       rDisponibilidad:'Disponibilidad', rIbi:'IBI', rCargas:'Cargas', rMotivo:'Motivo',
-      rTituloAnuncio:'Título anuncio', rDescripcion:'Descripción', rNotas:'Notas'
+      rTituloAnuncio:'Título anuncio', rDescripcion:'Descripción',
+      rDescripcionEn:'Descripción EN', rDescripcionDe:'Descripción DE', rDescripcionFr:'Descripción FR',
+      rNotas:'Notas'
     };
     Object.keys(textFields).forEach(id=>{
       document.getElementById(id).value = r[textFields[id]] || '';
     });
+    resetLangTabs('rDescripcion');
 
     const choiceFields = {
       rOperacion:'Operación', rTipoInmueble:'Tipo de inmueble', rAscensor:'Ascensor',
@@ -3033,6 +3065,7 @@
 
   function resetRecoForm(){
     document.querySelectorAll('.reco-form input[type="text"], .reco-form input[type="number"], .reco-form textarea').forEach(el=> el.value = '');
+    resetLangTabs('rDescripcion');
     document.querySelectorAll('.reco-form .choice-btn.active').forEach(b=> b.classList.remove('active'));
     Object.keys(recoChoices).forEach(k=> delete recoChoices[k]);
     recoPhotoLinks.length = 0;
@@ -3963,6 +3996,29 @@
   const pvMetros = document.getElementById('pvMetros');
   const pvHabitaciones = document.getElementById('pvHabitaciones');
   const pvDescripcion = document.getElementById('pvDescripcion');
+  const pvDescripcionEn = document.getElementById('pvDescripcionEn');
+  const pvDescripcionDe = document.getElementById('pvDescripcionDe');
+  const pvDescripcionFr = document.getElementById('pvDescripcionFr');
+  // ---- Pestañas de idioma para las descripciones (ES/EN/DE/FR): un textarea por idioma, oculto salvo el activo ----
+  document.addEventListener('click', function(ev){
+    const tab = ev.target.closest && ev.target.closest('[data-lang-tab]');
+    if(!tab) return;
+    const grupo = tab.closest('[data-lang-tabs]');
+    if(!grupo) return;
+    const campo = grupo.getAttribute('data-lang-tabs');
+    const idioma = tab.getAttribute('data-lang-tab');
+    grupo.querySelectorAll('[data-lang-tab]').forEach(b=> b.classList.toggle('active', b===tab));
+    document.querySelectorAll('[data-lang-field="'+campo+'"]').forEach(ta=>{
+      ta.hidden = (ta.getAttribute('data-lang') !== idioma);
+    });
+  });
+  function resetLangTabs(campo){
+    const grupo = document.querySelector('[data-lang-tabs="'+campo+'"]');
+    if(grupo) grupo.querySelectorAll('[data-lang-tab]').forEach(b=> b.classList.toggle('active', b.getAttribute('data-lang-tab')==='es'));
+    document.querySelectorAll('[data-lang-field="'+campo+'"]').forEach(ta=>{
+      ta.hidden = (ta.getAttribute('data-lang') !== 'es');
+    });
+  }
   const pvCeeCodigo = document.getElementById('pvCeeCodigo');
   const pvCeeConsumoLetra = document.getElementById('pvCeeConsumoLetra');
   const pvCeeConsumoValor = document.getElementById('pvCeeConsumoValor');
@@ -4342,6 +4398,8 @@
   function resetPvAddForm(){
     pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = ''; pvRefCatastral.value = ''; mostrarPvCatastroEstado('');
     pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
+    pvDescripcionEn.value = ''; pvDescripcionDe.value = ''; pvDescripcionFr.value = '';
+    resetLangTabs('pvDescripcion');
     pvCeeCodigo.value = '';
     pvCeeConsumoLetra.value = ''; pvCeeConsumoValor.value = '';
     pvCeeEmisionesLetra.value = ''; pvCeeEmisionesValor.value = '';
@@ -4386,6 +4444,10 @@
     pvMetros.value = p['Metros'] || '';
     pvHabitaciones.value = p['Habitaciones'] || '';
     pvDescripcion.value = p['Descripción'] || '';
+    pvDescripcionEn.value = p['Descripción EN'] || '';
+    pvDescripcionDe.value = p['Descripción DE'] || '';
+    pvDescripcionFr.value = p['Descripción FR'] || '';
+    resetLangTabs('pvDescripcion');
     pvCeeCodigo.value = p['CEE Código Registro'] || '';
     pvCeeConsumoLetra.value = p['CEE Consumo Letra'] || '';
     pvCeeConsumoValor.value = p['CEE Consumo Valor'] || '';
@@ -4466,6 +4528,9 @@
     const metros = pvMetros.value.trim();
     const habitaciones = pvHabitaciones.value.trim();
     const descripcion = pvDescripcion.value.trim();
+    const descripcionEn = pvDescripcionEn.value.trim();
+    const descripcionDe = pvDescripcionDe.value.trim();
+    const descripcionFr = pvDescripcionFr.value.trim();
     const ceeCodigo = pvCeeCodigo.value.trim();
     const ceeConsumoLetra = pvCeeConsumoLetra.value;
     const ceeConsumoValor = pvCeeConsumoValor.value.trim();
@@ -4512,6 +4577,7 @@
         fotos: uploadedPropVentaImageUrls.join('|'),
         link: link, precio: precio,
         barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
+        descripcionEn: descripcionEn, descripcionDe: descripcionDe, descripcionFr: descripcionFr,
         ceeCodigo: ceeCodigo,
         ceeConsumoLetra: ceeConsumoLetra, ceeConsumoValor: ceeConsumoValor,
         ceeEmisionesLetra: ceeEmisionesLetra, ceeEmisionesValor: ceeEmisionesValor,
