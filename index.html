@@ -1522,6 +1522,15 @@
         <textarea id="pvDescripcionEn" data-lang-field="pvDescripcion" data-lang="en" rows="3" placeholder="English: layout, condition, orientation..." hidden></textarea>
         <textarea id="pvDescripcionDe" data-lang-field="pvDescripcion" data-lang="de" rows="3" placeholder="Deutsch: Aufteilung, Zustand, Ausrichtung..." hidden></textarea>
         <textarea id="pvDescripcionFr" data-lang-field="pvDescripcion" data-lang="fr" rows="3" placeholder="Français : distribution, état, orientation..." hidden></textarea>
+        <button type="button" id="pvMejorarDescBtn" class="edit-reco-btn" style="width:auto;padding:8px 14px;margin-top:8px;font-size:12.5px;">✨ Corregir español y traducir a EN/DE/FR</button>
+        <div class="paste-status" id="pvMejorarDescStatus"></div>
+      </div>
+      <div class="paste-idealista-box">
+        <div class="paste-idealista-label">✨ Pegar certificado energético / cédula (opcional)</div>
+        <textarea id="pvCeeTexto" placeholder="Pega aquí el texto del anuncio o del certificado donde salga el CEE y la cédula (ej. copiado de Idealista)..."></textarea>
+        <button type="button" id="pvCeeExtraerBtn" class="add-piso-btn" style="margin-top:10px;width:auto;padding:10px 18px;">✨ Rellenar CEE y cédula</button>
+        <div class="paste-hint">Revisa los datos antes de guardar.</div>
+        <div class="paste-status" id="pvCeeExtraerStatus"></div>
       </div>
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Certificado energético <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional — se muestra en el mapa como un mini certificado que se puede ampliar)</span></label>
@@ -1580,6 +1589,10 @@
       <!-- ---- Datos extra del inmueble: solo aparecen en la ficha pública si se rellenan ---- -->
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Transporte público cercano <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional — solo se muestran los que rellenes, con icono)</span></label>
+        <div style="margin-bottom:12px;">
+          <button type="button" id="pvTransporteAutoBtn" class="edit-reco-btn" style="width:auto;padding:8px 14px;font-size:12.5px;">📍 Detectar transporte cercano (usa el punto del mapa)</button>
+          <div class="paste-status" id="pvTransporteAutoStatus"></div>
+        </div>
         <div class="pv-transporte-block">
           <label class="pv-sub">🚇 Estaciones de Metro cercanas (hasta 3 — escribe el nombre)</label>
           <div class="pv-repeat-group" data-repeat-group="metroEst">
@@ -1647,7 +1660,7 @@
           <select id="pvEstadoPropiedad">
             <option value="">— Selecciona —</option>
             <option value="A reformar">A reformar</option>
-            <option value="Buen estado">Buen estado</option>
+            <option value="Buen estado" selected>Buen estado</option>
             <option value="Reformado">Reformado</option>
             <option value="Obra nueva">Obra nueva</option>
           </select>
@@ -1678,9 +1691,9 @@
       </div>
 
       <div class="add-piso-field" style="margin-bottom:14px;">
-        <label>Mensaje de WhatsApp para los leads de este piso (opcional)</label>
-        <textarea id="pvMensajeWhatsapp" rows="3" placeholder="Ej. Hola {nombre}, gracias por tu interés en el piso de Aribau 218. ¿Te viene bien concretar una visita esta semana?"></textarea>
-        <p style="font-size:11.5px;color:var(--muted,#8a8a8a);margin:4px 0 0;">Usa <code>{nombre}</code> donde quieras que aparezca el nombre del lead — se rellena solo al enviar. Se puede editar cuando quieras y se guarda para todos tus dispositivos.</p>
+        <label>Mensaje de WhatsApp para los leads de este piso (opcional — ya viene con una plantilla por defecto)</label>
+        <textarea id="pvMensajeWhatsapp" rows="6"></textarea>
+        <p style="font-size:11.5px;color:var(--muted,#8a8a8a);margin:4px 0 0;">Usa <code>{nombre}</code> para el nombre del lead y <code>{link}</code> para el link de Idealista de esta propiedad — se rellenan solos al enviar. Se puede editar cuando quieras y se guarda para todos tus dispositivos.</p>
       </div>
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Ubicación en el mapa (necesaria para que salga en el mapa público — no hace falta que sea exacta, solo aproximada)</label>
@@ -4032,6 +4045,17 @@
   const pvIndexValor = document.getElementById('pvIndexValor');
   const pvIndexAreaSuperior = document.getElementById('pvIndexAreaSuperior');
   const pvMensajeWhatsapp = document.getElementById('pvMensajeWhatsapp');
+  // Plantilla por defecto del mensaje de WhatsApp a los leads: usa {nombre} y
+  // {link} (el link de Idealista de la propiedad), y se puede personalizar
+  // por propiedad en el campo de abajo.
+  const PV_MENSAJE_WA_DEFECTO = '👋 Hola {nombre},\n\n'
+    + 'Soy Fernando, de AG Núñez, y te escribo en referencia al piso en el que mostraste interés, disponible aquí:\n\n'
+    + '{link}\n\n'
+    + '📋 Quedo a tu disposición para ampliarte cualquier información o agendar una visita cuando te venga bien.\n'
+    + '📞 Si lo prefieres, también podemos hablar por teléfono — dime cuándo te viene bien y te llamo con gusto.\n'
+    + '✍️ O dime por aquí las preguntas que necesites saber y cuándo quieres agendar una visita.\n\n'
+    + 'Un abrazo,\n'
+    + 'Fernando';
 
   // ---- Datos extra del inmueble (transporte, hospitales, orientación, estado, ascensor, año, ITE, IBI, gastos) ----
   const PV_METRO_LINEAS = ['L1','L2','L3','L4','L5','L9 Nord','L9 Sud','L10 Nord','L10 Sud','L11'];
@@ -4243,6 +4267,13 @@
           ensurePvMap();
           setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 50);
           setTimeout(()=>{ setPvLocation(json.lat, json.lng, 17); }, 120);
+          // El catastro no da el barrio: si el campo está vacío, lo rellenamos
+          // solos a partir de las coordenadas (geocodificación, no una suposición).
+          if(!pvBarrio.value.trim()){
+            fetch(APPS_SCRIPT_URL_VENTA + '?tipo=geocodificar_barrio&lat=' + encodeURIComponent(json.lat) + '&lng=' + encodeURIComponent(json.lng))
+              .then(r=>r.json()).then(bj=>{ if(bj.success && bj.barrio && !pvBarrio.value.trim()) pvBarrio.value = bj.barrio; })
+              .catch(()=>{});
+          }
         }
         mostrarPvCatastroEstado('Datos del catastro cargados ✓ Revisa que estén bien antes de guardar.', true);
       } else {
@@ -4250,6 +4281,101 @@
       }
     } catch(err){
       mostrarPvCatastroEstado('No se pudo consultar el catastro (revisa tu conexión).');
+    }
+    btn.disabled = false; btn.textContent = textoOriginal;
+  });
+
+  // ---- Corregir y traducir la descripción con IA (solo esos 4 campos) ----
+  function mostrarPvEstadoGenerico(idEstado, msg, ok){
+    const el = document.getElementById(idEstado);
+    if(!msg){ el.className = 'paste-status'; el.textContent = ''; return; }
+    el.className = 'paste-status ' + (ok ? 'ok' : 'error');
+    el.textContent = msg;
+  }
+  document.getElementById('pvMejorarDescBtn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('pvMejorarDescBtn');
+    const texto = pvDescripcion.value.trim();
+    if(!texto){ mostrarPvEstadoGenerico('pvMejorarDescStatus', 'Escribe primero la descripción en español.'); return; }
+    const textoOriginal = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Corrigiendo y traduciendo...';
+    mostrarPvEstadoGenerico('pvMejorarDescStatus', '');
+    try{
+      const res = await fetch(APPS_SCRIPT_URL_VENTA + '?tipo=mejorar_descripcion&texto=' + encodeURIComponent(texto));
+      const json = await res.json();
+      if(json.success && json.campos){
+        const c = json.campos;
+        if(c.descripcion) pvDescripcion.value = c.descripcion;
+        if(c.descripcionEn) pvDescripcionEn.value = c.descripcionEn;
+        if(c.descripcionDe) pvDescripcionDe.value = c.descripcionDe;
+        if(c.descripcionFr) pvDescripcionFr.value = c.descripcionFr;
+        mostrarPvEstadoGenerico('pvMejorarDescStatus', 'Descripción corregida y traducida ✓', true);
+      } else {
+        mostrarPvEstadoGenerico('pvMejorarDescStatus', json.error || 'No se pudo procesar la descripción.');
+      }
+    } catch(err){
+      mostrarPvEstadoGenerico('pvMejorarDescStatus', 'No se pudo contactar con la IA (revisa tu conexión).');
+    }
+    btn.disabled = false; btn.textContent = textoOriginal;
+  });
+
+  // ---- Extraer CEE y cédula de un texto pegado (solo esos 6 campos) ----
+  document.getElementById('pvCeeExtraerBtn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('pvCeeExtraerBtn');
+    const texto = document.getElementById('pvCeeTexto').value.trim();
+    if(!texto){ mostrarPvEstadoGenerico('pvCeeExtraerStatus', 'Pega primero el texto con el CEE / la cédula.'); return; }
+    const textoOriginal = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Extrayendo...';
+    mostrarPvEstadoGenerico('pvCeeExtraerStatus', '');
+    try{
+      const res = await fetch(APPS_SCRIPT_URL_VENTA + '?tipo=extraer_cee_cedula&texto=' + encodeURIComponent(texto));
+      const json = await res.json();
+      if(json.success && json.campos){
+        const c = json.campos;
+        if(c.ceeCodigo) pvCeeCodigo.value = c.ceeCodigo;
+        if(c.ceeConsumoLetra) pvCeeConsumoLetra.value = c.ceeConsumoLetra;
+        if(c.ceeConsumoValor) pvCeeConsumoValor.value = c.ceeConsumoValor;
+        if(c.ceeEmisionesLetra) pvCeeEmisionesLetra.value = c.ceeEmisionesLetra;
+        if(c.ceeEmisionesValor) pvCeeEmisionesValor.value = c.ceeEmisionesValor;
+        if(c.cedula) pvCedula.value = c.cedula;
+        mostrarPvEstadoGenerico('pvCeeExtraerStatus', 'Datos rellenados ✓ Revisa antes de guardar.', true);
+      } else {
+        mostrarPvEstadoGenerico('pvCeeExtraerStatus', json.error || 'No se pudo extraer esa información.');
+      }
+    } catch(err){
+      mostrarPvEstadoGenerico('pvCeeExtraerStatus', 'No se pudo contactar con la IA (revisa tu conexión).');
+    }
+    btn.disabled = false; btn.textContent = textoOriginal;
+  });
+
+  // ---- Detectar transporte cercano a partir del punto marcado en el mapa ----
+  document.getElementById('pvTransporteAutoBtn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('pvTransporteAutoBtn');
+    const lat = pvLat.value, lng = pvLng.value;
+    if(!lat || !lng){ mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'Pon primero el piso en el mapa (busca la dirección o la referencia catastral).'); return; }
+    const textoOriginal = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Buscando...';
+    mostrarPvEstadoGenerico('pvTransporteAutoStatus', '');
+    try{
+      const res = await fetch(APPS_SCRIPT_URL_VENTA + '?tipo=transportes_cercanos&lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng));
+      const json = await res.json();
+      if(json.success){
+        const metroEstCampos = [pvMetroEst1, pvMetroEst2, pvMetroEst3];
+        (json.metroEstaciones||[]).forEach((n,i)=>{ if(metroEstCampos[i]) metroEstCampos[i].value = n; });
+        const cercaniasCampos = [pvCercaniasEst1, pvCercaniasEst2, pvCercaniasEst3];
+        (json.cercaniasEstaciones||[]).forEach((n,i)=>{ if(cercaniasCampos[i]) cercaniasCampos[i].value = n; });
+        const metroSelects = [pvMetro1, pvMetro2, pvMetro3];
+        (json.metroLineas||[]).forEach((l,i)=>{ if(metroSelects[i] && [...metroSelects[i].options].some(o=>o.value===l)) metroSelects[i].value = l; });
+        const trenSelects = [pvTren1, pvTren2, pvTren3];
+        (json.trenLineas||[]).forEach((l,i)=>{ if(trenSelects[i] && [...trenSelects[i].options].some(o=>o.value===l)) trenSelects[i].value = l; });
+        const busCampos = [pvBus1, pvBus2, pvBus3];
+        (json.busLineas||[]).forEach((l,i)=>{ if(busCampos[i]) busCampos[i].value = l; });
+        PV_REPEAT_GROUPS.forEach(mostrarCamposConValor);
+        mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'Transporte cercano detectado ✓ Revisa antes de guardar.', true);
+      } else {
+        mostrarPvEstadoGenerico('pvTransporteAutoStatus', json.error || 'No se pudo detectar transporte cercano.');
+      }
+    } catch(err){
+      mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'No se pudo contactar con el servicio (revisa tu conexión).');
     }
     btn.disabled = false; btn.textContent = textoOriginal;
   });
@@ -4412,10 +4538,10 @@
     pvMetroEst1.value = ''; pvMetroEst2.value = ''; pvMetroEst3.value = '';
     pvCercaniasEst1.value = ''; pvCercaniasEst2.value = ''; pvCercaniasEst3.value = '';
     PV_REPEAT_GROUPS.forEach(resetCamposRepetibles);
-    pvHospitales.value = ''; pvOrientacion.value = ''; pvEstadoPropiedad.value = '';
+    pvHospitales.value = ''; pvOrientacion.value = ''; pvEstadoPropiedad.value = 'Buen estado';
     pvAscensor.value = ''; pvAnyoConstruccion.value = ''; pvIte.value = '';
     pvIbi.value = ''; pvGastosComunidad.value = '';
-    pvMensajeWhatsapp.value = '';
+    pvMensajeWhatsapp.value = PV_MENSAJE_WA_DEFECTO;
     uploadedPropVentaImageUrls = [];
     pvUploadStatus.textContent = ''; pvUploadStatus.className = 'piso-upload-status';
     pvLat.value = ''; pvLng.value = '';
@@ -4468,13 +4594,13 @@
     PV_REPEAT_GROUPS.forEach(mostrarCamposConValor);
     pvHospitales.value = p['Hospitales'] || '';
     pvOrientacion.value = p['Orientación'] || '';
-    pvEstadoPropiedad.value = p['EstadoPropiedad'] || '';
+    pvEstadoPropiedad.value = p['EstadoPropiedad'] || 'Buen estado';
     pvAscensor.value = p['Ascensor'] || '';
     pvAnyoConstruccion.value = p['AñoConstrucción'] || '';
     pvIte.value = p['ITE'] || '';
     pvIbi.value = p['IBI'] || '';
     pvGastosComunidad.value = p['GastosComunidad'] || '';
-    pvMensajeWhatsapp.value = p['MensajeWhatsapp'] || '';
+    pvMensajeWhatsapp.value = p['MensajeWhatsapp'] || PV_MENSAJE_WA_DEFECTO;
 
     const operacion = (p['Operación'] || 'Venta').trim() || 'Venta';
     pvOperacionSeleccionada = operacion;
@@ -5438,8 +5564,12 @@
     const propiedadLead = cachedPropiedadesVenta.find(p => (p['Dirección']||'').trim() && (p['Dirección']||'').trim() === (l['Propiedad']||'').trim());
     const plantillaWa = (propiedadLead && (propiedadLead['MensajeWhatsapp']||'').trim())
       ? propiedadLead['MensajeWhatsapp'].trim()
-      : 'Hola {nombre}, soy Fer. Gracias por tu interés en el piso, ¿cuándo te vendría bien concretar una visita?';
-    const mensajeWaCompuesto = plantillaWa.replace(/\{nombre\}/gi, (l['Nombre']||'').trim()).replace(/ {2,}/g, ' ').trim();
+      : PV_MENSAJE_WA_DEFECTO;
+    const linkPropiedadLead = (propiedadLead && (propiedadLead['Link']||'').trim()) || '';
+    const mensajeWaCompuesto = plantillaWa
+      .replace(/\{nombre\}/gi, (l['Nombre']||'').trim())
+      .replace(/\{link\}/gi, linkPropiedadLead)
+      .replace(/[ \t]{2,}/g, ' ').trim();
     const waEnviado = (l['WhatsappEnviado'] || '').trim() === 'Sí';
     const waEnviadoFecha = (l['WhatsappEnviadoFecha'] || '').toString().trim();
     let visitaRealizadaFecha = (l['VisitaRealizadaFecha'] || '').toString().trim();
