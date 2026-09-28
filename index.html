@@ -113,6 +113,9 @@
   .pv-transporte-group label.pv-sub{font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block;}
   .pv-transporte-block{margin-bottom:10px;}
   @media (max-width:640px){ .pv-transporte-group{grid-template-columns:1fr;} }
+  .pv-repeat-group{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+  .pv-repeat-add{background:none;border:1.5px dashed var(--border);color:var(--navy);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:8px;cursor:pointer;width:100%;text-align:center;font-family:'Inter',sans-serif;transition:background .2s var(--ease);}
+  .pv-repeat-add:hover{background:rgba(0,0,0,.04);}
   .add-piso-field input[type="file"]{font-size:13px;width:100%;}
   .piso-upload-status{font-size:12.5px;color:var(--muted);margin-bottom:12px;min-height:16px;}
   .piso-upload-status.ok{color:var(--green);}
@@ -1494,53 +1497,103 @@
       <div class="add-piso-field" id="pvTipoNegocioField" style="margin-bottom:14px;display:none;"><label>Tipo de negocio permitido (opcional)</label><input type="text" id="pvTipoNegocio" placeholder="Ej. Hostelería, oficinas, cualquier actividad..."></div>
       <div class="add-piso-field" id="pvHabitacionesField" style="margin-bottom:14px;"><label>Habitaciones (opcional)</label><input type="text" id="pvHabitaciones" placeholder="Ej. 3" style="max-width:160px;"></div>
       <div class="add-piso-field" style="margin-bottom:14px;"><label>Descripción (opcional)</label><textarea id="pvDescripcion" rows="3" placeholder="Notas sobre el piso: distribución, estado, orientación..."></textarea></div>
-      <div class="add-piso-row">
-        <div class="add-piso-field"><label>Certificado energético — CEE <span style="color:var(--muted);font-weight:400;text-transform:none;">(se muestra en el mapa público)</span></label><input type="text" id="pvCee" placeholder="Ej. D o D (72 kWh/m² año)"></div>
-        <div class="add-piso-field"><label>Cédula de habitabilidad <span style="color:var(--muted);font-weight:400;text-transform:none;">(uso interno, no se publica)</span></label><input type="text" id="pvCedula" placeholder="Ej. Vigente hasta 2032 / En trámite"></div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Certificado energético <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional — se muestra en el mapa como un mini certificado que se puede ampliar)</span></label>
+        <div class="add-piso-row" style="margin-bottom:8px;">
+          <div class="add-piso-field">
+            <label style="font-weight:600;text-transform:none;letter-spacing:0;font-size:12px;">Consumo de energía</label>
+            <div style="display:flex;gap:8px;">
+              <select id="pvCeeConsumoLetra" style="max-width:90px;">
+                <option value="">—</option>
+                <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+                <option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option>
+              </select>
+              <input type="text" id="pvCeeConsumoValor" placeholder="Ej. 143 kWh/m² año" style="flex:1;">
+            </div>
+          </div>
+          <div class="add-piso-field">
+            <label style="font-weight:600;text-transform:none;letter-spacing:0;font-size:12px;">Emisiones de CO₂</label>
+            <div style="display:flex;gap:8px;">
+              <select id="pvCeeEmisionesLetra" style="max-width:90px;">
+                <option value="">—</option>
+                <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+                <option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option>
+              </select>
+              <input type="text" id="pvCeeEmisionesValor" placeholder="Ej. 26 kgCO₂/m² año" style="flex:1;">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Cédula de habitabilidad <span style="color:var(--muted);font-weight:400;text-transform:none;">(uso interno, no se publica)</span></label><input type="text" id="pvCedula" placeholder="Ej. Vigente hasta 2032 / En trámite">
+      </div>
+
+      <!-- ---- Datos de alquiler de vivienda (Incasòl): solo se piden y se muestran cuando Operación=Alquiler y el inmueble es Vivienda (no Local) ---- -->
+      <div class="add-piso-field" id="pvAlquilerViviendaFields" style="margin-bottom:14px;display:none;">
+        <label>Datos del alquiler de vivienda <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional — solo aplica a alquiler de vivienda, se muestra en el mapa)</span></label>
+        <div class="add-piso-row" style="margin-bottom:8px;">
+          <div class="add-piso-field"><label style="font-weight:600;text-transform:none;letter-spacing:0;font-size:12px;">Última renta devengada</label><input type="text" id="pvUltimaRenta" placeholder="Ej. 950"></div>
+          <div class="add-piso-field"></div>
+        </div>
+        <div class="add-piso-row" style="margin-bottom:8px;">
+          <div class="add-piso-field"><label style="font-weight:600;text-transform:none;letter-spacing:0;font-size:12px;">Rango de valores de alquiler — mínimo</label><input type="text" id="pvRentaRangoMin" placeholder="Ej. 850"></div>
+          <div class="add-piso-field"><label style="font-weight:600;text-transform:none;letter-spacing:0;font-size:12px;">Rango de valores de alquiler — máximo</label><input type="text" id="pvRentaRangoMax" placeholder="Ej. 1050"></div>
+        </div>
+        <label style="font-weight:600;text-transform:none;letter-spacing:0;font-size:12px;display:block;margin-bottom:6px;">Índex de referència de preus de lloguer (€/m²)</label>
+        <div class="pv-transporte-group">
+          <div><label class="pv-sub" style="text-transform:none;">Área inferior</label><input type="text" id="pvIndexAreaInferior" placeholder="Ej. 19,23"></div>
+          <div><label class="pv-sub" style="text-transform:none;">Índex</label><input type="text" id="pvIndexValor" placeholder="Ej. 19,64"></div>
+          <div><label class="pv-sub" style="text-transform:none;">Área superior</label><input type="text" id="pvIndexAreaSuperior" placeholder="Ej. 24,47"></div>
+        </div>
       </div>
 
       <!-- ---- Datos extra del inmueble: solo aparecen en la ficha pública si se rellenan ---- -->
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Transporte público cercano <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional — solo se muestran los que rellenes, con icono)</span></label>
         <div class="pv-transporte-block">
-          <label class="pv-sub">🚇 Metro (hasta 3 líneas)</label>
-          <div class="pv-transporte-group">
-            <select id="pvMetro1"></select>
-            <select id="pvMetro2"></select>
-            <select id="pvMetro3"></select>
+          <label class="pv-sub">🚇 Estaciones de Metro cercanas (hasta 3 — escribe el nombre)</label>
+          <div class="pv-repeat-group" data-repeat-group="metroEst">
+            <input type="text" id="pvMetroEst1" placeholder="Ej. Clot">
+            <input type="text" id="pvMetroEst2" placeholder="Ej. Navas" hidden>
+            <input type="text" id="pvMetroEst3" placeholder="Ej. Encants" hidden>
           </div>
+          <button type="button" class="pv-repeat-add" data-repeat-add="metroEst">+ Añadir otra estación de Metro</button>
+        </div>
+        <div class="pv-transporte-block">
+          <label class="pv-sub">🚉 Estaciones de Cercanías / Renfe cercanas (hasta 3 — escribe el nombre)</label>
+          <div class="pv-repeat-group" data-repeat-group="cercaniasEst">
+            <input type="text" id="pvCercaniasEst1" placeholder="Ej. Clot-Aragó">
+            <input type="text" id="pvCercaniasEst2" placeholder="Ej. Sant Andreu Arenal" hidden>
+            <input type="text" id="pvCercaniasEst3" placeholder="Ej. Sants Estació" hidden>
+          </div>
+          <button type="button" class="pv-repeat-add" data-repeat-add="cercaniasEst">+ Añadir otra estación de Cercanías</button>
+        </div>
+        <div class="pv-transporte-block">
+          <label class="pv-sub">🚇 Metro (hasta 3 líneas)</label>
+          <div class="pv-repeat-group" data-repeat-group="metro">
+            <select id="pvMetro1"></select>
+            <select id="pvMetro2" hidden></select>
+            <select id="pvMetro3" hidden></select>
+          </div>
+          <button type="button" class="pv-repeat-add" data-repeat-add="metro">+ Añadir otra línea de Metro</button>
         </div>
         <div class="pv-transporte-block">
           <label class="pv-sub">🚆 Tren / Rodalies / FGC (hasta 3 líneas)</label>
-          <div class="pv-transporte-group">
+          <div class="pv-repeat-group" data-repeat-group="tren">
             <select id="pvTren1"></select>
-            <select id="pvTren2"></select>
-            <select id="pvTren3"></select>
+            <select id="pvTren2" hidden></select>
+            <select id="pvTren3" hidden></select>
           </div>
-        </div>
-        <div class="pv-transporte-block">
-          <label class="pv-sub">🚌 Autobús (hasta 3 líneas — escribe el número/nombre)</label>
-          <div class="pv-transporte-group">
-            <input type="text" id="pvBus1" placeholder="Ej. H16">
-            <input type="text" id="pvBus2" placeholder="Ej. V21">
-            <input type="text" id="pvBus3" placeholder="Ej. 92">
-          </div>
-        </div>
-        <div class="pv-transporte-block">
-          <label class="pv-sub">🚇 Estaciones de Metro cercanas (hasta 3 — escribe el nombre)</label>
-          <div class="pv-transporte-group">
-            <input type="text" id="pvMetroEst1" placeholder="Ej. Clot">
-            <input type="text" id="pvMetroEst2" placeholder="Ej. Navas">
-            <input type="text" id="pvMetroEst3" placeholder="Ej. Encants">
-          </div>
+          <button type="button" class="pv-repeat-add" data-repeat-add="tren">+ Añadir otra línea de Tren</button>
         </div>
         <div class="pv-transporte-block" style="margin-bottom:0;">
-          <label class="pv-sub">🚉 Estaciones de Cercanías / Renfe cercanas (hasta 3 — escribe el nombre)</label>
-          <div class="pv-transporte-group">
-            <input type="text" id="pvCercaniasEst1" placeholder="Ej. Clot-Aragó">
-            <input type="text" id="pvCercaniasEst2" placeholder="Ej. Sant Andreu Arenal">
-            <input type="text" id="pvCercaniasEst3" placeholder="Ej. Sants Estació">
+          <label class="pv-sub">🚌 Autobús (hasta 3 líneas — escribe el número/nombre)</label>
+          <div class="pv-repeat-group" data-repeat-group="bus">
+            <input type="text" id="pvBus1" placeholder="Ej. H16">
+            <input type="text" id="pvBus2" placeholder="Ej. V21" hidden>
+            <input type="text" id="pvBus3" placeholder="Ej. 92" hidden>
           </div>
+          <button type="button" class="pv-repeat-add" data-repeat-add="bus">+ Añadir otra línea de Autobús</button>
         </div>
       </div>
       <div class="add-piso-row">
@@ -3906,8 +3959,17 @@
   const pvMetros = document.getElementById('pvMetros');
   const pvHabitaciones = document.getElementById('pvHabitaciones');
   const pvDescripcion = document.getElementById('pvDescripcion');
-  const pvCee = document.getElementById('pvCee');
+  const pvCeeConsumoLetra = document.getElementById('pvCeeConsumoLetra');
+  const pvCeeConsumoValor = document.getElementById('pvCeeConsumoValor');
+  const pvCeeEmisionesLetra = document.getElementById('pvCeeEmisionesLetra');
+  const pvCeeEmisionesValor = document.getElementById('pvCeeEmisionesValor');
   const pvCedula = document.getElementById('pvCedula');
+  const pvUltimaRenta = document.getElementById('pvUltimaRenta');
+  const pvRentaRangoMin = document.getElementById('pvRentaRangoMin');
+  const pvRentaRangoMax = document.getElementById('pvRentaRangoMax');
+  const pvIndexAreaInferior = document.getElementById('pvIndexAreaInferior');
+  const pvIndexValor = document.getElementById('pvIndexValor');
+  const pvIndexAreaSuperior = document.getElementById('pvIndexAreaSuperior');
   const pvMensajeWhatsapp = document.getElementById('pvMensajeWhatsapp');
 
   // ---- Datos extra del inmueble (transporte, hospitales, orientación, estado, ascensor, año, ITE, IBI, gastos) ----
@@ -3924,6 +3986,42 @@
   const pvBus1 = document.getElementById('pvBus1'), pvBus2 = document.getElementById('pvBus2'), pvBus3 = document.getElementById('pvBus3');
   const pvMetroEst1 = document.getElementById('pvMetroEst1'), pvMetroEst2 = document.getElementById('pvMetroEst2'), pvMetroEst3 = document.getElementById('pvMetroEst3');
   const pvCercaniasEst1 = document.getElementById('pvCercaniasEst1'), pvCercaniasEst2 = document.getElementById('pvCercaniasEst2'), pvCercaniasEst3 = document.getElementById('pvCercaniasEst3');
+
+  // ---- Grupos repetibles "hasta 3" con botón + para no alargar el scroll ----
+  const PV_REPEAT_GROUPS = ['metroEst','cercaniasEst','metro','tren','bus'];
+  function pvCamposDeGrupo(nombre){
+    const cont = document.querySelector('[data-repeat-group="'+nombre+'"]');
+    return cont ? Array.from(cont.querySelectorAll('input, select')) : [];
+  }
+  function mostrarCamposConValor(nombre){
+    const campos = pvCamposDeGrupo(nombre);
+    const btn = document.querySelector('[data-repeat-add="'+nombre+'"]');
+    let ultimoConValor = -1;
+    campos.forEach((c,i)=>{ if((c.value||'').toString().trim() !== '') ultimoConValor = i; });
+    for(let i=0;i<=ultimoConValor && i<campos.length;i++){ campos[i].hidden = false; }
+    if(btn){
+      const quedan = campos.some(c=>c.hidden);
+      btn.style.display = quedan ? '' : 'none';
+    }
+  }
+  function resetCamposRepetibles(nombre){
+    const campos = pvCamposDeGrupo(nombre);
+    const btn = document.querySelector('[data-repeat-add="'+nombre+'"]');
+    campos.forEach((c,i)=>{ c.value=''; c.hidden = (i>0); });
+    if(btn) btn.style.display = '';
+  }
+  document.addEventListener('click', function(ev){
+    const btn = ev.target.closest && ev.target.closest('[data-repeat-add]');
+    if(!btn) return;
+    const nombre = btn.getAttribute('data-repeat-add');
+    const campos = pvCamposDeGrupo(nombre);
+    const siguiente = campos.find(c=>c.hidden);
+    if(siguiente){
+      siguiente.hidden = false;
+      siguiente.focus();
+    }
+    if(!campos.some(c=>c.hidden)) btn.style.display = 'none';
+  });
   const pvHospitales = document.getElementById('pvHospitales');
   const pvOrientacion = document.getElementById('pvOrientacion');
   const pvEstadoPropiedad = document.getElementById('pvEstadoPropiedad');
@@ -3941,6 +4039,7 @@
   const pvAlquilerRow1 = document.getElementById('pvAlquilerRow1');
   const pvTipoNegocioField = document.getElementById('pvTipoNegocioField');
   const pvHabitacionesField = document.getElementById('pvHabitacionesField');
+  const pvAlquilerViviendaFields = document.getElementById('pvAlquilerViviendaFields');
   const pvFianza = document.getElementById('pvFianza');
   const pvGastosIbi = document.getElementById('pvGastosIbi');
   const pvTipoNegocio = document.getElementById('pvTipoNegocio');
@@ -3953,6 +4052,7 @@
     pvAlquilerRow1.style.display = esAlquiler ? 'flex' : 'none';
     pvTipoNegocioField.style.display = (esAlquiler && esLocal) ? 'block' : 'none';
     pvHabitacionesField.style.display = (esAlquiler && esLocal) ? 'none' : 'block';
+    pvAlquilerViviendaFields.style.display = (esAlquiler && !esLocal) ? 'block' : 'none';
     pvPrecioLabel.textContent = esAlquiler ? 'Renta mensual (opcional)' : 'Precio de venta (opcional)';
   }
   pvOperacionGroup.querySelectorAll('.choice-btn').forEach(btn=>{
@@ -4237,12 +4337,17 @@
   function resetPvAddForm(){
     pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = ''; pvRefCatastral.value = ''; mostrarPvCatastroEstado('');
     pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
-    pvCee.value = ''; pvCedula.value = '';
+    pvCeeConsumoLetra.value = ''; pvCeeConsumoValor.value = '';
+    pvCeeEmisionesLetra.value = ''; pvCeeEmisionesValor.value = '';
+    pvCedula.value = '';
+    pvUltimaRenta.value = ''; pvRentaRangoMin.value = ''; pvRentaRangoMax.value = '';
+    pvIndexAreaInferior.value = ''; pvIndexValor.value = ''; pvIndexAreaSuperior.value = '';
     pvMetro1.value = ''; pvMetro2.value = ''; pvMetro3.value = '';
     pvTren1.value = ''; pvTren2.value = ''; pvTren3.value = '';
     pvBus1.value = ''; pvBus2.value = ''; pvBus3.value = '';
     pvMetroEst1.value = ''; pvMetroEst2.value = ''; pvMetroEst3.value = '';
     pvCercaniasEst1.value = ''; pvCercaniasEst2.value = ''; pvCercaniasEst3.value = '';
+    PV_REPEAT_GROUPS.forEach(resetCamposRepetibles);
     pvHospitales.value = ''; pvOrientacion.value = ''; pvEstadoPropiedad.value = '';
     pvAscensor.value = ''; pvAnyoConstruccion.value = ''; pvIte.value = '';
     pvIbi.value = ''; pvGastosComunidad.value = '';
@@ -4275,13 +4380,23 @@
     pvMetros.value = p['Metros'] || '';
     pvHabitaciones.value = p['Habitaciones'] || '';
     pvDescripcion.value = p['Descripción'] || '';
-    pvCee.value = p['Certificado energético'] || '';
+    pvCeeConsumoLetra.value = p['CEE Consumo Letra'] || '';
+    pvCeeConsumoValor.value = p['CEE Consumo Valor'] || '';
+    pvCeeEmisionesLetra.value = p['CEE Emisiones Letra'] || '';
+    pvCeeEmisionesValor.value = p['CEE Emisiones Valor'] || '';
     pvCedula.value = p['Cédula habitabilidad'] || '';
+    pvUltimaRenta.value = p['UltimaRenta'] || '';
+    pvRentaRangoMin.value = p['RentaRangoMin'] || '';
+    pvRentaRangoMax.value = p['RentaRangoMax'] || '';
+    pvIndexAreaInferior.value = p['IndexAreaInferior'] || '';
+    pvIndexValor.value = p['IndexValor'] || '';
+    pvIndexAreaSuperior.value = p['IndexAreaSuperior'] || '';
     pvMetro1.value = p['Metro1'] || ''; pvMetro2.value = p['Metro2'] || ''; pvMetro3.value = p['Metro3'] || '';
     pvTren1.value = p['Tren1'] || ''; pvTren2.value = p['Tren2'] || ''; pvTren3.value = p['Tren3'] || '';
     pvBus1.value = p['Bus1'] || ''; pvBus2.value = p['Bus2'] || ''; pvBus3.value = p['Bus3'] || '';
     pvMetroEst1.value = p['MetroEst1'] || ''; pvMetroEst2.value = p['MetroEst2'] || ''; pvMetroEst3.value = p['MetroEst3'] || '';
     pvCercaniasEst1.value = p['CercaniasEst1'] || ''; pvCercaniasEst2.value = p['CercaniasEst2'] || ''; pvCercaniasEst3.value = p['CercaniasEst3'] || '';
+    PV_REPEAT_GROUPS.forEach(mostrarCamposConValor);
     pvHospitales.value = p['Hospitales'] || '';
     pvOrientacion.value = p['Orientación'] || '';
     pvEstadoPropiedad.value = p['EstadoPropiedad'] || '';
@@ -4344,8 +4459,17 @@
     const metros = pvMetros.value.trim();
     const habitaciones = pvHabitaciones.value.trim();
     const descripcion = pvDescripcion.value.trim();
-    const cee = pvCee.value.trim();
+    const ceeConsumoLetra = pvCeeConsumoLetra.value;
+    const ceeConsumoValor = pvCeeConsumoValor.value.trim();
+    const ceeEmisionesLetra = pvCeeEmisionesLetra.value;
+    const ceeEmisionesValor = pvCeeEmisionesValor.value.trim();
     const cedula = pvCedula.value.trim();
+    const ultimaRenta = pvUltimaRenta.value.trim();
+    const rentaRangoMin = pvRentaRangoMin.value.trim();
+    const rentaRangoMax = pvRentaRangoMax.value.trim();
+    const indexAreaInferior = pvIndexAreaInferior.value.trim();
+    const indexValor = pvIndexValor.value.trim();
+    const indexAreaSuperior = pvIndexAreaSuperior.value.trim();
     const metro1 = pvMetro1.value, metro2 = pvMetro2.value, metro3 = pvMetro3.value;
     const tren1 = pvTren1.value, tren2 = pvTren2.value, tren3 = pvTren3.value;
     const bus1 = pvBus1.value.trim(), bus2 = pvBus2.value.trim(), bus3 = pvBus3.value.trim();
@@ -4380,7 +4504,11 @@
         fotos: uploadedPropVentaImageUrls.join('|'),
         link: link, precio: precio,
         barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
-        cee: cee, cedula: cedula,
+        ceeConsumoLetra: ceeConsumoLetra, ceeConsumoValor: ceeConsumoValor,
+        ceeEmisionesLetra: ceeEmisionesLetra, ceeEmisionesValor: ceeEmisionesValor,
+        cedula: cedula,
+        ultimaRenta: ultimaRenta, rentaRangoMin: rentaRangoMin, rentaRangoMax: rentaRangoMax,
+        indexAreaInferior: indexAreaInferior, indexValor: indexValor, indexAreaSuperior: indexAreaSuperior,
         metro1: metro1, metro2: metro2, metro3: metro3,
         tren1: tren1, tren2: tren2, tren3: tren3,
         bus1: bus1, bus2: bus2, bus3: bus3,
@@ -4492,7 +4620,9 @@
       const metros = (p['Metros'] || '').toString().trim();
       const habitaciones = (p['Habitaciones'] || '').toString().trim();
       const descripcion = (p['Descripción'] || '').toString().trim();
-      const cee = (p['Certificado energético'] || '').toString().trim();
+      const ceeConsumoLetra = (p['CEE Consumo Letra'] || '').toString().trim();
+      const ceeConsumoValor = (p['CEE Consumo Valor'] || '').toString().trim();
+      const cee = ceeConsumoLetra ? (ceeConsumoLetra + (ceeConsumoValor ? ' (' + ceeConsumoValor + ')' : '')) : (p['Certificado energético'] || '').toString().trim();
       const cedula = (p['Cédula habitabilidad'] || '').toString().trim();
       const fotos = (p['Fotos'] || '').toString().split('|').map(u=>u.trim()).filter(Boolean);
       const metaParts = [];
