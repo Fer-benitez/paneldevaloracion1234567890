@@ -4263,6 +4263,14 @@
         if(json.direccion) pvDireccion.value = json.direccion;
         if(json.metros) pvMetros.value = json.metros;
         if(json.anyoConstruccion) pvAnyoConstruccion.value = json.anyoConstruccion;
+        // El catastro también da el uso principal del inmueble (Residencial,
+        // Comercial, Oficinas...). Si es Alquiler y el uso no es residencial,
+        // marcamos "Local" solos; si es residencial, dejamos "Vivienda".
+        if(json.uso && pvOperacionSeleccionada === 'Alquiler'){
+          const esResidencial = /resi/i.test(json.uso);
+          const subtipoBtn = pvSubtipoGroup.querySelector('.choice-btn[data-subtipo="' + (esResidencial ? 'Vivienda' : 'Local') + '"]');
+          if(subtipoBtn && !subtipoBtn.classList.contains('active')) subtipoBtn.click();
+        }
         if(json.lat!=null && json.lng!=null){
           ensurePvMap();
           setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 50);
