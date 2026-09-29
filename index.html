@@ -4477,7 +4477,10 @@
           mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'Detectado y rellenado: ' + partes.join(', ') + '. Revisa antes de guardar.', true);
         }
       } else {
-        mostrarPvEstadoGenerico('pvTransporteAutoStatus', json.error || 'No se pudo detectar transporte cercano.');
+        // Incluimos el detalle técnico (json.debug) si lo hay, para poder
+        // diagnosticar sin tener que repetir la prueba a ciegas.
+        const detalle = Array.isArray(json.debug) && json.debug.length ? (' — ' + json.debug.join(' | ')) : '';
+        mostrarPvEstadoGenerico('pvTransporteAutoStatus', (json.error || 'No se pudo detectar transporte cercano.') + detalle);
       }
     } catch(err){
       mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'No se pudo contactar con el servicio (revisa tu conexión).');
