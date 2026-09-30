@@ -1646,8 +1646,10 @@
       <div class="add-piso-field form-isla form-isla-sky" style="margin-bottom:18px;">
         <div class="form-isla-header">🚇 TRANSPORTE PÚBLICO CERCANO <span class="form-isla-sub">(opcional — solo se muestran los que rellenes, con icono)</span></div>
         <div style="margin-bottom:12px;">
-          <button type="button" id="pvTransporteAutoBtn" class="edit-reco-btn" style="width:auto;padding:8px 14px;font-size:12.5px;">📍 Detectar transporte cercano (usa el punto del mapa)</button>
+          <div style="font-size:12.5px;font-weight:700;color:var(--navy-dark);margin-bottom:8px;">📍 Dirección: <span id="pvTransporteDireccion" style="font-weight:400;color:var(--muted);">(escribe primero la dirección arriba)</span></div>
+          <button type="button" id="pvTransporteAutoBtn" class="edit-reco-btn" style="width:auto;padding:8px 14px;font-size:12.5px;">✨ Buscar transporte cercano (con IA)</button>
           <div class="paste-status" id="pvTransporteAutoStatus"></div>
+          <div id="pvTransporteResumen" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(255,255,255,0.7);border:1px solid var(--border);border-radius:9px;font-size:12.5px;line-height:1.5;color:var(--navy-dark);"></div>
         </div>
         <div class="pv-transporte-block">
           <label class="pv-sub">🚇 Estaciones de Metro cercanas (hasta 3 — escribe el nombre)</label>
@@ -4131,6 +4133,17 @@
   const pvBus1 = document.getElementById('pvBus1'), pvBus2 = document.getElementById('pvBus2'), pvBus3 = document.getElementById('pvBus3');
   const pvMetroEst1 = document.getElementById('pvMetroEst1'), pvMetroEst2 = document.getElementById('pvMetroEst2'), pvMetroEst3 = document.getElementById('pvMetroEst3');
   const pvCercaniasEst1 = document.getElementById('pvCercaniasEst1'), pvCercaniasEst2 = document.getElementById('pvCercaniasEst2'), pvCercaniasEst3 = document.getElementById('pvCercaniasEst3');
+  // La dirección se escribe arriba del todo del formulario; aquí solo la
+  // repetimos en la isla de Transporte para que quede claro para qué
+  // dirección se va a buscar, sin tener que hacer scroll hacia arriba.
+  const pvTransporteDireccion = document.getElementById('pvTransporteDireccion');
+  function actualizarPvTransporteDireccion(){
+    const d = document.getElementById('pvDireccion').value.trim();
+    pvTransporteDireccion.textContent = d || '(escribe primero la dirección arriba)';
+    pvTransporteDireccion.style.color = d ? 'var(--navy-dark)' : 'var(--muted)';
+    pvTransporteDireccion.style.fontWeight = d ? '800' : '400';
+  }
+  actualizarPvTransporteDireccion();
 
   // ---- Grupos repetibles "hasta 3" con botón + para no alargar el scroll ----
   const PV_REPEAT_GROUPS = ['metroEst','cercaniasEst','metro','tren','bus'];
@@ -4378,7 +4391,10 @@
         if(c.descripcionFr) pvDescripcionFr.value = c.descripcionFr;
         mostrarPvEstadoGenerico('pvMejorarDescStatus', 'Descripción corregida y traducida ✓', true);
       } else {
-        mostrarPvEstadoGenerico('pvMejorarDescStatus', json.error || 'No se pudo procesar la descripción.');
+        // Si el backend incluye "debug" (motivo técnico del fallo), lo añadimos
+        // al mensaje para poder diagnosticar sin tener que adivinar.
+        const detalle = json.debug ? (' — [' + (json.debug.stopReason||'?') + ', ' + (json.debug.longitudTexto||0) + ' car.] ' + (json.debug.muestra||'')) : '';
+        mostrarPvEstadoGenerico('pvMejorarDescStatus', (json.error || 'No se pudo procesar la descripción.') + detalle);
       }
     } catch(err){
       mostrarPvEstadoGenerico('pvMejorarDescStatus', 'No se pudo contactar con la IA (revisa tu conexión).');
@@ -4415,23 +4431,33 @@
     btn.disabled = false; btn.textContent = textoOriginal;
   });
 
-  // ---- Detectar transporte cercano a partir del punto marcado en el mapa ----
+  // ---- Buscar transporte cercano con IA a partir de la dirección ----
+  // Se cambió de OpenStreetMap/Overpass a la IA porque Overpass fallaba a
+  // menudo o tardaba minutos desde Apps Script. Ahora se manda la MISMA
+  // dirección que se escribe arriba del formulario (repetida aquí para que
+  // quede claro qué se está buscando) y la IA devuelve tanto un resumen en
+  // texto natural (con minutos a pie, para que Fer lo lea y ajuste si hace
+  // falta) como los datos ya estructurados para rellenar los campos de
+  // siempre, que son los que generan los iconos en la tarjeta del mapa.
   document.getElementById('pvTransporteAutoBtn').addEventListener('click', async ()=>{
     const btn = document.getElementById('pvTransporteAutoBtn');
-    const lat = pvLat.value, lng = pvLng.value;
-    if(!lat || !lng){ mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'Pon primero el piso en el mapa (busca la dirección o la referencia catastral).'); return; }
+    const direccion = pvDireccion.value.trim();
+    if(!direccion){ mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'Escribe primero la dirección arriba del formulario.'); return; }
     const textoOriginal = btn.textContent;
     btn.disabled = true; btn.textContent = 'Buscando...';
     mostrarPvEstadoGenerico('pvTransporteAutoStatus', '');
+    const resumenBox = document.getElementById('pvTransporteResumen');
+    resumenBox.style.display = 'none';
     try{
-      const res = await fetch(APPS_SCRIPT_URL_VENTA + '?tipo=transportes_cercanos&lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng));
+      const res = await fetch(APPS_SCRIPT_URL_VENTA + '?tipo=transporte_ia&direccion=' + encodeURIComponent(direccion));
       const json = await res.json();
-      if(json.success){
+      if(json.success && json.campos){
+        const c = json.campos;
         function rellenarSelectLinea(select, valor){
           if(!select || !valor) return false;
           const opciones = [...select.options];
           // Coincidencia exacta primero, luego tolerante (sin espacios/mayúsculas,
-          // con o sin prefijo "L"), porque OSM y el desplegable no siempre usan
+          // con o sin prefijo "L"), porque la IA y el desplegable no siempre usan
           // exactamente el mismo formato para el número de línea.
           let opt = opciones.find(o => o.value === valor);
           if(!opt){
@@ -4444,29 +4470,34 @@
 
         const metroEstCampos = [pvMetroEst1, pvMetroEst2, pvMetroEst3];
         let nEstMetro = 0;
-        (json.metroEstaciones||[]).forEach((n,i)=>{ if(metroEstCampos[i]){ metroEstCampos[i].value = n; nEstMetro++; } });
+        (c.metroEstaciones||[]).forEach((n,i)=>{ if(metroEstCampos[i]){ metroEstCampos[i].value = n; nEstMetro++; } });
 
         const cercaniasCampos = [pvCercaniasEst1, pvCercaniasEst2, pvCercaniasEst3];
         let nEstCercanias = 0;
-        (json.cercaniasEstaciones||[]).forEach((n,i)=>{ if(cercaniasCampos[i]){ cercaniasCampos[i].value = n; nEstCercanias++; } });
+        (c.cercaniasEstaciones||[]).forEach((n,i)=>{ if(cercaniasCampos[i]){ cercaniasCampos[i].value = n; nEstCercanias++; } });
 
         const metroSelects = [pvMetro1, pvMetro2, pvMetro3];
         let nLineasMetro = 0;
-        (json.metroLineas||[]).forEach((l,i)=>{ if(rellenarSelectLinea(metroSelects[i], l)) nLineasMetro++; });
+        (c.metroLineas||[]).forEach((l,i)=>{ if(rellenarSelectLinea(metroSelects[i], l)) nLineasMetro++; });
 
         const trenSelects = [pvTren1, pvTren2, pvTren3];
         let nLineasTren = 0;
-        (json.trenLineas||[]).forEach((l,i)=>{ if(rellenarSelectLinea(trenSelects[i], l)) nLineasTren++; });
+        (c.trenLineas||[]).forEach((l,i)=>{ if(rellenarSelectLinea(trenSelects[i], l)) nLineasTren++; });
 
         const busCampos = [pvBus1, pvBus2, pvBus3];
         let nBus = 0;
-        (json.busLineas||[]).forEach((l,i)=>{ if(busCampos[i]){ busCampos[i].value = l; nBus++; } });
+        (c.busLineas||[]).forEach((l,i)=>{ if(busCampos[i]){ busCampos[i].value = l; nBus++; } });
 
         PV_REPEAT_GROUPS.forEach(mostrarCamposConValor);
 
+        if(c.resumen){
+          resumenBox.textContent = c.resumen;
+          resumenBox.style.display = 'block';
+        }
+
         const totalRellenado = nEstMetro + nEstCercanias + nLineasMetro + nLineasTren + nBus;
         if(totalRellenado === 0){
-          mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'No se ha encontrado transporte público cerca de este punto en OpenStreetMap. Puedes rellenarlo tú a mano.');
+          mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'La IA no ha podido identificar transporte cercano fiable para esta dirección. Puedes rellenarlo tú a mano.');
         } else {
           const partes = [];
           if(nEstMetro) partes.push(nEstMetro + ' estación' + (nEstMetro>1?'es':'') + ' de metro');
@@ -4479,8 +4510,8 @@
       } else {
         // Incluimos el detalle técnico (json.debug) si lo hay, para poder
         // diagnosticar sin tener que repetir la prueba a ciegas.
-        const detalle = Array.isArray(json.debug) && json.debug.length ? (' — ' + json.debug.join(' | ')) : '';
-        mostrarPvEstadoGenerico('pvTransporteAutoStatus', (json.error || 'No se pudo detectar transporte cercano.') + detalle);
+        const detalle = json.debug ? (' — [' + (json.debug.stopReason||'?') + ', ' + (json.debug.longitudTexto||0) + ' car.] ' + (json.debug.muestra||'')) : '';
+        mostrarPvEstadoGenerico('pvTransporteAutoStatus', (json.error || 'No se pudo buscar el transporte cercano.') + detalle);
       }
     } catch(err){
       mostrarPvEstadoGenerico('pvTransporteAutoStatus', 'No se pudo contactar con el servicio (revisa tu conexión).');
@@ -4642,6 +4673,7 @@
   });
 
   pvDireccion.addEventListener('input', checkAddPropVentaReady);
+  pvDireccion.addEventListener('input', actualizarPvTransporteDireccion);
   function checkAddPropVentaReady(){
     const direccion = pvDireccion.value.trim();
     const tieneUbicacion = !!pvLat.value;
@@ -4663,6 +4695,8 @@
 
   function resetPvAddForm(){
     pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = ''; pvRefCatastral.value = ''; mostrarPvCatastroEstado('');
+    actualizarPvTransporteDireccion();
+    document.getElementById('pvTransporteResumen').style.display = 'none';
     pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
     pvDescripcionEn.value = ''; pvDescripcionDe.value = ''; pvDescripcionFr.value = '';
     resetLangTabs('pvDescripcion');
@@ -4705,6 +4739,8 @@
     setTimeout(()=>{ if(pvMap) pvMap.invalidateSize(); }, 150);
 
     pvDireccion.value = p['Dirección'] || '';
+    actualizarPvTransporteDireccion();
+    document.getElementById('pvTransporteResumen').style.display = 'none';
     pvLink.value = p['Link'] || '';
     pvPrecio.value = p['Precio'] || '';
     pvBarrio.value = p['Barrio'] || '';
