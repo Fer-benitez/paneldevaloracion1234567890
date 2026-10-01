@@ -3357,6 +3357,24 @@
   function grupoDeVisita(diaVisita){
     return (diaVisita === 'Hoy' || diaVisita === 'Mañana') ? diaVisita : 'Otro';
   }
+  // Google Sheets, en cuanto ve un texto con pinta de fecha ("02/10/2026"),
+  // lo convierte solo en una fecha real de la hoja — así que al leerlo de
+  // vuelta llega como fecha/hora ISO (p.ej. "2026-10-02T22:00:00.000Z") en
+  // vez del texto "DD/MM/YYYY" que se guardó. Esto se repasa aquí para que
+  // en toda la app (tarjetas, agrupación Hoy/Mañana/Otro, calendario, editar
+  // lead) siempre se vea y se use el mismo formato limpio.
+  function normalizarDiaVisita(v){
+    if(v === null || v === undefined) return '';
+    const str = String(v).trim();
+    if(!str) return '';
+    if(str === 'Hoy' || str === 'Mañana' || str === 'Otro') return str;
+    if(/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return str;
+    const d = new Date(str);
+    if(isNaN(d)) return str;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return dd + '/' + mm + '/' + d.getFullYear();
+  }
 
   const lHoraVisita = document.getElementById('lHoraVisita');
   const diaVisitaGroup = document.getElementById('diaVisitaGroup');
@@ -3813,6 +3831,7 @@
         return;
       }
       cachedLeads = json.data.reverse();
+      cachedLeads.forEach(l => { l['Día visita'] = normalizarDiaVisita(l['Día visita']); });
       renderLeads();
     } catch(err){
       loadingLeads.style.display = 'none';
@@ -5690,6 +5709,7 @@
         return;
       }
       cachedLeadsVenta = json.data.reverse();
+      cachedLeadsVenta.forEach(l => { l['Día visita'] = normalizarDiaVisita(l['Día visita']); });
       renderLeadsVenta();
     } catch(err){
       loadingLeadsVenta.style.display = 'none';
