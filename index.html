@@ -790,6 +790,34 @@
   .super-foto-placeholder{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f1e7c8;color:#9c7a1e;font-size:24px;margin-bottom:10px;}
   .super-foto-upload{font-size:11.5px;margin-bottom:10px;}
 
+  /* Secciones "post-it" plegables de la ficha de Super Contacto: un título
+     pulsable (como una nota adhesiva) que al abrirse muestra el contenido y
+     su propio botón Guardar independiente, en vez de un formulario largo
+     siempre abierto. */
+  .postit-section{border-radius:10px;margin-top:10px;overflow:hidden;border:1.5px solid;}
+  .postit-header{display:flex;align-items:center;justify-content:space-between;width:100%;background:transparent;border:none;cursor:pointer;padding:9px 12px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:12.5px;letter-spacing:.02em;text-align:left;}
+  .postit-chevron{font-size:11px;transition:transform .15s;}
+  .postit-section.open .postit-chevron{transform:rotate(180deg);}
+  .postit-body{padding:0 12px 12px;}
+  .postit-amber{background:#fdf6e2;border-color:#f0dc9c;} .postit-amber .postit-header{color:var(--gold-dark);}
+  .postit-sky{background:#e8f6fb;border-color:#b7e3f0;} .postit-sky .postit-header{color:#166a86;}
+  .postit-teal{background:#e7f7f4;border-color:#b9e6dc;} .postit-teal .postit-header{color:#1c7a68;}
+  .postit-green{background:#eef8ef;border-color:#c3e6c6;} .postit-green .postit-header{color:var(--green);}
+  .postit-purple{background:#f5eefb;border-color:#ddc7f0;} .postit-purple .postit-header{color:#6b3fa0;}
+  .postit-body textarea{width:100%;box-sizing:border-box;padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;font-family:'Inter',sans-serif;background:rgba(255,255,255,0.8);}
+
+  /* Chips de selección múltiple (perfil / interés / ofrecer) — se pueden
+     marcar varios a la vez y los mismos botones sirven luego para filtrar
+     la lista de Super Contactos. */
+  .chip-toggle{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;margin:0 6px 6px 0;border-radius:999px;border:1.5px solid var(--border);background:rgba(255,255,255,0.75);color:var(--navy-dark);font-size:12.5px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .12s;}
+  .chip-toggle:hover{border-color:var(--navy);}
+  .chip-toggle.active{background:var(--gold-dark);border-color:var(--gold-dark);color:#fff;}
+  .super-filters{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-bottom:16px;padding:12px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px;}
+  .super-filters-group{display:flex;flex-wrap:wrap;align-items:center;gap:4px;}
+  .super-filters-label{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-right:4px;}
+  .super-filters .chip-toggle{padding:5px 10px;font-size:11.5px;margin:0 4px 4px 0;}
+  .super-filters .chip-toggle.active{background:var(--navy);border-color:var(--navy);}
+
   .venta-badge{
     display:inline-flex;align-items:center;gap:4px;
     background:linear-gradient(135deg,#E3C25C,#9c7a1e);color:#241d05;
@@ -1894,6 +1922,7 @@
   <div class="tab-panel" id="tab-supercontactos">
     <span class="venta-badge" style="background:linear-gradient(135deg,#ffe08a,#b8860b);">★ Super Contactos</span>
     <p class="section-desc">Contactos de alto valor, marcados a mano con la ★ desde Leads Idealista — es el mismo lead, solo que aquí lo ves destacado. No hay visitas ni fase de investigación: solo foto de perfil y lo esencial, para tenerlos localizados.</p>
+    <div class="super-filters" id="superFiltersBar"></div>
     <div class="cards-grid" id="superContactosGrid"></div>
     <div class="empty-state" id="emptySuperContactos" style="display:none;">Todavía no has marcado ningún Super Contacto. Ve a Leads Idealista y pulsa la ☆ en el lead que quieras destacar.</div>
   </div>
@@ -5440,6 +5469,83 @@
   });
 
   let cachedLeadsVenta = [];
+
+  // ---- Super Contactos: opciones de chips + estado de filtros ----
+  const SUPER_PERFIL_OPCIONES = ['FINALISTA', 'INVERSOR', 'PATRIMONIALISTA', 'FAMILY OFFICE'];
+  const SUPER_INTERES_OPCIONES = [
+    { icon: '🏠', label: 'Vivienda' },
+    { icon: '🏢', label: 'Oficina' },
+    { icon: '🏬', label: 'Local comercial' },
+    { icon: '🏭', label: 'Nave industrial' },
+    { icon: '🌇', label: 'Terreno / Solar' },
+    { icon: '🏘️', label: 'Edificio entero' },
+    { icon: '🏖️', label: 'Segunda residencia' },
+    { icon: '💶', label: 'Alta rentabilidad' }
+  ];
+  const SUPER_OFRECER_OPCIONES = [
+    { icon: '📞', label: 'Llamar' },
+    { icon: '📩', label: 'Enviar nuevas opciones' },
+    { icon: '📅', label: 'Proponer visita' },
+    { icon: '🤝', label: 'Reunión presencial' },
+    { icon: '⏳', label: 'Avisar si entra algo similar' },
+    { icon: '📄', label: 'Enviar dossier / ficha' }
+  ];
+  let filtroSuperPerfil = [];
+  let filtroSuperInteres = [];
+  let filtroSuperOfrecer = [];
+
+  function superTagsArray(v){
+    return (v || '').toString().split('|').map(s => s.trim()).filter(Boolean);
+  }
+  function superChipsHTML(groupClass, opciones, seleccionados, soloLabel){
+    return opciones.map(op => {
+      const label = soloLabel ? op : op.label;
+      const icon = soloLabel ? '' : (op.icon + ' ');
+      const activo = seleccionados.indexOf(label) !== -1;
+      return `<button type="button" class="chip-toggle ${groupClass}${activo ? ' active' : ''}" data-valor="${escVenta(label)}">${icon}${escVenta(label)}</button>`;
+    }).join('');
+  }
+  function toggleEnArray(arr, valor){
+    const i = arr.indexOf(valor);
+    if(i === -1) arr.push(valor); else arr.splice(i, 1);
+  }
+  function renderSuperFiltersBar(){
+    const bar = document.getElementById('superFiltersBar');
+    if(!bar) return;
+    bar.innerHTML = `
+      <div class="super-filters-group">
+        <span class="super-filters-label">Quién es</span>
+        ${superChipsHTML('filtro-perfil', SUPER_PERFIL_OPCIONES, filtroSuperPerfil, true)}
+      </div>
+      <div class="super-filters-group">
+        <span class="super-filters-label">Le interesa</span>
+        ${superChipsHTML('filtro-interes', SUPER_INTERES_OPCIONES, filtroSuperInteres, false)}
+      </div>
+      <div class="super-filters-group">
+        <span class="super-filters-label">Ofrecerle</span>
+        ${superChipsHTML('filtro-ofrecer', SUPER_OFRECER_OPCIONES, filtroSuperOfrecer, false)}
+      </div>
+    `;
+    bar.querySelectorAll('.chip-toggle.filtro-perfil').forEach(btn => btn.addEventListener('click', ()=>{
+      toggleEnArray(filtroSuperPerfil, btn.dataset.valor); renderSuperContactos();
+    }));
+    bar.querySelectorAll('.chip-toggle.filtro-interes').forEach(btn => btn.addEventListener('click', ()=>{
+      toggleEnArray(filtroSuperInteres, btn.dataset.valor); renderSuperContactos();
+    }));
+    bar.querySelectorAll('.chip-toggle.filtro-ofrecer').forEach(btn => btn.addEventListener('click', ()=>{
+      toggleEnArray(filtroSuperOfrecer, btn.dataset.valor); renderSuperContactos();
+    }));
+  }
+  function superPasaFiltros(l){
+    const perfil = superTagsArray(l['SuperQuienEs']);
+    const interes = superTagsArray(l['SuperInteresa']);
+    const ofrecer = superTagsArray(l['SuperOfrecer']);
+    if(filtroSuperPerfil.length && !filtroSuperPerfil.some(v => perfil.indexOf(v) !== -1)) return false;
+    if(filtroSuperInteres.length && !filtroSuperInteres.some(v => interes.indexOf(v) !== -1)) return false;
+    if(filtroSuperOfrecer.length && !filtroSuperOfrecer.some(v => ofrecer.indexOf(v) !== -1)) return false;
+    return true;
+  }
+
   function leadVentaKey(l){ return l['Fecha'] + '|' + l['Teléfono']; }
   function updateCachedLeadVenta(fecha, telefono, cambios){
     const key = fecha + '|' + telefono;
@@ -6110,10 +6216,18 @@
     const grid = document.getElementById('superContactosGrid');
     const empty = document.getElementById('emptySuperContactos');
     if(!grid || !empty) return;
+    renderSuperFiltersBar();
     grid.innerHTML = '';
-    const superContactos = cachedLeadsVenta.filter(l => (l['SuperContacto']||'').toString().trim() === 'Sí');
+    const todos = cachedLeadsVenta.filter(l => (l['SuperContacto']||'').toString().trim() === 'Sí');
+    const superContactos = todos.filter(superPasaFiltros);
+    if(todos.length === 0){
+      empty.style.display = 'block';
+      empty.textContent = 'Todavía no hay Super Contactos. Marca la ★ en un lead de Idealista para añadirlo aquí.';
+      return;
+    }
     if(superContactos.length === 0){
       empty.style.display = 'block';
+      empty.textContent = 'Ningún Super Contacto coincide con esos filtros.';
       return;
     }
     empty.style.display = 'none';
@@ -6131,6 +6245,25 @@
     const buscando = (l['SuperBuscando'] || '').toString();
     const interesa = (l['SuperInteresa'] || '').toString();
     const ofrecer = (l['SuperOfrecer'] || '').toString();
+    const notas = (l['SuperNotas'] || '').toString();
+    const quienEsSel = superTagsArray(quienEs);
+    const interesaSel = superTagsArray(interesa);
+    const ofrecerSel = superTagsArray(ofrecer);
+
+    function postit(campo, color, titulo, bodyHTML){
+      return `
+      <div class="postit-section postit-${color}" data-campo="${campo}">
+        <button type="button" class="postit-header"><span>${titulo}</span><span class="postit-chevron">▾</span></button>
+        <div class="postit-body" style="display:none;">
+          ${bodyHTML}
+          <div style="margin-top:8px;">
+            <button type="button" class="postit-guardar edit-reco-btn" style="width:auto;padding:7px 12px;margin-bottom:0;font-size:12px;">Guardar</button>
+            <span class="postit-status" style="margin-left:8px;font-size:11.5px;color:var(--muted,#8a8a8a);"></span>
+          </div>
+        </div>
+      </div>`;
+    }
+
     card.innerHTML = `
       <button type="button" class="super-star-btn active" title="Quitar de Super Contactos">★</button>
       <div class="lead-number">${esAlquilerLead ? '🔑 Alquiler' : '€ Venta'} · ★ Super Contacto</div>
@@ -6144,27 +6277,67 @@
       <div class="meta">${l['Fecha'] ? formatDateVenta(l['Fecha']) : '—'} · ${escVenta(l['Teléfono'] || '—')}${l['Propiedad'] ? ' · ' + escVenta(l['Propiedad']) : ''}</div>
       ${l['Email'] ? `<div class="meta">✉️ ${escVenta(l['Email'])}</div>` : ''}
       ${l['Mensaje'] ? `<div class="notes"><strong>Mensaje original:</strong> ${escVenta(l['Mensaje'])}</div>` : ''}
-      <div class="add-piso-field" style="margin-top:10px;margin-bottom:8px;">
-        <label style="margin-bottom:4px;">¿Quién es?</label>
-        <textarea class="super-quien" rows="2" placeholder="Ej. Dueño de una cadena de restaurantes, se lo recomendó un cliente nuestro..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(quienEs)}</textarea>
-      </div>
-      <div class="add-piso-field" style="margin-bottom:8px;">
-        <label style="margin-bottom:4px;">¿Qué está buscando?</label>
-        <textarea class="super-buscando" rows="2" placeholder="Ej. Local comercial en Eixample, 200-300 m²..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(buscando)}</textarea>
-      </div>
-      <div class="add-piso-field" style="margin-bottom:8px;">
-        <label style="margin-bottom:4px;">¿Qué le interesa?</label>
-        <textarea class="super-interesa" rows="2" placeholder="Ej. Buena ubicación y poder reformar a su gusto..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(interesa)}</textarea>
-      </div>
-      <div class="add-piso-field" style="margin-bottom:0;">
-        <label style="margin-bottom:4px;">¿Qué ofrecerle?</label>
-        <textarea class="super-ofrecer" rows="2" placeholder="Ej. Avisarle en cuanto entre algo similar, proponerle tal piso..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(ofrecer)}</textarea>
-      </div>
-      <button class="super-guardar-btn edit-reco-btn" style="width:auto;padding:8px 14px;margin-top:8px;margin-bottom:0;font-size:12px;">Guardar</button>
+
+      ${postit('SuperQuienEs', 'amber', '¿Quién es?', `<div class="postit-chips">${superChipsHTML('chip-quien', SUPER_PERFIL_OPCIONES, quienEsSel, true)}</div>`)}
+      ${postit('SuperBuscando', 'sky', '¿Qué está buscando?', `<textarea class="postit-textarea" rows="2" placeholder="Ej. Local comercial en Eixample, 200-300 m²...">${escVenta(buscando)}</textarea>`)}
+      ${postit('SuperInteresa', 'teal', '¿Qué le interesa?', `<div class="postit-chips">${superChipsHTML('chip-interesa', SUPER_INTERES_OPCIONES, interesaSel, false)}</div>`)}
+      ${postit('SuperOfrecer', 'green', '¿Qué ofrecerle?', `<div class="postit-chips">${superChipsHTML('chip-ofrecer', SUPER_OFRECER_OPCIONES, ofrecerSel, false)}</div>`)}
+      ${postit('SuperNotas', 'purple', 'Anotaciones', `<textarea class="postit-textarea" rows="2" placeholder="Cualquier otra cosa que quieras recordar sobre este contacto...">${escVenta(notas)}</textarea>`)}
+
       <div class="actions" style="margin-top:10px;">
         ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
       </div>
     `;
+
+    card.querySelectorAll('.postit-header').forEach(header => {
+      header.addEventListener('click', ()=>{
+        const section = header.closest('.postit-section');
+        const body = section.querySelector('.postit-body');
+        const abierta = section.classList.contains('open');
+        section.classList.toggle('open', !abierta);
+        body.style.display = abierta ? 'none' : 'block';
+      });
+    });
+
+    card.querySelectorAll('.postit-chips .chip-toggle').forEach(chip => {
+      chip.addEventListener('click', ()=> chip.classList.toggle('active'));
+    });
+
+    function valorDeCampo(campo){
+      const section = card.querySelector(`.postit-section[data-campo="${campo}"]`);
+      const textarea = section.querySelector('.postit-textarea');
+      if(textarea) return textarea.value.trim();
+      const activos = section.querySelectorAll('.postit-chips .chip-toggle.active');
+      return Array.from(activos).map(b => b.dataset.valor).join('|');
+    }
+
+    card.querySelectorAll('.postit-guardar').forEach(btn => {
+      btn.addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        const section = btn.closest('.postit-section');
+        const campo = section.dataset.campo;
+        const statusEl = section.querySelector('.postit-status');
+        const valor = valorDeCampo(campo);
+        btn.disabled = true;
+        statusEl.textContent = 'Guardando...';
+        try{
+          await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({
+            action:'actualizar_super_contacto_venta', fecha: l['Fecha'], telefono: l['Teléfono'],
+            foto: (l['SuperFoto']||''),
+            quienEs: campo === 'SuperQuienEs' ? valor : (l['SuperQuienEs']||''),
+            buscando: campo === 'SuperBuscando' ? valor : (l['SuperBuscando']||''),
+            interesa: campo === 'SuperInteresa' ? valor : (l['SuperInteresa']||''),
+            ofrecer: campo === 'SuperOfrecer' ? valor : (l['SuperOfrecer']||''),
+            notas: campo === 'SuperNotas' ? valor : (l['SuperNotas']||'')
+          }) });
+          l[campo] = valor;
+          updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { [campo]: valor });
+          statusEl.textContent = 'Guardado ✓';
+          setTimeout(()=>{ statusEl.textContent = ''; }, 2000);
+        } catch(err){ statusEl.textContent = ''; alert('No se pudo guardar. Revisa tu conexión.'); }
+        btn.disabled = false;
+      });
+    });
 
     card.querySelector('.super-star-btn').addEventListener('click', async (e)=>{
       const btn = e.currentTarget;
@@ -6195,10 +6368,11 @@
           await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({
             action:'actualizar_super_contacto_venta', fecha: l['Fecha'], telefono: l['Teléfono'],
             foto: data.secure_url,
-            quienEs: card.querySelector('.super-quien').value.trim(),
-            buscando: card.querySelector('.super-buscando').value.trim(),
-            interesa: card.querySelector('.super-interesa').value.trim(),
-            ofrecer: card.querySelector('.super-ofrecer').value.trim()
+            quienEs: (l['SuperQuienEs']||''),
+            buscando: (l['SuperBuscando']||''),
+            interesa: (l['SuperInteresa']||''),
+            ofrecer: (l['SuperOfrecer']||''),
+            notas: (l['SuperNotas']||'')
           }) });
           l['SuperFoto'] = data.secure_url;
           updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'SuperFoto': data.secure_url });
@@ -6206,29 +6380,6 @@
           renderSuperContactos();
         })
         .catch(()=>{ statusEl.textContent = 'No se pudo subir la foto (revisa tu conexión).'; });
-    });
-
-    card.querySelector('.super-guardar-btn').addEventListener('click', async (e)=>{
-      const btn = e.currentTarget;
-      const cambios = {
-        SuperQuienEs: card.querySelector('.super-quien').value.trim(),
-        SuperBuscando: card.querySelector('.super-buscando').value.trim(),
-        SuperInteresa: card.querySelector('.super-interesa').value.trim(),
-        SuperOfrecer: card.querySelector('.super-ofrecer').value.trim()
-      };
-      btn.disabled = true;
-      btn.textContent = 'Guardando...';
-      try{
-        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({
-          action:'actualizar_super_contacto_venta', fecha: l['Fecha'], telefono: l['Teléfono'],
-          foto: (l['SuperFoto']||''),
-          quienEs: cambios.SuperQuienEs, buscando: cambios.SuperBuscando, interesa: cambios.SuperInteresa, ofrecer: cambios.SuperOfrecer
-        }) });
-        Object.assign(l, cambios);
-        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], cambios);
-      } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
-      btn.disabled = false;
-      btn.textContent = 'Guardar';
     });
 
     return card;
