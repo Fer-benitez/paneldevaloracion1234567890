@@ -834,6 +834,48 @@
   .super-filters-dropdown.open .super-filters-chevron{transform:rotate(180deg);}
   .super-filters-dropdown .super-filters{margin-bottom:0;border:none;border-top:1px solid var(--border);border-radius:0;}
 
+  /* ---- Calendario de Visitas (Leads Idealista, Nivel 2) ---- */
+  .visitas-view-toggle{display:flex;gap:8px;margin:2px 0 14px;}
+  .visitas-view-btn{background:var(--white);border:1.5px solid var(--border);border-radius:8px;padding:7px 14px;font-family:'Inter',sans-serif;font-weight:700;font-size:12.5px;color:var(--muted,#8a8a8a);cursor:pointer;transition:all .12s;}
+  .visitas-view-btn:hover{border-color:var(--navy);}
+  .visitas-view-btn.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+  .vcal-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .vcal-nav{background:var(--white);border:1.5px solid var(--border);border-radius:8px;width:34px;height:34px;font-size:15px;cursor:pointer;color:var(--navy-dark);}
+  .vcal-nav:hover{border-color:var(--navy);}
+  .vcal-mes{flex:1;text-align:center;font-family:'Montserrat',sans-serif;font-weight:800;font-size:15px;color:var(--navy-dark);text-transform:capitalize;}
+  .vcal-hoy-btn{background:var(--white);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;color:var(--navy-dark);}
+  .vcal-hoy-btn:hover{border-color:var(--navy);}
+
+  .vcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .vcal-dow{text-align:center;font-size:10.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--muted,#8a8a8a);padding-bottom:4px;}
+  .vcal-day{min-height:78px;border:1.5px solid var(--border);border-radius:9px;padding:6px;background:var(--white);cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:border-color .12s,background .12s;}
+  .vcal-day:hover{border-color:var(--navy);}
+  .vcal-day.vcal-empty{visibility:hidden;cursor:default;}
+  .vcal-day.vcal-hoy{border-color:var(--gold-dark);background:#fffaf0;}
+  .vcal-day.vcal-sin-visitas{cursor:default;}
+  .vcal-day.vcal-sin-visitas:hover{border-color:var(--border);}
+  .vcal-day-num{font-size:12.5px;font-weight:800;color:var(--navy-dark);}
+  .vcal-day.vcal-hoy .vcal-day-num{color:var(--gold-dark);}
+  .vcal-day-chip{font-size:10px;font-weight:700;padding:2px 5px;border-radius:5px;background:#eef3fb;color:var(--navy-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .vcal-day-chip.alquiler{background:#e9f7ef;color:#1c7a3f;}
+  .vcal-day-chip.realizada{background:#f0f0f0;color:#8a8a8a;text-decoration:line-through;}
+  .vcal-day-more{font-size:10px;font-weight:700;color:var(--muted,#8a8a8a);}
+
+  .vcal-day-overlay{position:fixed;inset:0;background:rgba(20,25,40,0.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .vcal-day-popup{background:var(--white);border-radius:14px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+  .vcal-day-popup-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--white);border-radius:14px 14px 0 0;}
+  .vcal-day-popup-title{font-family:'Montserrat',sans-serif;font-weight:800;font-size:15px;color:var(--navy-dark);text-transform:capitalize;}
+  .vcal-day-popup-close{background:transparent;border:none;font-size:18px;cursor:pointer;color:var(--muted,#8a8a8a);padding:4px;}
+  .vcal-day-popup-body{padding:10px 18px 18px;display:flex;flex-direction:column;gap:10px;}
+  .vcal-visita-item{border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .12s;}
+  .vcal-visita-item:hover{border-color:var(--navy);}
+  .vcal-visita-item.realizada{opacity:.65;}
+  .vcal-visita-hora{display:inline-block;background:var(--navy);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;margin-right:8px;}
+  .vcal-visita-hora.sin-hora{background:var(--muted,#8a8a8a);}
+  .vcal-visita-nombre{font-weight:800;font-size:13.5px;color:var(--navy-dark);}
+  .vcal-visita-meta{font-size:12px;color:var(--muted,#8a8a8a);margin-top:2px;}
+
   .venta-badge{
     display:inline-flex;align-items:center;gap:4px;
     background:linear-gradient(135deg,#E3C25C,#9c7a1e);color:#241d05;
@@ -1928,8 +1970,33 @@
       </div>
       <div class="leads-column" id="leadsVentaColN2">
         <div class="leads-column-title"><span class="leads-num venta-num" id="leadsVentaNumN2">2</span>Visitas</div>
+        <div class="visitas-view-toggle">
+          <button type="button" class="visitas-view-btn active" id="visitasViewListaBtn">📋 Lista</button>
+          <button type="button" class="visitas-view-btn" id="visitasViewCalBtn">📅 Calendario</button>
+        </div>
         <div id="leadsVentaGridN2"></div>
         <div class="empty-state" id="emptyLeadsVentaN2" style="display:none;">Sin leads en Nivel 2.</div>
+
+        <div id="visitasCalendario" style="display:none;">
+          <div class="vcal-header">
+            <button type="button" class="vcal-nav" id="vcalPrevBtn">←</button>
+            <div class="vcal-mes" id="vcalMesLabel">—</div>
+            <button type="button" class="vcal-nav" id="vcalNextBtn">→</button>
+            <button type="button" class="vcal-hoy-btn" id="vcalHoyBtn">Hoy</button>
+          </div>
+          <div class="vcal-grid" id="vcalGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popup del día: lista de visitas de la fecha pinchada en el calendario -->
+    <div class="vcal-day-overlay" id="vcalDayOverlay" style="display:none;">
+      <div class="vcal-day-popup">
+        <div class="vcal-day-popup-header">
+          <div class="vcal-day-popup-title" id="vcalDayTitle">—</div>
+          <button type="button" class="vcal-day-popup-close" id="vcalDayCloseBtn">✕</button>
+        </div>
+        <div class="vcal-day-popup-body" id="vcalDayBody"></div>
       </div>
     </div>
   </div>
@@ -5846,8 +5913,14 @@
       emptyLeadsVentaN2.textContent = filtroActivo ? 'Sin leads en Nivel 2 con este filtro.' : 'Sin leads en Nivel 2.';
       emptyLeadsVentaN2.style.display = 'block';
     } else {
+      // Las visitas YA realizadas se sacan de los grupos Hoy/Mañana/Otro (que
+      // son para lo pendiente, según el día programado) y se listan aparte,
+      // debajo de las tres, ordenadas por la fecha real en que se hicieron.
+      const pendientes = n2.filter(l => (l['VisitaRealizada'] || '').toString().trim() !== 'Sí');
+      const realizadas = n2.filter(l => (l['VisitaRealizada'] || '').toString().trim() === 'Sí');
+
       ['Hoy','Mañana','Otro'].forEach(grupo=>{
-        const enGrupo = n2.filter(l => grupoDeVisita(l['Día visita'] || 'Otro') === grupo);
+        const enGrupo = pendientes.filter(l => grupoDeVisita(l['Día visita'] || 'Otro') === grupo);
         if(enGrupo.length === 0) return;
         if(grupo !== 'Otro'){
           enGrupo.sort((a,b)=> (formatHoraVenta(a['Hora visita']) || '99:99').localeCompare(formatHoraVenta(b['Hora visita']) || '99:99'));
@@ -5865,13 +5938,200 @@
         leadsVentaGridN2.appendChild(groupTitle);
         enGrupo.forEach(l => leadsVentaGridN2.appendChild(buildLeadVentaCard(l, '1', numeros.get(claveLeadVenta(l)))));
       });
+
+      if(realizadas.length > 0){
+        realizadas.sort((a,b)=>{
+          const da = parseFechaVenta(a['VisitaRealizadaFecha']); const db = parseFechaVenta(b['VisitaRealizadaFecha']);
+          if(!da && !db) return 0; if(!da) return 1; if(!db) return -1;
+          return db - da; // más reciente primero
+        });
+        const groupTitle = document.createElement('div');
+        groupTitle.className = 'leads-group-title';
+        groupTitle.textContent = 'Visitas realizadas';
+        leadsVentaGridN2.appendChild(groupTitle);
+        realizadas.forEach(l => leadsVentaGridN2.appendChild(buildLeadVentaCard(l, '1', numeros.get(claveLeadVenta(l)))));
+      }
     }
 
     // Super Contactos se repinta siempre junto con Leads Idealista, así los
     // dos quedan sincronizados automáticamente sin tener que acordarse de
     // llamarlo aparte cada vez que algo cambia (estrella, fotos, campos...).
     renderSuperContactos();
+    if(vcalViewActiva === 'calendario') renderVisitasCalendario();
   }
+
+  // ==================== CALENDARIO DE VISITAS ====================
+  // Vista alternativa a la lista Hoy/Mañana/Otro: un calendario mensual para
+  // cuando las visitas ya no caen solo en esos 3 cubos sino repartidas en
+  // distintos días de la semana o la semana que viene. Junta Venta Y Alquiler
+  // (toda la cartera de Fer), no solo la pestaña activa, porque el objetivo
+  // es ver de un vistazo cuántas visitas hay un día concreto y con quién.
+  let vcalViewActiva = 'lista';
+  let vcalFechaMes = new Date(); vcalFechaMes.setDate(1); vcalFechaMes.setHours(0,0,0,0);
+  const VCAL_DOW = ['L','M','X','J','V','S','D'];
+  const VCAL_MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+  function fechaVisitaLead(l){
+    const realizada = (l['VisitaRealizada'] || '').toString().trim() === 'Sí';
+    if(realizada){
+      const d = parseFechaVenta(l['VisitaRealizadaFecha']);
+      return d ? { fecha: d, realizada: true } : null;
+    }
+    const dia = (l['Día visita'] || '').toString().trim();
+    if(!dia) return null;
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    if(dia === 'Hoy') return { fecha: hoy, realizada: false };
+    if(dia === 'Mañana'){ const m = new Date(hoy); m.setDate(m.getDate()+1); return { fecha: m, realizada: false }; }
+    if(dia === 'Otro') return null; // "Otro" sin fecha concreta elegida — no se puede ubicar en el calendario
+    const especifica = parseFechaOtroDisplay(dia);
+    return especifica ? { fecha: especifica, realizada: false } : null;
+  }
+  function mismaFechaDia(a, b){
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+  function visitasDelMes(anio, mes){
+    // { diaDelMes: [ {lead, fecha, realizada, numero} ... ] }
+    const mapa = new Map();
+    const numeros = numerosEntradaLeadsVenta();
+    cachedLeadsVenta.filter(l => String(l['Nivel']) === '2').forEach(l=>{
+      const info = fechaVisitaLead(l);
+      if(!info) return;
+      if(info.fecha.getFullYear() !== anio || info.fecha.getMonth() !== mes) return;
+      const dia = info.fecha.getDate();
+      if(!mapa.has(dia)) mapa.set(dia, []);
+      mapa.get(dia).push({ lead: l, fecha: info.fecha, realizada: info.realizada, numero: numeros.get(claveLeadVenta(l)) });
+    });
+    mapa.forEach(arr => arr.sort((a,b)=>{
+      const ha = formatHoraVenta(a.lead['Hora visita']) || '99:99';
+      const hb = formatHoraVenta(b.lead['Hora visita']) || '99:99';
+      return ha.localeCompare(hb);
+    }));
+    return mapa;
+  }
+  function renderVisitasCalendario(){
+    const grid = document.getElementById('vcalGrid');
+    const label = document.getElementById('vcalMesLabel');
+    if(!grid || !label) return;
+    const anio = vcalFechaMes.getFullYear();
+    const mes = vcalFechaMes.getMonth();
+    label.textContent = VCAL_MESES[mes] + ' de ' + anio;
+    const visitasPorDia = visitasDelMes(anio, mes);
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+
+    grid.innerHTML = '';
+    VCAL_DOW.forEach(d=>{
+      const el = document.createElement('div');
+      el.className = 'vcal-dow';
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    const primerDia = new Date(anio, mes, 1);
+    // getDay(): 0=domingo..6=sábado → lo pasamos a L..D (0=lunes..6=domingo)
+    const offset = (primerDia.getDay() + 6) % 7;
+    const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+
+    for(let i = 0; i < offset; i++){
+      const vacio = document.createElement('div');
+      vacio.className = 'vcal-day vcal-empty';
+      grid.appendChild(vacio);
+    }
+
+    for(let dia = 1; dia <= diasEnMes; dia++){
+      const fechaCelda = new Date(anio, mes, dia);
+      const visitas = visitasPorDia.get(dia) || [];
+      const cell = document.createElement('div');
+      cell.className = 'vcal-day' + (mismaFechaDia(fechaCelda, hoy) ? ' vcal-hoy' : '') + (visitas.length === 0 ? ' vcal-sin-visitas' : '');
+      const numEl = document.createElement('div');
+      numEl.className = 'vcal-day-num';
+      numEl.textContent = dia;
+      cell.appendChild(numEl);
+      visitas.slice(0, 3).forEach(v=>{
+        const esAlquiler = ((v.lead['Operación'] || 'Venta').trim() || 'Venta') === 'Alquiler';
+        const chip = document.createElement('div');
+        chip.className = 'vcal-day-chip' + (esAlquiler ? ' alquiler' : '') + (v.realizada ? ' realizada' : '');
+        const hora = formatHoraVenta(v.lead['Hora visita']);
+        chip.textContent = (hora ? hora + ' ' : '') + (v.lead['Nombre'] || 'Sin nombre');
+        cell.appendChild(chip);
+      });
+      if(visitas.length > 3){
+        const mas = document.createElement('div');
+        mas.className = 'vcal-day-more';
+        mas.textContent = '+' + (visitas.length - 3) + ' más';
+        cell.appendChild(mas);
+      }
+      if(visitas.length > 0){
+        cell.addEventListener('click', ()=> abrirVcalDiaPopup(fechaCelda, visitas));
+      }
+      grid.appendChild(cell);
+    }
+  }
+  function abrirVcalDiaPopup(fecha, visitas){
+    const overlay = document.getElementById('vcalDayOverlay');
+    const title = document.getElementById('vcalDayTitle');
+    const body = document.getElementById('vcalDayBody');
+    if(!overlay || !title || !body) return;
+    title.textContent = fecha.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+    body.innerHTML = '';
+    visitas.forEach(v=>{
+      const esAlquiler = ((v.lead['Operación'] || 'Venta').trim() || 'Venta') === 'Alquiler';
+      const hora = formatHoraVenta(v.lead['Hora visita']);
+      const item = document.createElement('div');
+      item.className = 'vcal-visita-item' + (v.realizada ? ' realizada' : '');
+      item.innerHTML = `
+        <span class="vcal-visita-hora${hora ? '' : ' sin-hora'}">${hora ? escVenta(hora) : '—'}</span>
+        <span class="vcal-visita-nombre">${escVenta(v.lead['Nombre'] || 'Sin nombre')}</span>
+        <div class="vcal-visita-meta">${esAlquiler ? '🔑 Alquiler' : '€ Venta'} · ${escVenta(v.lead['Propiedad'] || 'Sin piso')}${v.lead['Teléfono'] ? ' · ' + escVenta(v.lead['Teléfono']) : ''}${v.realizada ? ' · ✓ Realizada' : ''}</div>
+      `;
+      item.addEventListener('click', ()=>{
+        overlay.style.display = 'none';
+        if(!v.numero) return;
+        document.getElementById('visitasViewListaBtn').click();
+        goToLeadVentaNumber(v.numero);
+      });
+      body.appendChild(item);
+    });
+    overlay.style.display = 'flex';
+  }
+
+  document.getElementById('visitasViewListaBtn').addEventListener('click', ()=>{
+    vcalViewActiva = 'lista';
+    document.getElementById('visitasViewListaBtn').classList.add('active');
+    document.getElementById('visitasViewCalBtn').classList.remove('active');
+    document.getElementById('leadsVentaGridN2').style.display = '';
+    const empty = document.getElementById('emptyLeadsVentaN2');
+    const gridN2 = document.getElementById('leadsVentaGridN2');
+    if(empty) empty.style.display = (gridN2.children.length === 0) ? 'block' : 'none';
+    document.getElementById('visitasCalendario').style.display = 'none';
+  });
+  document.getElementById('visitasViewCalBtn').addEventListener('click', ()=>{
+    vcalViewActiva = 'calendario';
+    document.getElementById('visitasViewCalBtn').classList.add('active');
+    document.getElementById('visitasViewListaBtn').classList.remove('active');
+    document.getElementById('leadsVentaGridN2').style.display = 'none';
+    const empty = document.getElementById('emptyLeadsVentaN2');
+    if(empty) empty.style.display = 'none';
+    document.getElementById('visitasCalendario').style.display = 'block';
+    renderVisitasCalendario();
+  });
+  document.getElementById('vcalPrevBtn').addEventListener('click', ()=>{
+    vcalFechaMes.setMonth(vcalFechaMes.getMonth() - 1);
+    renderVisitasCalendario();
+  });
+  document.getElementById('vcalNextBtn').addEventListener('click', ()=>{
+    vcalFechaMes.setMonth(vcalFechaMes.getMonth() + 1);
+    renderVisitasCalendario();
+  });
+  document.getElementById('vcalHoyBtn').addEventListener('click', ()=>{
+    vcalFechaMes = new Date(); vcalFechaMes.setDate(1); vcalFechaMes.setHours(0,0,0,0);
+    renderVisitasCalendario();
+  });
+  document.getElementById('vcalDayCloseBtn').addEventListener('click', ()=>{
+    document.getElementById('vcalDayOverlay').style.display = 'none';
+  });
+  document.getElementById('vcalDayOverlay').addEventListener('click', (e)=>{
+    if(e.target.id === 'vcalDayOverlay') e.currentTarget.style.display = 'none';
+  });
 
   function calcularBarometroVenta(l){
     // Cuanto más completas y "positivas" las respuestas de la fase de
