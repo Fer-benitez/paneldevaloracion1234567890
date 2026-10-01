@@ -512,6 +512,7 @@
     border-radius:50%;background:var(--navy);color:var(--white);font-size:12px;font-weight:800;
   }
   .lead-card{
+    position:relative;
     background:var(--white);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:10px;
     padding:16px;margin-bottom:12px;transition:opacity .2s var(--ease), filter .2s var(--ease);
   }
@@ -773,6 +774,18 @@
   .tab-btn.tab-venta .letter{background:var(--gold-dark);}
   .tab-btn.tab-venta.active{border-bottom-color:var(--gold);}
   .tab-btn.tab-venta.active .letter{background:var(--gold);color:#241d05;}
+
+  /* ---- Tab SUPER CONTACTOS ---- */
+  .tab-btn.tab-super .letter{background:#b8860b;}
+  .tab-btn.tab-super.active{border-bottom-color:#ffd54a;}
+  .tab-btn.tab-super.active .letter{background:#ffd54a;color:#3a2b00;}
+  .super-star-btn{position:absolute;top:10px;right:10px;background:transparent;border:none;cursor:pointer;font-size:19px;line-height:1;padding:0 4px;color:#c9a227;filter:grayscale(1) opacity(0.55);transition:filter .15s;z-index:2;}
+  .super-star-btn:hover{filter:grayscale(0.3) opacity(0.85);}
+  .super-star-btn.active{filter:none;opacity:1;}
+  .super-contacto-card{position:relative;}
+  .super-foto{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);display:block;margin-bottom:10px;background:#f1e7c8;}
+  .super-foto-placeholder{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f1e7c8;color:#9c7a1e;font-size:24px;margin-bottom:10px;}
+  .super-foto-upload{font-size:11.5px;margin-bottom:10px;}
 
   .venta-badge{
     display:inline-flex;align-items:center;gap:4px;
@@ -1180,6 +1193,7 @@
     <button class="tab-btn" data-tab="reconocimiento"><span class="letter">R</span>Reconocimiento</button>
     <button class="tab-btn" data-tab="leads"><span class="letter">L</span>Leads</button>
     <button class="tab-btn tab-venta" data-tab="venta"><span class="letter">€</span>Leads Idealista</button>
+    <button class="tab-btn tab-super" data-tab="supercontactos"><span class="letter">★</span>Super Contactos</button>
   </div>
 </div>
 
@@ -1873,6 +1887,14 @@
     </div>
   </div>
 
+  <!-- ==================== TAB SUPER CONTACTOS ==================== -->
+  <div class="tab-panel" id="tab-supercontactos">
+    <span class="venta-badge" style="background:linear-gradient(135deg,#ffe08a,#b8860b);">★ Super Contactos</span>
+    <p class="section-desc">Contactos de alto valor, marcados a mano con la ★ desde Leads Idealista — es el mismo lead, solo que aquí lo ves destacado. No hay visitas ni fase de investigación: solo foto de perfil y lo esencial, para tenerlos localizados.</p>
+    <div class="cards-grid" id="superContactosGrid"></div>
+    <div class="empty-state" id="emptySuperContactos" style="display:none;">Todavía no has marcado ningún Super Contacto. Ve a Leads Idealista y pulsa la ☆ en el lead que quieras destacar.</div>
+  </div>
+
 </main>
 
 <div class="confirm-overlay" id="confirmOverlay">
@@ -1985,6 +2007,17 @@
         // en memoria (cachedPropiedadesVenta) para poder mostrar el mensaje de
         // WhatsApp guardado en su piso en vez del genérico por defecto.
         loadPropiedadesVenta().then(()=> loadLeadsVenta());
+      }
+      // Super Contactos usa los mismos leads de Idealista (cachedLeadsVenta) —
+      // si todavía no se han cargado nunca, los carga igual que la pestaña
+      // "Leads Idealista"; si ya están en memoria, solo repinta.
+      if(btn.dataset.tab === 'supercontactos'){
+        if(!ventaLoaded){
+          ventaLoaded = true;
+          loadPropiedadesVenta().then(()=> loadLeadsVenta());
+        } else {
+          renderSuperContactos();
+        }
       }
     });
   });
@@ -5695,6 +5728,11 @@
         enGrupo.forEach(l => leadsVentaGridN2.appendChild(buildLeadVentaCard(l, '1', numeros.get(claveLeadVenta(l)))));
       });
     }
+
+    // Super Contactos se repinta siempre junto con Leads Idealista, así los
+    // dos quedan sincronizados automáticamente sin tener que acordarse de
+    // llamarlo aparte cada vez que algo cambia (estrella, fotos, campos...).
+    renderSuperContactos();
   }
 
   function calcularBarometroVenta(l){
@@ -5754,7 +5792,9 @@
     let seguimientoEstado = (l['SeguimientoEstado'] || '').toString().trim();
     let seguimientoNota = (l['SeguimientoNota'] || '').toString().trim();
     const seguimientoLabel = () => SEGUIMIENTO_ESTADOS[seguimientoEstado] || '';
+    let esSuperContacto = (l['SuperContacto'] || '').trim() === 'Sí';
     card.innerHTML = `
+      <button type="button" class="super-star-btn ${esSuperContacto ? 'active' : ''}" title="${esSuperContacto ? 'Quitar de Super Contactos' : 'Marcar como Super Contacto'}">${esSuperContacto ? '★' : '☆'}</button>
       <div class="visita-resumen">
         <div>
           <strong style="font-size:15px;">${escVenta(l['Nombre'] || 'Sin nombre')}</strong>
@@ -5911,6 +5951,27 @@
       updateBulkDeleteVentaBtn();
     });
 
+    // ---- Estrella "Super Contacto": marca/desmarca el lead sin tocar nada
+    // más de su ficha — el mismo dato pasa a verse también en la pestaña
+    // "Super Contactos".
+    card.querySelector('.super-star-btn').addEventListener('click', async (e)=>{
+      const btn = e.currentTarget;
+      if(btn.disabled) return;
+      btn.disabled = true;
+      const nuevo = !esSuperContacto;
+      try{
+        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'marcar_super_contacto_venta', fecha: l['Fecha'], telefono: l['Teléfono'], activar: nuevo }) });
+        esSuperContacto = nuevo;
+        l['SuperContacto'] = nuevo ? 'Sí' : '';
+        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'SuperContacto': nuevo ? 'Sí' : '' });
+        btn.classList.toggle('active', nuevo);
+        btn.textContent = nuevo ? '★' : '☆';
+        btn.title = nuevo ? 'Quitar de Super Contactos' : 'Marcar como Super Contacto';
+        renderSuperContactos();
+      } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+      btn.disabled = false;
+    });
+
     const invBox = card.querySelector('.inv-box');
     card.querySelector('.inv-toggle').addEventListener('click', ()=>{
       const showing = invBox.style.display !== 'none';
@@ -6032,6 +6093,139 @@
         '¿Eliminar este lead de venta?',
         'Esta acción borra la fila de tu hoja de forma permanente. No se puede deshacer.'
       );
+    });
+
+    return card;
+  }
+
+  // ==================== SUPER CONTACTOS ====================
+  // Es el MISMO lead de Idealista (misma fila de LeadsVenta), filtrado por
+  // "SuperContacto"==="Sí" y mostrado con una ficha distinta: sin saludo de
+  // WhatsApp ni fase de investigación (aquí no hay visitas), con foto de
+  // perfil y 4 campos libres para dejar anotado quién es y qué ofrecerle.
+  function renderSuperContactos(){
+    const grid = document.getElementById('superContactosGrid');
+    const empty = document.getElementById('emptySuperContactos');
+    if(!grid || !empty) return;
+    grid.innerHTML = '';
+    const superContactos = cachedLeadsVenta.filter(l => (l['SuperContacto']||'').toString().trim() === 'Sí');
+    if(superContactos.length === 0){
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    superContactos.forEach(l => grid.appendChild(buildSuperContactoCard(l)));
+  }
+
+  function buildSuperContactoCard(l){
+    const card = document.createElement('div');
+    const operacionLead = (l['Operación'] || 'Venta').trim() || 'Venta';
+    const esAlquilerLead = operacionLead === 'Alquiler';
+    card.className = 'lead-card venta super-contacto-card' + (esAlquilerLead ? ' alquiler' : '');
+    const waPhone = String(l['Teléfono'] || '').replace(/[^0-9]/g, '');
+    const foto = (l['SuperFoto'] || '').toString().trim();
+    const quienEs = (l['SuperQuienEs'] || '').toString();
+    const buscando = (l['SuperBuscando'] || '').toString();
+    const interesa = (l['SuperInteresa'] || '').toString();
+    const ofrecer = (l['SuperOfrecer'] || '').toString();
+    card.innerHTML = `
+      <button type="button" class="super-star-btn active" title="Quitar de Super Contactos">★</button>
+      <div class="lead-number">${esAlquilerLead ? '🔑 Alquiler' : '€ Venta'} · ★ Super Contacto</div>
+      ${foto ? `<img class="super-foto" src="${escVenta(foto)}" alt="">` : `<div class="super-foto-placeholder">👤</div>`}
+      <div class="super-foto-upload">
+        <input type="file" class="super-foto-input" accept="image/*" style="display:none;">
+        <button type="button" class="edit-reco-btn super-foto-btn" style="width:auto;padding:5px 10px;margin-bottom:0;font-size:11.5px;">${foto ? 'Cambiar foto' : '+ Foto de perfil'}</button>
+        <span class="super-foto-status" style="margin-left:6px;color:var(--muted,#8a8a8a);"></span>
+      </div>
+      <div class="name">${escVenta(l['Nombre'] || 'Sin nombre')}</div>
+      <div class="meta">${l['Fecha'] ? formatDateVenta(l['Fecha']) : '—'} · ${escVenta(l['Teléfono'] || '—')}${l['Propiedad'] ? ' · ' + escVenta(l['Propiedad']) : ''}</div>
+      ${l['Email'] ? `<div class="meta">✉️ ${escVenta(l['Email'])}</div>` : ''}
+      ${l['Mensaje'] ? `<div class="notes"><strong>Mensaje original:</strong> ${escVenta(l['Mensaje'])}</div>` : ''}
+      <div class="add-piso-field" style="margin-top:10px;margin-bottom:8px;">
+        <label style="margin-bottom:4px;">¿Quién es?</label>
+        <textarea class="super-quien" rows="2" placeholder="Ej. Dueño de una cadena de restaurantes, se lo recomendó un cliente nuestro..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(quienEs)}</textarea>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:8px;">
+        <label style="margin-bottom:4px;">¿Qué está buscando?</label>
+        <textarea class="super-buscando" rows="2" placeholder="Ej. Local comercial en Eixample, 200-300 m²..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(buscando)}</textarea>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:8px;">
+        <label style="margin-bottom:4px;">¿Qué le interesa?</label>
+        <textarea class="super-interesa" rows="2" placeholder="Ej. Buena ubicación y poder reformar a su gusto..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(interesa)}</textarea>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:0;">
+        <label style="margin-bottom:4px;">¿Qué ofrecerle?</label>
+        <textarea class="super-ofrecer" rows="2" placeholder="Ej. Avisarle en cuanto entre algo similar, proponerle tal piso..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">${escVenta(ofrecer)}</textarea>
+      </div>
+      <button class="super-guardar-btn edit-reco-btn" style="width:auto;padding:8px 14px;margin-top:8px;margin-bottom:0;font-size:12px;">Guardar</button>
+      <div class="actions" style="margin-top:10px;">
+        ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+      </div>
+    `;
+
+    card.querySelector('.super-star-btn').addEventListener('click', async (e)=>{
+      const btn = e.currentTarget;
+      if(btn.disabled) return;
+      btn.disabled = true;
+      try{
+        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'marcar_super_contacto_venta', fecha: l['Fecha'], telefono: l['Teléfono'], activar: false }) });
+        l['SuperContacto'] = '';
+        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'SuperContacto': '' });
+        renderLeadsVenta();
+      } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); btn.disabled = false; }
+    });
+
+    const fotoInput = card.querySelector('.super-foto-input');
+    card.querySelector('.super-foto-btn').addEventListener('click', ()=> fotoInput.click());
+    fotoInput.addEventListener('change', ()=>{
+      const file = fotoInput.files && fotoInput.files[0];
+      if(!file) return;
+      const statusEl = card.querySelector('.super-foto-status');
+      statusEl.textContent = 'Subiendo...';
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', 'documentos_alquiler');
+      fetch('https://api.cloudinary.com/v1_1/do9fo5gg/auto/upload', { method:'POST', body: fd })
+        .then(res=> res.json())
+        .then(async (data)=>{
+          if(!data.secure_url){ statusEl.textContent = 'No se pudo subir la foto.'; return; }
+          await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({
+            action:'actualizar_super_contacto_venta', fecha: l['Fecha'], telefono: l['Teléfono'],
+            foto: data.secure_url,
+            quienEs: card.querySelector('.super-quien').value.trim(),
+            buscando: card.querySelector('.super-buscando').value.trim(),
+            interesa: card.querySelector('.super-interesa').value.trim(),
+            ofrecer: card.querySelector('.super-ofrecer').value.trim()
+          }) });
+          l['SuperFoto'] = data.secure_url;
+          updateCachedLeadVenta(l['Fecha'], l['Teléfono'], { 'SuperFoto': data.secure_url });
+          statusEl.textContent = '';
+          renderSuperContactos();
+        })
+        .catch(()=>{ statusEl.textContent = 'No se pudo subir la foto (revisa tu conexión).'; });
+    });
+
+    card.querySelector('.super-guardar-btn').addEventListener('click', async (e)=>{
+      const btn = e.currentTarget;
+      const cambios = {
+        SuperQuienEs: card.querySelector('.super-quien').value.trim(),
+        SuperBuscando: card.querySelector('.super-buscando').value.trim(),
+        SuperInteresa: card.querySelector('.super-interesa').value.trim(),
+        SuperOfrecer: card.querySelector('.super-ofrecer').value.trim()
+      };
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+      try{
+        await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({
+          action:'actualizar_super_contacto_venta', fecha: l['Fecha'], telefono: l['Teléfono'],
+          foto: (l['SuperFoto']||''),
+          quienEs: cambios.SuperQuienEs, buscando: cambios.SuperBuscando, interesa: cambios.SuperInteresa, ofrecer: cambios.SuperOfrecer
+        }) });
+        Object.assign(l, cambios);
+        updateCachedLeadVenta(l['Fecha'], l['Teléfono'], cambios);
+      } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+      btn.disabled = false;
+      btn.textContent = 'Guardar';
     });
 
     return card;
