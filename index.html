@@ -786,6 +786,14 @@
   .super-star-btn:hover{filter:grayscale(0.3) opacity(0.85);}
   .super-star-btn.active{filter:none;opacity:1;}
   .super-contacto-card{position:relative;}
+  /* En la ficha de Super Contacto no hay punto de semáforo con el que
+     chocar, pero la estrella absoluta sí se solapaba con la etiqueta
+     "€ Venta · ★ Super Contacto" de arriba. Aquí la sacamos del flujo
+     absoluto y la ponemos en una fila junto a la etiqueta. */
+  .super-contacto-card{padding-top:10px;}
+  .super-contacto-card .super-star-btn{position:static;padding:0;margin-right:8px;font-size:20px;flex:none;}
+  .super-card-top{display:flex;align-items:center;gap:0;margin-bottom:6px;}
+  .super-card-top .lead-number{margin:0;}
   .super-foto{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);display:block;margin-bottom:10px;background:#f1e7c8;}
   .super-foto-placeholder{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f1e7c8;color:#9c7a1e;font-size:24px;margin-bottom:10px;}
   .super-foto-upload{font-size:11.5px;margin-bottom:10px;}
@@ -799,6 +807,9 @@
   .postit-chevron{font-size:11px;transition:transform .15s;}
   .postit-section.open .postit-chevron{transform:rotate(180deg);}
   .postit-body{padding:0 12px 12px;}
+  .postit-header-text{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;}
+  .postit-summary{font-family:'Inter',sans-serif;font-weight:600;font-size:11.5px;letter-spacing:0;text-transform:none;color:var(--muted,#8a7550);white-space:normal;overflow-wrap:anywhere;}
+  .postit-summary:empty::before{content:'Sin rellenar';font-style:italic;opacity:.65;}
   .postit-amber{background:#fdf6e2;border-color:#f0dc9c;} .postit-amber .postit-header{color:var(--gold-dark);}
   .postit-sky{background:#e8f6fb;border-color:#b7e3f0;} .postit-sky .postit-header{color:#166a86;}
   .postit-teal{background:#e7f7f4;border-color:#b9e6dc;} .postit-teal .postit-header{color:#1c7a68;}
@@ -817,6 +828,11 @@
   .super-filters-label{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-right:4px;}
   .super-filters .chip-toggle{padding:5px 10px;font-size:11.5px;margin:0 4px 4px 0;}
   .super-filters .chip-toggle.active{background:var(--navy);border-color:var(--navy);}
+  .super-filters-dropdown{margin-bottom:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--white);}
+  .super-filters-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;background:transparent;border:none;cursor:pointer;padding:11px 14px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:12.5px;color:var(--navy-dark);}
+  .super-filters-chevron{font-size:11px;transition:transform .15s;}
+  .super-filters-dropdown.open .super-filters-chevron{transform:rotate(180deg);}
+  .super-filters-dropdown .super-filters{margin-bottom:0;border:none;border-top:1px solid var(--border);border-radius:0;}
 
   .venta-badge{
     display:inline-flex;align-items:center;gap:4px;
@@ -1922,7 +1938,10 @@
   <div class="tab-panel" id="tab-supercontactos">
     <span class="venta-badge" style="background:linear-gradient(135deg,#ffe08a,#b8860b);">★ Super Contactos</span>
     <p class="section-desc">Contactos de alto valor, marcados a mano con la ★ desde Leads Idealista — es el mismo lead, solo que aquí lo ves destacado. No hay visitas ni fase de investigación: solo foto de perfil y lo esencial, para tenerlos localizados.</p>
-    <div class="super-filters" id="superFiltersBar"></div>
+    <div class="super-filters-dropdown" id="superFiltersDropdown">
+      <button type="button" class="super-filters-toggle" id="superFiltersToggle"><span>🔍 Filtros</span><span class="super-filters-chevron" id="superFiltersChevron">▾</span></button>
+      <div class="super-filters" id="superFiltersBar" style="display:none;"></div>
+    </div>
     <div class="cards-grid" id="superContactosGrid"></div>
     <div class="empty-state" id="emptySuperContactos" style="display:none;">Todavía no has marcado ningún Super Contacto. Ve a Leads Idealista y pulsa la ☆ en el lead que quieras destacar.</div>
   </div>
@@ -5536,6 +5555,16 @@
       toggleEnArray(filtroSuperOfrecer, btn.dataset.valor); renderSuperContactos();
     }));
   }
+  const superFiltersToggleBtn = document.getElementById('superFiltersToggle');
+  if(superFiltersToggleBtn){
+    superFiltersToggleBtn.addEventListener('click', ()=>{
+      const dropdown = document.getElementById('superFiltersDropdown');
+      const bar = document.getElementById('superFiltersBar');
+      const abierto = dropdown.classList.contains('open');
+      dropdown.classList.toggle('open', !abierto);
+      bar.style.display = abierto ? 'none' : 'flex';
+    });
+  }
   function superPasaFiltros(l){
     const perfil = superTagsArray(l['SuperQuienEs']);
     const interes = superTagsArray(l['SuperInteresa']);
@@ -6250,10 +6279,13 @@
     const interesaSel = superTagsArray(interesa);
     const ofrecerSel = superTagsArray(ofrecer);
 
-    function postit(campo, color, titulo, bodyHTML){
+    function postit(campo, color, titulo, bodyHTML, resumenInicial){
       return `
       <div class="postit-section postit-${color}" data-campo="${campo}">
-        <button type="button" class="postit-header"><span>${titulo}</span><span class="postit-chevron">▾</span></button>
+        <button type="button" class="postit-header">
+          <span class="postit-header-text"><span>${titulo}</span><span class="postit-summary">${escVenta(resumenInicial || '')}</span></span>
+          <span class="postit-chevron">▾</span>
+        </button>
         <div class="postit-body" style="display:none;">
           ${bodyHTML}
           <div style="margin-top:8px;">
@@ -6265,8 +6297,10 @@
     }
 
     card.innerHTML = `
-      <button type="button" class="super-star-btn active" title="Quitar de Super Contactos">★</button>
-      <div class="lead-number">${esAlquilerLead ? '🔑 Alquiler' : '€ Venta'} · ★ Super Contacto</div>
+      <div class="super-card-top">
+        <button type="button" class="super-star-btn active" title="Quitar de Super Contactos">★</button>
+        <div class="lead-number">${esAlquilerLead ? '🔑 Alquiler' : '€ Venta'} · ★ Super Contacto</div>
+      </div>
       ${foto ? `<img class="super-foto" src="${escVenta(foto)}" alt="">` : `<div class="super-foto-placeholder">👤</div>`}
       <div class="super-foto-upload">
         <input type="file" class="super-foto-input" accept="image/*" style="display:none;">
@@ -6278,11 +6312,11 @@
       ${l['Email'] ? `<div class="meta">✉️ ${escVenta(l['Email'])}</div>` : ''}
       ${l['Mensaje'] ? `<div class="notes"><strong>Mensaje original:</strong> ${escVenta(l['Mensaje'])}</div>` : ''}
 
-      ${postit('SuperQuienEs', 'amber', '¿Quién es?', `<div class="postit-chips">${superChipsHTML('chip-quien', SUPER_PERFIL_OPCIONES, quienEsSel, true)}</div>`)}
-      ${postit('SuperBuscando', 'sky', '¿Qué está buscando?', `<textarea class="postit-textarea" rows="2" placeholder="Ej. Local comercial en Eixample, 200-300 m²...">${escVenta(buscando)}</textarea>`)}
-      ${postit('SuperInteresa', 'teal', '¿Qué le interesa?', `<div class="postit-chips">${superChipsHTML('chip-interesa', SUPER_INTERES_OPCIONES, interesaSel, false)}</div>`)}
-      ${postit('SuperOfrecer', 'green', '¿Qué ofrecerle?', `<div class="postit-chips">${superChipsHTML('chip-ofrecer', SUPER_OFRECER_OPCIONES, ofrecerSel, false)}</div>`)}
-      ${postit('SuperNotas', 'purple', 'Anotaciones', `<textarea class="postit-textarea" rows="2" placeholder="Cualquier otra cosa que quieras recordar sobre este contacto...">${escVenta(notas)}</textarea>`)}
+      ${postit('SuperQuienEs', 'amber', '¿Quién es?', `<div class="postit-chips">${superChipsHTML('chip-quien', SUPER_PERFIL_OPCIONES, quienEsSel, true)}</div>`, quienEsSel.join(', '))}
+      ${postit('SuperBuscando', 'sky', '¿Qué está buscando?', `<textarea class="postit-textarea" rows="2" placeholder="Ej. Local comercial en Eixample, 200-300 m²...">${escVenta(buscando)}</textarea>`, buscando)}
+      ${postit('SuperInteresa', 'teal', '¿Qué le interesa?', `<div class="postit-chips">${superChipsHTML('chip-interesa', SUPER_INTERES_OPCIONES, interesaSel, false)}</div>`, interesaSel.join(', '))}
+      ${postit('SuperOfrecer', 'green', '¿Qué ofrecerle?', `<div class="postit-chips">${superChipsHTML('chip-ofrecer', SUPER_OFRECER_OPCIONES, ofrecerSel, false)}</div>`, ofrecerSel.join(', '))}
+      ${postit('SuperNotas', 'purple', 'Anotaciones', `<textarea class="postit-textarea" rows="2" placeholder="Cualquier otra cosa que quieras recordar sobre este contacto...">${escVenta(notas)}</textarea>`, notas)}
 
       <div class="actions" style="margin-top:10px;">
         ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
@@ -6299,8 +6333,23 @@
       });
     });
 
+    function actualizarResumenSeccion(section){
+      const resumenEl = section.querySelector('.postit-summary');
+      if(!resumenEl) return;
+      const textarea = section.querySelector('.postit-textarea');
+      if(textarea){ resumenEl.textContent = textarea.value.trim(); return; }
+      const activos = section.querySelectorAll('.postit-chips .chip-toggle.active');
+      resumenEl.textContent = Array.from(activos).map(b => b.dataset.valor).join(', ');
+    }
+
     card.querySelectorAll('.postit-chips .chip-toggle').forEach(chip => {
-      chip.addEventListener('click', ()=> chip.classList.toggle('active'));
+      chip.addEventListener('click', ()=>{
+        chip.classList.toggle('active');
+        actualizarResumenSeccion(chip.closest('.postit-section'));
+      });
+    });
+    card.querySelectorAll('.postit-textarea').forEach(ta => {
+      ta.addEventListener('input', ()=> actualizarResumenSeccion(ta.closest('.postit-section')));
     });
 
     function valorDeCampo(campo){
