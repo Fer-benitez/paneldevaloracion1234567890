@@ -779,7 +779,10 @@
   .tab-btn.tab-super .letter{background:#b8860b;}
   .tab-btn.tab-super.active{border-bottom-color:#ffd54a;}
   .tab-btn.tab-super.active .letter{background:#ffd54a;color:#3a2b00;}
-  .super-star-btn{position:absolute;top:10px;right:10px;background:transparent;border:none;cursor:pointer;font-size:19px;line-height:1;padding:0 4px;color:#c9a227;filter:grayscale(1) opacity(0.55);transition:filter .15s;z-index:2;}
+  /* A la izquierda (no a la derecha) a propósito: el punto de color del
+     semáforo (verde/rojo/amarillo) ya ocupa la esquina superior derecha de
+     la tarjeta con su propio ::before, y se solapaba con la estrella ahí. */
+  .super-star-btn{position:absolute;top:8px;left:8px;background:transparent;border:none;cursor:pointer;font-size:22px;line-height:1;padding:4px;color:#c9a227;filter:grayscale(1) opacity(0.55);transition:filter .15s;z-index:3;}
   .super-star-btn:hover{filter:grayscale(0.3) opacity(0.85);}
   .super-star-btn.active{filter:none;opacity:1;}
   .super-contacto-card{position:relative;}
