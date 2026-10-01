@@ -3381,6 +3381,15 @@
   fechaOtro.addEventListener('change', ()=>{
     diaVisitaSeleccionado = fechaOtro.value ? formatFechaOtro(fechaOtro.value) : 'Otro';
   });
+  // Igual que en Leads Idealista: se relee del campo directamente al guardar,
+  // por si el 'change' del input de fecha todavía no ha disparado.
+  function diaVisitaActual(){
+    const activo = diaVisitaGroup.querySelector('.choice-btn.active');
+    if(!activo) return diaVisitaSeleccionado;
+    const texto = activo.textContent.trim();
+    if(texto !== 'Otro') return texto;
+    return fechaOtro.value ? formatFechaOtro(fechaOtro.value) : 'Otro';
+  }
 
   function checkLeadReady(){
     addLeadBtn.disabled = !(lNombre.value.trim() && lTelefono.value.trim());
@@ -3537,7 +3546,7 @@
       telefono: lTelefono.value.trim(),
       pisoInteres: lPisoInteres.value.trim(),
       notas: lNotas.value.trim(),
-      diaVisita: diaVisitaSeleccionado,
+      diaVisita: diaVisitaActual(),
       horaVisita: lHoraVisita.value
     };
     if(wasEditing) payload.fecha = editingLeadFecha;
@@ -5462,6 +5471,17 @@
   lvFechaOtro.addEventListener('change', ()=>{
     diaVisitaVentaSeleccionado = lvFechaOtro.value ? formatFechaOtro(lvFechaOtro.value) : 'Otro';
   });
+  // Se lee en el momento de guardar, directamente del campo de fecha, en vez
+  // de fiarse solo de diaVisitaVentaSeleccionado: si eliges la fecha en el
+  // calendario y le das a "Guardar cambios" enseguida, el evento 'change'
+  // del input puede no haber disparado todavía y se guardaba un valor viejo.
+  function diaVisitaVentaActual(){
+    const activo = diaVisitaVentaGroup.querySelector('.choice-btn.active');
+    if(!activo) return diaVisitaVentaSeleccionado;
+    const texto = activo.textContent.trim();
+    if(texto !== 'Otro') return texto;
+    return lvFechaOtro.value ? formatFechaOtro(lvFechaOtro.value) : 'Otro';
+  }
 
   function checkLeadVentaReady(){
     addLeadVentaBtn.disabled = !(lvNombre.value.trim() && lvTelefono.value.trim());
@@ -5528,7 +5548,7 @@
       email: lvEmail.value.trim(),
       propiedad: lvPropiedad.value,
       mensaje: lvMensaje.value.trim(),
-      diaVisita: diaVisitaVentaSeleccionado,
+      diaVisita: diaVisitaVentaActual(),
       horaVisita: lvHoraVisita.value,
       operacion: operacionLead
     };
