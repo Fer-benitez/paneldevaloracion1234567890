@@ -779,10 +779,11 @@
   .tab-btn.tab-super .letter{background:#b8860b;}
   .tab-btn.tab-super.active{border-bottom-color:#ffd54a;}
   .tab-btn.tab-super.active .letter{background:#ffd54a;color:#3a2b00;}
-  /* A la izquierda (no a la derecha) a propósito: el punto de color del
-     semáforo (verde/rojo/amarillo) ya ocupa la esquina superior derecha de
-     la tarjeta con su propio ::before, y se solapaba con la estrella ahí. */
-  .super-star-btn{position:absolute;top:8px;left:8px;background:transparent;border:none;cursor:pointer;font-size:22px;line-height:1;padding:4px;color:#c9a227;filter:grayscale(1) opacity(0.55);transition:filter .15s;z-index:3;}
+  /* Al lado del punto de color del semáforo (verde/rojo/amarillo), no encima
+     ni lejos en la otra esquina: el punto vive en top:14px;right:14px con
+     26px de ancho, así que la estrella se coloca justo a su izquierda, con
+     hueco de sobra para que no se toquen. */
+  .super-star-btn{position:absolute;top:10px;right:48px;left:auto;background:transparent;border:none;cursor:pointer;font-size:22px;line-height:1;padding:4px;color:#c9a227;filter:grayscale(1) opacity(0.55);transition:filter .15s;z-index:3;}
   .super-star-btn:hover{filter:grayscale(0.3) opacity(0.85);}
   .super-star-btn.active{filter:none;opacity:1;}
   .super-contacto-card{position:relative;}
@@ -5991,9 +5992,13 @@
   }
   function visitasDelMes(anio, mes){
     // { diaDelMes: [ {lead, fecha, realizada, numero} ... ] }
+    // OJO: se recorren TODOS los leads (Nivel 1 "Entrada" y Nivel 2 "Visitas"),
+    // no solo los que ya están en la columna Visitas — el día/hora de la
+    // visita se puede rellenar desde que se crea el lead, antes de moverlo a
+    // Nivel 2, y el calendario es la agenda completa, no solo ese cajón.
     const mapa = new Map();
     const numeros = numerosEntradaLeadsVenta();
-    cachedLeadsVenta.filter(l => String(l['Nivel']) === '2').forEach(l=>{
+    cachedLeadsVenta.forEach(l=>{
       const info = fechaVisitaLead(l);
       if(!info) return;
       if(info.fecha.getFullYear() !== anio || info.fecha.getMonth() !== mes) return;
