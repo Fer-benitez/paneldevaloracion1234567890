@@ -501,6 +501,15 @@
   }
   .pv-foto-thumb.is-portada .pv-foto-star{background:var(--gold-dark);cursor:default;}
   .pv-fotos-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
+  .pv-video-preview{margin-top:10px;}
+  .pv-video-preview:empty{display:none;}
+  .pv-video-box{position:relative;display:inline-block;max-width:200px;}
+  .pv-video-box video{width:100%;max-height:280px;border-radius:10px;background:#000;display:block;}
+  .pv-video-box .remove-x{
+    position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;
+    background:rgba(31,45,58,0.75);color:#fff;font-size:12px;line-height:22px;text-align:center;
+    cursor:pointer;z-index:2;
+  }
 
   .leads-columns{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
   .leads-column-title{
@@ -1639,6 +1648,13 @@
             <input type="file" id="pvFoto" accept="image/*" multiple>
             <p style="font-size:11.5px;color:var(--muted,#8a8a8a);margin:6px 0 0;">Las fotos que subas se añaden a las que ya tenga el piso. La marcada con ⭐ es la portada — toca "Poner de portada" en cualquier otra para cambiarla, o la ✕ para quitarla.</p>
             <div class="pv-fotos-grid" id="pvFotosGrid"></div>
+          </div>
+          <div class="add-piso-field">
+            <label>Vídeo (reel) — opcional</label>
+            <input type="file" id="pvVideo" accept="video/*">
+            <p style="font-size:11.5px;color:var(--muted,#8a8a8a);margin:6px 0 0;">Se mostrará en "Dentro de cada propiedad" del mapa y en la ficha de este piso. Solo uno por propiedad; subir otro sustituye al anterior.</p>
+            <div id="pvVideoStatus" class="piso-upload-status"></div>
+            <div class="pv-video-preview" id="pvVideoPreview"></div>
           </div>
         </div>
         <div class="add-piso-field" style="margin-bottom:14px;">
@@ -4195,6 +4211,9 @@
   // ---- Catálogo de propiedades en venta ----
   const pvDireccion = document.getElementById('pvDireccion');
   const pvFoto = document.getElementById('pvFoto');
+  const pvVideo = document.getElementById('pvVideo');
+  const pvVideoStatus = document.getElementById('pvVideoStatus');
+  const pvVideoPreview = document.getElementById('pvVideoPreview');
   const pvLink = document.getElementById('pvLink');
   const pvRefCatastral = document.getElementById('pvRefCatastral');
   const pvPrecio = document.getElementById('pvPrecio');
@@ -4854,6 +4873,53 @@
     files.forEach((file, idx) => subirUna(file, idx));
   });
 
+  // ---- Vídeo (reel) de la propiedad: uno solo por piso, subido a Cloudinary ----
+  let uploadedPropVentaVideoUrl = '';
+
+  function renderPvVideoPreview(){
+    if(!uploadedPropVentaVideoUrl){ pvVideoPreview.innerHTML = ''; return; }
+    pvVideoPreview.innerHTML = `
+      <div class="pv-video-box">
+        <video src="${uploadedPropVentaVideoUrl}" controls playsinline preload="metadata"></video>
+        <div class="remove-x" title="Quitar vídeo">✕</div>
+      </div>
+    `;
+    pvVideoPreview.querySelector('.remove-x').addEventListener('click', ()=>{
+      uploadedPropVentaVideoUrl = '';
+      renderPvVideoPreview();
+      pvVideoStatus.textContent = '';
+      pvVideoStatus.className = 'piso-upload-status';
+    });
+  }
+
+  pvVideo.addEventListener('change', ()=>{
+    const file = pvVideo.files && pvVideo.files[0];
+    if(!file) return;
+    pvVideoStatus.textContent = 'Subiendo vídeo...';
+    pvVideoStatus.className = 'piso-upload-status';
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', 'documentos_alquiler');
+    fetch('https://api.cloudinary.com/v1_1/do9fo5gg/video/upload', { method:'POST', body: fd })
+      .then(res=> res.json())
+      .then(data=>{
+        if(data.secure_url){
+          uploadedPropVentaVideoUrl = data.secure_url;
+          renderPvVideoPreview();
+          pvVideoStatus.textContent = 'Vídeo subido ✓';
+          pvVideoStatus.className = 'piso-upload-status ok';
+        } else {
+          pvVideoStatus.textContent = 'Error al subir el vídeo.';
+          pvVideoStatus.className = 'piso-upload-status error';
+        }
+      })
+      .catch(()=>{
+        pvVideoStatus.textContent = 'Error al subir el vídeo.';
+        pvVideoStatus.className = 'piso-upload-status error';
+      })
+      .finally(()=>{ pvVideo.value = ''; });
+  });
+
   pvDireccion.addEventListener('input', checkAddPropVentaReady);
   pvDireccion.addEventListener('input', actualizarPvTransporteDireccion);
   function checkAddPropVentaReady(){
@@ -4901,6 +4967,10 @@
     uploadedPropVentaImageUrls = [];
     renderPvFotosGrid();
     pvUploadStatus.textContent = ''; pvUploadStatus.className = 'piso-upload-status';
+    uploadedPropVentaVideoUrl = '';
+    pvVideo.value = '';
+    renderPvVideoPreview();
+    pvVideoStatus.textContent = ''; pvVideoStatus.className = 'piso-upload-status';
     pvLat.value = ''; pvLng.value = '';
     pvLatLngTxt.textContent = 'Sin ubicación seleccionada.';
     pvBuscarTexto.value = ''; mostrarPvBuscarEstado('');
@@ -4982,6 +5052,11 @@
     pvUploadStatus.textContent = uploadedPropVentaImageUrls.length ? uploadedPropVentaImageUrls.length + ' foto(s) ya guardada(s) — quita, reordena o añade más abajo' : '';
     pvUploadStatus.className = 'piso-upload-status ok';
 
+    uploadedPropVentaVideoUrl = (p['VideoReel'] || '').toString().trim();
+    renderPvVideoPreview();
+    pvVideoStatus.textContent = uploadedPropVentaVideoUrl ? 'Vídeo ya guardado — quítalo o sube otro para sustituirlo' : '';
+    pvVideoStatus.className = 'piso-upload-status ok';
+
     if(ubicacionValida(p['Lat'], p['Lng'])){
       const latN = parseFloat(p['Lat']), lngN = parseFloat(p['Lng']);
       pvLat.value = latN.toFixed(6); pvLng.value = lngN.toFixed(6);
@@ -5061,6 +5136,7 @@
         direccion: direccion,
         imagen: uploadedPropVentaImageUrls[0],
         fotos: uploadedPropVentaImageUrls.join('|'),
+        video: uploadedPropVentaVideoUrl,
         link: link, precio: precio,
         barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
         descripcionEn: descripcionEn, descripcionDe: descripcionDe, descripcionFr: descripcionFr,
