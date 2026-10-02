@@ -1857,6 +1857,9 @@
           </div>
         </div>
         <div class="add-piso-row">
+          <div class="add-piso-field"><label>Planta (opcional)</label><input type="text" id="pvPlanta" placeholder="Ej. 3º 2ª, Bajos, Ático"></div>
+        </div>
+        <div class="add-piso-row">
           <div class="add-piso-field"><label>Año de construcción (opcional)</label><input type="text" id="pvAnyoConstruccion" placeholder="Ej. 1975"></div>
           <div class="add-piso-field"><label>ITE — Inspección Técnica del Edificio (opcional)</label>
             <select id="pvIte">
@@ -4385,6 +4388,7 @@
   const pvOrientacion = document.getElementById('pvOrientacion');
   const pvEstadoPropiedad = document.getElementById('pvEstadoPropiedad');
   const pvAscensor = document.getElementById('pvAscensor');
+  const pvPlanta = document.getElementById('pvPlanta');
   const pvAnyoConstruccion = document.getElementById('pvAnyoConstruccion');
   const pvIte = document.getElementById('pvIte');
   const pvIbi = document.getElementById('pvIbi');
@@ -4961,7 +4965,7 @@
     pvCercaniasEst1.value = ''; pvCercaniasEst2.value = ''; pvCercaniasEst3.value = '';
     PV_REPEAT_GROUPS.forEach(resetCamposRepetibles);
     pvHospitales.value = ''; pvOrientacion.value = ''; pvEstadoPropiedad.value = 'Buen estado';
-    pvAscensor.value = ''; pvAnyoConstruccion.value = ''; pvIte.value = '';
+    pvAscensor.value = ''; pvPlanta.value = ''; pvAnyoConstruccion.value = ''; pvIte.value = '';
     pvIbi.value = ''; pvGastosComunidad.value = '';
     pvMensajeWhatsapp.value = PV_MENSAJE_WA_DEFECTO;
     uploadedPropVentaImageUrls = [];
@@ -5025,6 +5029,7 @@
     pvOrientacion.value = p['Orientación'] || '';
     pvEstadoPropiedad.value = p['EstadoPropiedad'] || 'Buen estado';
     pvAscensor.value = p['Ascensor'] || '';
+    pvPlanta.value = p['Planta'] || '';
     pvAnyoConstruccion.value = p['AñoConstrucción'] || '';
     pvIte.value = p['ITE'] || '';
     pvIbi.value = p['IBI'] || '';
@@ -5113,6 +5118,7 @@
     const orientacion = pvOrientacion.value;
     const estadoPropiedad = pvEstadoPropiedad.value;
     const ascensor = pvAscensor.value;
+    const planta = pvPlanta.value.trim();
     const anyoConstruccion = pvAnyoConstruccion.value.trim();
     const ite = pvIte.value;
     const ibi = pvIbi.value.trim();
@@ -5152,7 +5158,7 @@
         metroEst1: metroEst1, metroEst2: metroEst2, metroEst3: metroEst3,
         cercaniasEst1: cercaniasEst1, cercaniasEst2: cercaniasEst2, cercaniasEst3: cercaniasEst3,
         hospitales: hospitales, orientacion: orientacion, estadoPropiedad: estadoPropiedad,
-        ascensor: ascensor, anyoConstruccion: anyoConstruccion, ite: ite,
+        ascensor: ascensor, planta: planta, anyoConstruccion: anyoConstruccion, ite: ite,
         ibi: ibi, gastosComunidad: gastosComunidad,
         mensajeWhatsapp: mensajeWhatsapp,
         lat: lat, lng: lng,
