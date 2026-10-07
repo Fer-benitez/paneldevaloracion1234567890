@@ -6,8 +6,14 @@
 <title>Lector de documentos — AG Núñez</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<!-- Lector de PDF (pdf.js) y de Word (mammoth.js) cargados en LOCAL, no desde
+     un CDN externo: esta página se abre como archivo en el ordenador
+     (file://), y ahí los navegadores suelen bloquear la carga de scripts
+     remotos o el worker de pdf.js, dejando el lector sin funcionar sin dar
+     ningún aviso claro. Con los ficheros en la carpeta libs/ al lado de este
+     HTML, todo funciona sin depender de internet. -->
+<script src="libs/pdf.min.js"></script>
+<script src="libs/mammoth.browser.min.js"></script>
 <style>
   :root{
     --navy:#346B93; --navy-dark:#1F4460; --navy-darker:#16324a;
@@ -230,7 +236,7 @@
 
   // ---------- Detección automática desde PDF ----------
   if (window.pdfjsLib) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'libs/pdf.worker.min.js';
   }
 
   var CAMPO_LABEL = {
