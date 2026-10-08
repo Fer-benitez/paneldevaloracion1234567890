@@ -305,24 +305,14 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
         La lectura de la <strong>cédula</strong> y el <strong>certificado energético</strong> es más variable que la de los otros documentos (hay muchos formatos distintos) — revisa siempre los campos en amarillo.<br>
         Los mandatos en <strong>.doc antiguo</strong> no se pueden leer automáticamente — ábrelos en Word y usa "Guardar como" → PDF o Word (.docx), y sube ese archivo.
       </div>
-      <div class="propiedad-bar" style="margin-bottom:10px;align-items:flex-end;">
+      <div class="propiedad-bar" style="margin-bottom:12px;align-items:flex-end;">
         <div class="field">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-            <input type="checkbox" id="usarClaudeIA" style="width:auto;">
-            Usar IA de Claude para leer los documentos (más fiable, necesita clave de API e internet)
+            <input type="checkbox" id="usarClaudeIA" checked style="width:auto;">
+            Usar IA de Claude para leer los documentos (recomendado — más fiable, necesita internet)
           </label>
+          <div class="hint">La clave de la IA ya está incluida en este archivo — no hace falta pegar nada. Si falla internet o la IA, desmarca esta casilla para usar el lector local de respaldo.</div>
         </div>
-      </div>
-      <div class="propiedad-bar" id="claudeApiBar" style="margin-bottom:12px;display:none;">
-        <div class="field">
-          <label>Clave de API de Anthropic</label>
-          <input type="password" id="claudeApiKey" placeholder="sk-ant-...">
-          <div class="hint">
-            Se usa solo para llamar a la IA de Claude y leer tus documentos — no se envía a ningún otro sitio. Se guarda en este navegador (no viaja con el archivo si se lo mandas a otra persona).
-            Consíguela en <strong>console.anthropic.com</strong> → API Keys. Cada documento analizado tiene un coste pequeño con esa clave.
-          </div>
-        </div>
-        <button class="btn-ghost" id="borrarClaudeApiKeyBtn" type="button">Borrar clave guardada</button>
       </div>
       <div class="propiedad-bar">
         <div class="field">
@@ -451,10 +441,14 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
   var MANDATO_FIELDS = ['propietario_nombre','propietario_dni','propietario_domicilio','propietario_telefono','propietario_email','gran_tenedor','porcentaje_administracion','direccion','localidad','cp','provincia','renta_propuesta','duracion_propuesta','fecha_encargo'];
   var FICHA_FIELDS = ['ref_catastral','sup_construida','sup_util','sup_comunes','anio_edificacion','cedula_numero','cedula_vigencia','energia_consumo','energia_emisiones','energia_registro','energia_vigencia','idx_inferior','idx_media','idx_superior','serpavi_min','serpavi_max','zona_tensionada','alquilada_antes','alquilada_antes_fechas','alquilada_antes_renta'];
 
-  // ---------- Lectura con IA de Claude (opcional, necesita clave propia) ----------
+  // ---------- Lectura con IA de Claude ----------
+  // Clave incrustada directamente en este archivo, tal y como pidió Fer, para
+  // no tener que pegarla cada vez. Al ser un HTML local que se abre en el
+  // propio navegador, cualquiera que tenga este archivo puede ver la clave en
+  // su código -- no compartir este archivo fuera de la empresa.
+  var CLAUDE_API_KEY_EMBEBIDA = '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';
   var CLAUDE_MODEL = 'claude-sonnet-5-5';
   var CLAUDE_API_VERSION = '2023-06-01';
-  var CLAUDE_STORAGE_KEY = 'mandato_claude_api_key_v1';
   var CLAUDE_STORAGE_ENABLED = 'mandato_claude_ia_activada_v1';
 
   var TIPOS_CONOCIDOS = [
@@ -510,30 +504,32 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       'Vas a recibir UN documento (mandato de alquiler, nota catastral, informe SERPAVI, índice de referencia de alquiler, cédula de habitabilidad o certificado de eficiencia energética, o algo distinto). ' +
       'Identifica primero el TIPO de documento, eligiendo exactamente una de estas opciones: ' + TIPOS_CONOCIDOS.join(' | ') + '. ' +
       'Después extrae SOLO los datos que encuentres realmente escritos en el documento, usando estas claves de campo:\n' + lineas.join('\n') + '\n' +
-      'Reglas importantes: no inventes ni deduzcas ningún valor que no esté literalmente en el documento; si un dato no aparece, simplemente no incluyas esa clave; las fechas siempre en formato YYYY-MM-DD; usa SIEMPRE la herramienta "extraer_datos_documento" para responder, nunca texto libre.';
+      'Reglas importantes: no inventes ni deduzcas ningún valor que no esté literalmente en el documento; si un dato no aparece, simplemente no incluyas esa clave (u ponla como cadena vacía); las fechas siempre en formato YYYY-MM-DD; responde ÚNICAMENTE con el JSON pedido, sin ningún texto antes ni después.';
   }
 
-  var CLAUDE_TOOL_SCHEMA = {
-    name: 'extraer_datos_documento',
-    description: 'Registra el tipo de documento detectado y los datos encontrados en él.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        tipo: { type: 'string', enum: TIPOS_CONOCIDOS, description: 'Tipo de documento identificado' },
-        direccion: { type: 'string', description: 'Dirección del inmueble, si aparece en el documento' },
-        campos: {
-          type: 'object',
-          description: 'Solo las claves de campo que se hayan encontrado realmente en el documento, como texto.',
-          properties: (function(){
-            var p = {};
-            Object.keys(CAMPOS_PARA_IA).forEach(function(k){ p[k] = { type: 'string' }; });
-            return p;
-          })(),
-          additionalProperties: false
-        }
-      },
-      required: ['tipo']
-    }
+  // Esquema para la salida estructurada de Claude (output_config.format).
+  // claude-sonnet-5-5 no admite forzar el uso de una tool (tool_choice
+  // "tool"/"any" devuelven error 400 en este modelo) -- en vez de eso se le
+  // pide directamente una respuesta en JSON con esta forma exacta, sin usar
+  // tools en absoluto. Ver https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+  var CLAUDE_OUTPUT_SCHEMA = {
+    type: 'object',
+    properties: {
+      tipo: { type: 'string', enum: TIPOS_CONOCIDOS, description: 'Tipo de documento identificado' },
+      direccion: { type: 'string', description: 'Dirección del inmueble, si aparece en el documento (vacío si no aparece)' },
+      campos: {
+        type: 'object',
+        description: 'Solo las claves de campo que se hayan encontrado realmente en el documento, como texto. Omite las que no se encuentren.',
+        properties: (function(){
+          var p = {};
+          Object.keys(CAMPOS_PARA_IA).forEach(function(k){ p[k] = { type: 'string' }; });
+          return p;
+        })(),
+        additionalProperties: false
+      }
+    },
+    required: ['tipo', 'direccion', 'campos'],
+    additionalProperties: false
   };
 
   function claudeIAActiva() {
@@ -542,8 +538,7 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
   }
 
   function obtenerClaudeApiKey() {
-    var el = document.getElementById('claudeApiKey');
-    return el ? el.value.trim() : '';
+    return CLAUDE_API_KEY_EMBEBIDA.trim();
   }
 
   function arrayBufferABase64(buffer) {
@@ -593,8 +588,12 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
 
     return contenidoPromise.then(function(contenido){
       if (onProgreso) onProgreso({ status: 'preguntando a Claude', progress: 0.3 });
-      contenido.push({ type: 'text', text: 'Analiza este documento y usa la herramienta extraer_datos_documento para registrar lo que encuentres.' });
+      contenido.push({ type: 'text', text: 'Analiza este documento y devuelve el JSON pedido con lo que encuentres.' });
 
+      // claude-sonnet-5-5 rechaza con error 400 forzar una tool (tool_choice
+      // "tool"/"any" no están soportados en este modelo). En vez de usar
+      // tools, se usa "salida estructurada" (output_config.format): se le pide
+      // directamente un JSON con el esquema exacto, sin tools ni tool_choice.
       return fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -605,10 +604,9 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
         },
         body: JSON.stringify({
           model: CLAUDE_MODEL,
-          max_tokens: 1024,
+          max_tokens: 1536,
           system: construirPromptSistemaIA(),
-          tools: [CLAUDE_TOOL_SCHEMA],
-          tool_choice: { type: 'tool', name: 'extraer_datos_documento' },
+          output_config: { format: { type: 'json_schema', schema: CLAUDE_OUTPUT_SCHEMA } },
           messages: [{ role: 'user', content: contenido }]
         })
       });
@@ -625,10 +623,13 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       }
       return resp.json();
     }).then(function(data){
-      var bloque = (data.content || []).filter(function(b){ return b.type === 'tool_use' && b.name === 'extraer_datos_documento'; })[0];
-      if (!bloque) throw new Error('Claude no devolvió datos estructurados.');
-      var entrada = bloque.input || {};
-      var tipo = entrada.tipo && entrada.tipo !== 'otro/desconocido' ? entrada.tipo : null;
+      if (data.stop_reason === 'refusal') throw new Error('Claude se ha negado a leer este documento.');
+      var bloqueTexto = (data.content || []).filter(function(b){ return b.type === 'text' && b.text; })[0];
+      if (!bloqueTexto) throw new Error('Claude no devolvió datos estructurados.');
+      var entrada;
+      try { entrada = JSON.parse(bloqueTexto.text); } catch (e) { throw new Error('Claude devolvió un JSON inválido.'); }
+      var tipoBruto = (entrada.tipo || '').toLowerCase();
+      var tipo = entrada.tipo && tipoBruto !== 'otro/desconocido' ? entrada.tipo : null;
       var campos = {};
       Object.keys(entrada.campos || {}).forEach(function(k){
         if (CAMPOS_PARA_IA.hasOwnProperty(k) && entrada.campos[k] !== '' && entrada.campos[k] != null) {
@@ -866,37 +867,18 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
     document.getElementById('autoResult').innerHTML = html;
   }
 
-  // ---------- Guardar/recuperar la clave de IA en este navegador ----------
+  // ---------- Recordar si la IA está activada en este navegador ----------
+  // La clave ya está incrustada en el archivo (CLAUDE_API_KEY_EMBEBIDA); aquí
+  // solo se recuerda si la casilla estaba marcada o desmarcada la última vez.
   (function initClaudeIA(){
     var chk = document.getElementById('usarClaudeIA');
-    var keyInput = document.getElementById('claudeApiKey');
-    var bar = document.getElementById('claudeApiBar');
-    var borrarBtn = document.getElementById('borrarClaudeApiKeyBtn');
-
-    function actualizarVisibilidad() {
-      bar.style.display = chk.checked ? 'flex' : 'none';
-    }
-
     try {
-      var claveGuardada = localStorage.getItem(CLAUDE_STORAGE_KEY);
       var activadaGuardada = localStorage.getItem(CLAUDE_STORAGE_ENABLED);
-      if (claveGuardada) keyInput.value = claveGuardada;
-      if (activadaGuardada === '1' && claveGuardada) chk.checked = true;
+      if (activadaGuardada === '0') chk.checked = false;
+      else if (activadaGuardada === '1') chk.checked = true;
     } catch (e) {}
-    actualizarVisibilidad();
-
     chk.addEventListener('change', function(){
-      actualizarVisibilidad();
       try { localStorage.setItem(CLAUDE_STORAGE_ENABLED, chk.checked ? '1' : '0'); } catch (e) {}
-    });
-    keyInput.addEventListener('change', function(){
-      try { localStorage.setItem(CLAUDE_STORAGE_KEY, keyInput.value.trim()); } catch (e) {}
-    });
-    borrarBtn.addEventListener('click', function(){
-      keyInput.value = '';
-      chk.checked = false;
-      actualizarVisibilidad();
-      try { localStorage.removeItem(CLAUDE_STORAGE_KEY); localStorage.removeItem(CLAUDE_STORAGE_ENABLED); } catch (e) {}
     });
   })();
 
