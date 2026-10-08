@@ -305,6 +305,25 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
         La lectura de la <strong>cédula</strong> y el <strong>certificado energético</strong> es más variable que la de los otros documentos (hay muchos formatos distintos) — revisa siempre los campos en amarillo.<br>
         Los mandatos en <strong>.doc antiguo</strong> no se pueden leer automáticamente — ábrelos en Word y usa "Guardar como" → PDF o Word (.docx), y sube ese archivo.
       </div>
+      <div class="propiedad-bar" style="margin-bottom:10px;align-items:flex-end;">
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="usarClaudeIA" style="width:auto;">
+            Usar IA de Claude para leer los documentos (más fiable, necesita clave de API e internet)
+          </label>
+        </div>
+      </div>
+      <div class="propiedad-bar" id="claudeApiBar" style="margin-bottom:12px;display:none;">
+        <div class="field">
+          <label>Clave de API de Anthropic</label>
+          <input type="password" id="claudeApiKey" placeholder="sk-ant-...">
+          <div class="hint">
+            Se usa solo para llamar a la IA de Claude y leer tus documentos — no se envía a ningún otro sitio. Se guarda en este navegador (no viaja con el archivo si se lo mandas a otra persona).
+            Consíguela en <strong>console.anthropic.com</strong> → API Keys. Cada documento analizado tiene un coste pequeño con esa clave.
+          </div>
+        </div>
+        <button class="btn-ghost" id="borrarClaudeApiKeyBtn" type="button">Borrar clave guardada</button>
+      </div>
       <div class="propiedad-bar">
         <div class="field">
           <input type="file" id="pdfInput" accept="application/pdf,.docx,image/*" multiple>
@@ -432,6 +451,194 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
   var MANDATO_FIELDS = ['propietario_nombre','propietario_dni','propietario_domicilio','propietario_telefono','propietario_email','gran_tenedor','porcentaje_administracion','direccion','localidad','cp','provincia','renta_propuesta','duracion_propuesta','fecha_encargo'];
   var FICHA_FIELDS = ['ref_catastral','sup_construida','sup_util','sup_comunes','anio_edificacion','cedula_numero','cedula_vigencia','energia_consumo','energia_emisiones','energia_registro','energia_vigencia','idx_inferior','idx_media','idx_superior','serpavi_min','serpavi_max','zona_tensionada','alquilada_antes','alquilada_antes_fechas','alquilada_antes_renta'];
 
+  // ---------- Lectura con IA de Claude (opcional, necesita clave propia) ----------
+  var CLAUDE_MODEL = 'claude-sonnet-5-5';
+  var CLAUDE_API_VERSION = '2023-06-01';
+  var CLAUDE_STORAGE_KEY = 'mandato_claude_api_key_v1';
+  var CLAUDE_STORAGE_ENABLED = 'mandato_claude_ia_activada_v1';
+
+  var TIPOS_CONOCIDOS = [
+    'Nota de encargo (Mandato)',
+    'Nota catastral',
+    'Informe SERPAVI',
+    'Índex de referència de lloguer',
+    'Cédula de habitabilidad',
+    'Certificado de eficiencia energética',
+    'otro/desconocido'
+  ];
+
+  var CAMPOS_PARA_IA = {
+    propietario_nombre: 'Nombre completo del propietario/arrendador',
+    propietario_dni: 'DNI/NIE del propietario',
+    propietario_domicilio: 'Domicilio del propietario a efectos de notificaciones',
+    propietario_telefono: 'Teléfono de contacto del propietario',
+    propietario_email: 'Email del propietario',
+    gran_tenedor: '"SI" o "NO" -- si el propietario está marcado como Gran Tenedor',
+    porcentaje_administracion: 'Porcentaje que cobra la agencia por administración (solo el número)',
+    direccion: 'Dirección completa del inmueble objeto del documento',
+    localidad: 'Localidad/municipio del inmueble',
+    cp: 'Código postal del inmueble',
+    provincia: 'Provincia del inmueble',
+    renta_propuesta: 'Renta mensual propuesta o pactada (solo el número, sin símbolo €)',
+    duracion_propuesta: 'Duración propuesta del contrato de alquiler (texto tal cual aparece, ej. "5 años")',
+    fecha_encargo: 'Fecha del encargo/mandato, formato YYYY-MM-DD',
+    ref_catastral: 'Referencia catastral del inmueble',
+    sup_construida: 'Superficie construida, con "m²" incluido (ej. "65 m²")',
+    sup_util: 'Superficie útil, con "m²" incluido',
+    sup_comunes: 'Superficie construida más elementos comunes, con "m²"',
+    anio_edificacion: 'Año de construcción/edificación del inmueble',
+    cedula_numero: 'Número de la cédula de habitabilidad',
+    cedula_vigencia: 'Fecha hasta la que es válida la cédula, formato YYYY-MM-DD',
+    energia_consumo: 'Letra (A-G) de la calificación energética de consumo',
+    energia_emisiones: 'Letra (A-G) de la calificación energética de emisiones',
+    energia_registro: 'Número de registro del certificado energético',
+    energia_vigencia: 'Fecha hasta la que es válido el certificado energético, formato YYYY-MM-DD',
+    idx_inferior: 'Índice de referencia de alquiler -- valor del área inferior (solo número)',
+    idx_media: 'Índice de referencia de alquiler -- valor medio/índice (solo número)',
+    idx_superior: 'Índice de referencia de alquiler -- valor del área superior (solo número)',
+    serpavi_min: 'Informe SERPAVI -- renta mínima de referencia mensual (solo número)',
+    serpavi_max: 'Informe SERPAVI -- renta máxima de referencia mensual (solo número)',
+    zona_tensionada: '"SI" o "NO" -- si está en zona de mercado residencial tensionado',
+    alquilada_antes: '"SI" o "NO" -- si el inmueble estuvo alquilado en los últimos 5 años',
+    alquilada_antes_fechas: 'Fechas del contrato de alquiler anterior, tal cual aparecen',
+    alquilada_antes_renta: 'Última renta mensual del contrato anterior, tal cual aparece (con €)'
+  };
+
+  function construirPromptSistemaIA() {
+    var lineas = Object.keys(CAMPOS_PARA_IA).map(function(k){ return '- ' + k + ': ' + CAMPOS_PARA_IA[k]; });
+    return 'Eres el lector de documentos de una inmobiliaria en Barcelona (AG Núñez). ' +
+      'Vas a recibir UN documento (mandato de alquiler, nota catastral, informe SERPAVI, índice de referencia de alquiler, cédula de habitabilidad o certificado de eficiencia energética, o algo distinto). ' +
+      'Identifica primero el TIPO de documento, eligiendo exactamente una de estas opciones: ' + TIPOS_CONOCIDOS.join(' | ') + '. ' +
+      'Después extrae SOLO los datos que encuentres realmente escritos en el documento, usando estas claves de campo:\n' + lineas.join('\n') + '\n' +
+      'Reglas importantes: no inventes ni deduzcas ningún valor que no esté literalmente en el documento; si un dato no aparece, simplemente no incluyas esa clave; las fechas siempre en formato YYYY-MM-DD; usa SIEMPRE la herramienta "extraer_datos_documento" para responder, nunca texto libre.';
+  }
+
+  var CLAUDE_TOOL_SCHEMA = {
+    name: 'extraer_datos_documento',
+    description: 'Registra el tipo de documento detectado y los datos encontrados en él.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        tipo: { type: 'string', enum: TIPOS_CONOCIDOS, description: 'Tipo de documento identificado' },
+        direccion: { type: 'string', description: 'Dirección del inmueble, si aparece en el documento' },
+        campos: {
+          type: 'object',
+          description: 'Solo las claves de campo que se hayan encontrado realmente en el documento, como texto.',
+          properties: (function(){
+            var p = {};
+            Object.keys(CAMPOS_PARA_IA).forEach(function(k){ p[k] = { type: 'string' }; });
+            return p;
+          })(),
+          additionalProperties: false
+        }
+      },
+      required: ['tipo']
+    }
+  };
+
+  function claudeIAActiva() {
+    var chk = document.getElementById('usarClaudeIA');
+    return !!(chk && chk.checked && obtenerClaudeApiKey());
+  }
+
+  function obtenerClaudeApiKey() {
+    var el = document.getElementById('claudeApiKey');
+    return el ? el.value.trim() : '';
+  }
+
+  function arrayBufferABase64(buffer) {
+    var bytes = new Uint8Array(buffer);
+    var binario = '';
+    var trozo = 0x8000;
+    for (var i = 0; i < bytes.length; i += trozo) {
+      binario += String.fromCharCode.apply(null, bytes.subarray(i, i + trozo));
+    }
+    return btoa(binario);
+  }
+
+  function extensionMediaTypeImagen(nombreArchivo, tipoMime) {
+    if (tipoMime && /^image\//.test(tipoMime)) return tipoMime;
+    var ext = (nombreArchivo.split('.').pop() || '').toLowerCase();
+    if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+    if (ext === 'png') return 'image/png';
+    if (ext === 'webp') return 'image/webp';
+    if (ext === 'gif') return 'image/gif';
+    return 'image/jpeg';
+  }
+
+  // Llama a la API de Claude con el documento (PDF/imagen como adjunto nativo,
+  // Word como texto ya extraído con mammoth) y devuelve { tipo, campos,
+  // direccion } igual que detectarYExtraer(), para que el resto del código no
+  // tenga que distinguir de dónde vino el resultado.
+  function analizarConClaudeIA(file, apiKey, onProgreso) {
+    var ext = (file.name.split('.').pop() || '').toLowerCase();
+    var esImagen = /^image\//.test(file.type) || /\.(jpe?g|png|webp|bmp|gif|tiff?)$/i.test(file.name);
+
+    var contenidoPromise;
+    if (ext === 'pdf') {
+      contenidoPromise = file.arrayBuffer().then(function(buf){
+        return [{ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: arrayBufferABase64(buf) } }];
+      });
+    } else if (ext === 'docx') {
+      contenidoPromise = extraerTextoDOCX(file).then(function(texto){
+        return [{ type: 'text', text: 'Contenido del documento (' + file.name + '):\n\n' + texto }];
+      });
+    } else if (esImagen) {
+      contenidoPromise = file.arrayBuffer().then(function(buf){
+        return [{ type: 'image', source: { type: 'base64', media_type: extensionMediaTypeImagen(file.name, file.type), data: arrayBufferABase64(buf) } }];
+      });
+    } else {
+      return Promise.reject(new Error('Formato no soportado para la IA de Claude.'));
+    }
+
+    return contenidoPromise.then(function(contenido){
+      if (onProgreso) onProgreso({ status: 'preguntando a Claude', progress: 0.3 });
+      contenido.push({ type: 'text', text: 'Analiza este documento y usa la herramienta extraer_datos_documento para registrar lo que encuentres.' });
+
+      return fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': CLAUDE_API_VERSION,
+          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: CLAUDE_MODEL,
+          max_tokens: 1024,
+          system: construirPromptSistemaIA(),
+          tools: [CLAUDE_TOOL_SCHEMA],
+          tool_choice: { type: 'tool', name: 'extraer_datos_documento' },
+          messages: [{ role: 'user', content: contenido }]
+        })
+      });
+    }).then(function(resp){
+      if (onProgreso) onProgreso({ status: 'leyendo respuesta', progress: 0.9 });
+      if (!resp.ok) {
+        return resp.text().then(function(txt){
+          var detalle = txt;
+          try { detalle = JSON.parse(txt).error.message; } catch (e) {}
+          if (resp.status === 401) throw new Error('Clave de API de Claude inválida o caducada.');
+          if (resp.status === 429) throw new Error('Límite de uso de la API de Claude alcanzado (demasiadas peticiones, o sin crédito).');
+          throw new Error('Error de la API de Claude (' + resp.status + '): ' + detalle);
+        });
+      }
+      return resp.json();
+    }).then(function(data){
+      var bloque = (data.content || []).filter(function(b){ return b.type === 'tool_use' && b.name === 'extraer_datos_documento'; })[0];
+      if (!bloque) throw new Error('Claude no devolvió datos estructurados.');
+      var entrada = bloque.input || {};
+      var tipo = entrada.tipo && entrada.tipo !== 'otro/desconocido' ? entrada.tipo : null;
+      var campos = {};
+      Object.keys(entrada.campos || {}).forEach(function(k){
+        if (CAMPOS_PARA_IA.hasOwnProperty(k) && entrada.campos[k] !== '' && entrada.campos[k] != null) {
+          campos[k] = String(entrada.campos[k]);
+        }
+      });
+      return { tipo: tipo, campos: campos, direccion: entrada.direccion || null };
+    });
+  }
+
   // ---------- Detección automática desde PDF ----------
   if (window.pdfjsLib) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = construirPdfWorkerBlobUrl();
@@ -494,11 +701,27 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
     }).then(function(res){ return res.value; });
   }
 
+  // Quita acentos/diéresis y pone en mayúsculas, para que el reconocimiento
+  // del TIPO de documento no dependa de que los acentos se lean exactamente
+  // igual (algunos navegadores/; p.ej. Safari con pdf.js en modo "worker
+  // falso" por abrir el archivo en local) pueden extraer letras acentuadas
+  // de formas ligeramente distintas (é vs e + acento combinado), y eso antes
+  // podía hacer que ni siquiera se reconociera el tipo de documento.
+  function normalizarParaDetectar(s) {
+    try {
+      return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').toUpperCase();
+    } catch (e) {
+      // Por si algún navegador no soporta String.prototype.normalize.
+      return (s || '').replace(/\s+/g, ' ').toUpperCase();
+    }
+  }
+
   function detectarYExtraer(texto) {
     var out = { tipo: null, campos: {}, direccion: null };
     var m;
+    var textoN = normalizarParaDetectar(texto);
 
-    if (/NOTA DE ENCARGO ALQUILER/i.test(texto) || /ENCARGA en las condiciones expresadas/i.test(texto)) {
+    if (/NOTA DE ENCARGO ALQUILER/.test(textoN) || /ENCARGA EN LAS CONDICIONES EXPRESADAS/.test(textoN)) {
       out.tipo = 'Nota de encargo (Mandato)';
       m = texto.match(/Sr\.?a?\.?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{4,60}?)\s+con\s+DNI/i);
       if (m) out.campos.propietario_nombre = m[1].trim();
@@ -531,7 +754,7 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
         if (f) out.campos.fecha_encargo = f;
       }
     }
-    else if (/DATOS CATASTRALES DE BIEN INMUEBLE/i.test(texto) || /CONSULTA DESCRIPTIVA Y GR[ÁA]FICA/i.test(texto)) {
+    else if (/DATOS CATASTRALES DE BIEN INMUEBLE/.test(textoN) || /CONSULTA DESCRIPTIVA Y GRAFICA/.test(textoN)) {
       out.tipo = 'Nota catastral';
       m = texto.match(/Referencia catastral:?\s*([0-9A-Z]{14,20})/i);
       if (m) out.campos.ref_catastral = m[1].trim();
@@ -542,7 +765,7 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       m = texto.match(/Localizaci[óo]n:?\s*(.*?)\s*(?:Escalera|Superficie m2|CONSTRUCCI[ÓO]N|Clase:)/is);
       if (m && m[1].trim()) out.direccion = m[1].trim();
     }
-    else if (/CERTIFICADO INFORMATIVO DE REFERENCIA DE PRECIOS DE ALQUILER/i.test(texto)) {
+    else if (/CERTIFICADO INFORMATIVO DE REFERENCIA DE PRECIOS DE ALQUILER/.test(textoN)) {
       out.tipo = 'Informe SERPAVI';
       m = texto.match(/Direcci[óo]n:?\s*(.*?)\s*Coordenadas/is);
       if (m) out.direccion = m[1].trim();
@@ -559,7 +782,7 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       m = texto.match(/Zona de mercado residencial tensionado:?\s*(S[íi]|No)/i);
       if (m) out.campos.zona_tensionada = /^s/i.test(m[1]) ? 'SI' : 'NO';
     }
-    else if (/[ÍI]ndex de refer[èe]ncia de preus de lloguer/i.test(texto) || /Ag[èe]ncia de l.Habitatge/i.test(texto)) {
+    else if (/INDEX DE REFERENCIA DE PREUS DE LLOGUER/.test(textoN) || /AGENCIA DE L.HABITATGE/.test(textoN)) {
       out.tipo = 'Índex de referència de lloguer';
       m = texto.match(/[ÀA]rea inferior\D{0,20}?([\d.,]+)\s*€\s*\/\s*m[²2]/i);
       if (m) out.campos.idx_inferior = m[1].trim();
@@ -578,43 +801,104 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       m = texto.match(/Adre[çc]a:?\s*(.*?)\s*(?:Latitud|Radi)/is);
       if (m) out.direccion = m[1].trim();
     }
-    else if (/C[ÈE]DULA D.HABITABILITAT/i.test(texto) || /C[ÉE]DULA DE HABITABILIDAD/i.test(texto)) {
+    else if (/CEDULA D.HABITABILITAT/.test(textoN) || /CEDULA DE HABITABILIDAD/.test(textoN)) {
       // Lectura más variable que la de los demás documentos (viene de OCR y hay
       // varios formatos según el año/comarca) — los campos detectados conviene
       // revisarlos siempre.
       out.tipo = 'Cédula de habitabilidad';
-      m = texto.match(/N[úu]m(?:ero)?\.?\s*(?:de\s*)?[Cc][èe]dula:?\s*([A-Z0-9\/\-\.]{5,25})/i);
+      // "NÚMERO" aparece tal cual en el modelo oficial de la Generalitat,
+      // justo después de "CÈDULA D'HABITABILITAT DE ___".
+      m = texto.match(/N[úu]m(?:ero)?\.?\s*(?:de\s*)?[Cc][èe]dula:?\s*([A-Z0-9\/\-\.]{5,25})/i)
+        || texto.match(/N[ÚU]MERO:?\s*([A-Z0-9][A-Z0-9\/\-\.]{4,24})/);
       if (m) out.campos.cedula_numero = m[1].trim();
-      m = texto.match(/(?:V[àa]lid[ae]?s?|Vigente|V[àa]lida)\s*(?:fins|hasta)\s*(?:el\s*)?(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/i);
+      // "PERÍODE VALIDESA DE LA CÈDULA ... DES DE: ... FINS A: ..." -- la fecha
+      // de interés es la de "FINS A" (hasta).
+      m = texto.match(/FINS A:?\s*(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/i)
+        || texto.match(/(?:V[àa]lid[ae]?s?|Vigente|V[àa]lida)\s*(?:fins|hasta)\s*(?:el\s*)?(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/i);
       if (m) out.campos.cedula_vigencia = m[3] + '-' + (m[2].length<2?'0'+m[2]:m[2]) + '-' + (m[1].length<2?'0'+m[1]:m[1]);
       m = texto.match(/Superf[íi]cie [úu]til:?\s*([\d.,]+)\s*m[²2]/i);
       if (m) out.campos.sup_util = m[1].trim() + ' m²';
-      m = texto.match(/Refer[èe]ncia cadastral:?\s*([0-9A-Z]{14,20})/i);
+      // En el modelo oficial va junto: "UTM / REFERÈNCIA CADASTRAL".
+      m = texto.match(/(?:UTM\s*\/\s*)?Refer[èe]ncia\s+cadastral:?\s*([0-9A-Za-z][0-9A-Za-z\-]{9,24})(?!\S)/i);
       if (m) out.campos.ref_catastral = m[1].trim();
-      m = texto.match(/Adre[çc]a:?\s*(.*?)\s*(?:\n|Titular|Superf)/is);
+      m = texto.match(/Adre[çc]a:?\s*(.*?)\s*(?:\n|UTM|Refer[èe]ncia|Titular|Superf)/is);
       if (m && m[1].trim()) out.direccion = m[1].trim();
     }
-    else if (/CERTIFICAD[OE] D.?EFICI[ÈE]NCIA ENERG[ÈE]TICA/i.test(texto) || /CERTIFICADO DE EFICIENCIA ENERG[ÉE]TICA/i.test(texto)) {
+    else if (/CERTIFICAD[OE] D.?EFICIENCIA ENERGETICA/.test(textoN) || /CALIFICACION ENERGETICA DEL EDIFICIO/.test(textoN)) {
       out.tipo = 'Certificado de eficiencia energética';
-      m = texto.match(/N[úu]m(?:ero)?\.?\s*(?:de\s*)?registre?:?\s*([A-Z0-9\/\-\.]{5,25})/i);
+      // En la etiqueta oficial el campo simplemente se llama "REGISTRO", sin
+      // más texto delante.
+      m = texto.match(/N[úu]m(?:ero)?\.?\s*(?:de\s*)?registre?:?\s*([A-Z0-9\/\-\.]{5,25})/i)
+        || texto.match(/REGISTRO:?\s*([A-Z0-9][A-Z0-9\/\-\.]{4,24})/i);
       if (m) out.campos.energia_registro = m[1].trim();
-      m = texto.match(/[Cc]onsum(?:o|\s*d.energia\s*primaria)[^A-G\n]{0,40}?([A-G])\b/i);
+      // La letra de consumo/emisiones va dentro de la escala A-G de la etiqueta
+      // (una flecha de color por cada letra) -- la lectura automática es poco
+      // fiable aquí porque el texto se desordena al leer la imagen; por eso
+      // conviene revisar siempre estos dos campos a mano.
+      // OJO: [A-G] sin más coincide con letras normales de palabras como "de"
+      // o "energía" (la d y la g caen dentro de ese rango) -- por eso se exige
+      // que la letra vaya SOLA (sin letras pegadas antes ni después), que es
+      // como aparece siempre la calificación en la etiqueta.
+      m = texto.match(/[Cc]onsum(?:o|\s*d.energia\s*primaria)[\s\S]{0,60}?(?<![A-Za-z])([A-G])(?![A-Za-z])/);
       if (m) out.campos.energia_consumo = m[1].trim();
-      m = texto.match(/[Ee]missi(?:ó|o)ns?\s*(?:de\s*)?CO2?[^A-G\n]{0,40}?([A-G])\b/i);
+      m = texto.match(/[Ee]misi(?:[oó]n(?:es)?)[\s\S]{0,60}?(?<![A-Za-z])([A-G])(?![A-Za-z])/);
       if (m) out.campos.energia_emisiones = m[1].trim();
-      m = texto.match(/(?:V[àa]lid[ae]?s?|Vigente|V[àa]lida)\s*(?:fins|hasta)\s*(?:el\s*)?(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/i);
+      m = texto.match(/V[áa]lido\s*hasta:?\s*(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/i)
+        || texto.match(/(?:V[àa]lid[ae]?s?|Vigente|V[àa]lida)\s*(?:fins|hasta)\s*(?:el\s*)?(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/i);
       if (m) out.campos.energia_vigencia = m[3] + '-' + (m[2].length<2?'0'+m[2]:m[2]) + '-' + (m[1].length<2?'0'+m[1]:m[1]);
-      m = texto.match(/Refer[èe]ncia cadastral:?\s*([0-9A-Z]{14,20})/i);
+      m = texto.match(/Referencia\/?s?\s*catastral\/?es?:?\s*([0-9A-Za-z][0-9A-Za-z \-]{9,30}?)(?:\s{2,}|\n|$)/i)
+        || texto.match(/Refer[èe]ncia cadastral:?\s*([0-9A-Z]{14,20})/i);
       if (m) out.campos.ref_catastral = m[1].trim();
-      m = texto.match(/Adre[çc]a:?\s*(.*?)\s*(?:\n|Normativa|Zona)/is);
+      m = texto.match(/Direcci[óo]n:?\s*(.*?)\s*(?:\n|Municipio)/is)
+        || texto.match(/Adre[çc]a:?\s*(.*?)\s*(?:\n|Normativa|Zona)/is);
       if (m && m[1].trim()) out.direccion = m[1].trim();
     }
     return out;
   }
 
+  function escHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function pintarAuto(html) {
     document.getElementById('autoResult').innerHTML = html;
   }
+
+  // ---------- Guardar/recuperar la clave de IA en este navegador ----------
+  (function initClaudeIA(){
+    var chk = document.getElementById('usarClaudeIA');
+    var keyInput = document.getElementById('claudeApiKey');
+    var bar = document.getElementById('claudeApiBar');
+    var borrarBtn = document.getElementById('borrarClaudeApiKeyBtn');
+
+    function actualizarVisibilidad() {
+      bar.style.display = chk.checked ? 'flex' : 'none';
+    }
+
+    try {
+      var claveGuardada = localStorage.getItem(CLAUDE_STORAGE_KEY);
+      var activadaGuardada = localStorage.getItem(CLAUDE_STORAGE_ENABLED);
+      if (claveGuardada) keyInput.value = claveGuardada;
+      if (activadaGuardada === '1' && claveGuardada) chk.checked = true;
+    } catch (e) {}
+    actualizarVisibilidad();
+
+    chk.addEventListener('change', function(){
+      actualizarVisibilidad();
+      try { localStorage.setItem(CLAUDE_STORAGE_ENABLED, chk.checked ? '1' : '0'); } catch (e) {}
+    });
+    keyInput.addEventListener('change', function(){
+      try { localStorage.setItem(CLAUDE_STORAGE_KEY, keyInput.value.trim()); } catch (e) {}
+    });
+    borrarBtn.addEventListener('click', function(){
+      keyInput.value = '';
+      chk.checked = false;
+      actualizarVisibilidad();
+      try { localStorage.removeItem(CLAUDE_STORAGE_KEY); localStorage.removeItem(CLAUDE_STORAGE_ENABLED); } catch (e) {}
+    });
+  })();
 
   document.getElementById('analizarBtn').addEventListener('click', function(){
     var files = document.getElementById('pdfInput').files;
@@ -635,9 +919,49 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       };
     }
 
+    function aplicarResultado(file, resultado, textoDiagnostico) {
+      if (!resultado.tipo) {
+        var textoPlano = (textoDiagnostico || '').replace(/\s+/g, ' ').trim();
+        var avisoVacio = textoPlano.length < 10
+          ? ' No se consiguió sacar apenas texto del archivo (puede que el escaneo/OCR no haya funcionado en tu navegador).'
+          : '';
+        var previa = textoPlano.length
+          ? '<br><span class="hint">Primeros caracteres leídos (' + textoPlano.length + ' en total): "' + escHtml(textoPlano.slice(0, 220)) + (textoPlano.length > 220 ? '…' : '') + '"</span>'
+          : '';
+        resumen.push('❌ <strong>' + file.name + '</strong>: no reconocido.' + avisoVacio + ' Puede ser un documento escaneado/imagen (como la cédula o el certificado energético) — esos hay que rellenarlos a mano, o si crees que debería reconocerlo, mándame esta vista previa de texto para ajustarlo.' + previa);
+        return;
+      }
+      var claves = Object.keys(resultado.campos);
+      if (!claves.length) {
+        resumen.push('⚠️ <strong>' + file.name + '</strong>: identificado como "' + resultado.tipo + '" pero no se pudo leer ningún dato de dentro. Revísalo a mano.');
+        return;
+      }
+      claves.forEach(function(k){ camposDetectados[k] = resultado.campos[k]; });
+      if (resultado.direccion) direcciones.push(resultado.direccion);
+      var lista = claves.map(function(k){ return (CAMPO_LABEL[k] || k) + ' = "' + resultado.campos[k] + '"'; }).join(', ');
+      resumen.push('✅ <strong>' + file.name + '</strong> → identificado como <strong>' + resultado.tipo + '</strong>. Detectado: ' + lista + '.');
+    }
+
+    var usarIA = claudeIAActiva();
+    var apiKey = obtenerClaudeApiKey();
+
     var cadena = Promise.resolve();
     Array.prototype.forEach.call(files, function(file){
       cadena = cadena.then(function(){
+        if (usarIA) {
+          var ext0 = (file.name.split('.').pop() || '').toLowerCase();
+          var esImagen0 = /^image\//.test(file.type) || /\.(jpe?g|png|webp|bmp|gif|tiff?)$/i.test(file.name);
+          if (ext0 !== 'pdf' && ext0 !== 'docx' && !esImagen0) {
+            resumen.push('❌ <strong>' + file.name + '</strong>: formato no soportado por la IA de Claude (PDF, DOCX o imagen).');
+            return;
+          }
+          return analizarConClaudeIA(file, apiKey, avisoProgresoOCR(file)).then(function(resultado){
+            aplicarResultado(file, resultado, '');
+          }).catch(function(err){
+            resumen.push('❌ <strong>' + file.name + '</strong>: ' + (err && err.message ? err.message : err));
+          });
+        }
+
         var ext = (file.name.split('.').pop() || '').toLowerCase();
         var esImagen = /^image\//.test(file.type) || /\.(jpe?g|png|webp|bmp|gif|tiff?)$/i.test(file.name);
         var lector;
@@ -663,20 +987,7 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
           return;
         }
         return lector.then(function(texto){
-          var resultado = detectarYExtraer(texto);
-          if (!resultado.tipo) {
-            resumen.push('❌ <strong>' + file.name + '</strong>: no reconocido. Puede ser un documento escaneado/imagen (como la cédula o el certificado energético) — esos hay que rellenarlos a mano.');
-            return;
-          }
-          var claves = Object.keys(resultado.campos);
-          if (!claves.length) {
-            resumen.push('⚠️ <strong>' + file.name + '</strong>: identificado como "' + resultado.tipo + '" pero no se pudo leer ningún dato de dentro. Revísalo a mano.');
-            return;
-          }
-          claves.forEach(function(k){ camposDetectados[k] = resultado.campos[k]; });
-          if (resultado.direccion) direcciones.push(resultado.direccion);
-          var lista = claves.map(function(k){ return (CAMPO_LABEL[k] || k) + ' = "' + resultado.campos[k] + '"'; }).join(', ');
-          resumen.push('✅ <strong>' + file.name + '</strong> → identificado como <strong>' + resultado.tipo + '</strong>. Detectado: ' + lista + '.');
+          aplicarResultado(file, detectarYExtraer(texto), texto);
         }).catch(function(err){
           resumen.push('❌ <strong>' + file.name + '</strong>: error al leer el documento (' + (err && err.message ? err.message : err) + ').');
         });
