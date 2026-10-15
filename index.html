@@ -1009,6 +1009,14 @@
     position:absolute;bottom:12px;left:14px;color:#fff;
     font-family:'Montserrat',sans-serif;font-weight:800;font-size:17px;
     text-shadow:0 1px 4px rgba(0,0,0,0.55);letter-spacing:0.01em;
+    display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;
+  }
+  .venta-price-old{font-size:12.5px;font-weight:600;color:#ffb3a8;text-decoration:line-through;opacity:.9;}
+  .venta-bajada-ribbon{
+    position:absolute;bottom:12px;right:14px;z-index:2;display:inline-flex;align-items:center;gap:4px;
+    background:linear-gradient(135deg,#ff6b4a,#e2231a);color:#fff;
+    font-family:'Inter',sans-serif;font-weight:800;font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;
+    padding:4px 9px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.28);
   }
   .estado-venta-group{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
   .estado-venta-btn{
@@ -4202,6 +4210,11 @@
     d.textContent = s == null ? '' : String(s);
     return d.innerHTML;
   }
+  // Extrae el número de un precio escrito en cualquier formato habitual
+  // ("320.000", "320.000 €", "900€", etc.) para poder comparar dos precios.
+  function pvParsearPrecio(valor){
+    return parseFloat(String(valor||'').replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.'));
+  }
   function formatPrecioVenta(valor){
     // Convierte "100000" (o "100000 €", "100.000€", etc.) en "100.000€".
     // Si no hay dígitos (texto libre tipo "A consultar"), se muestra tal cual.
@@ -5181,7 +5194,7 @@
     }
     pvBuscarTexto.value = ''; mostrarPvBuscarEstado('');
 
-    editingPropVentaOriginal = { direccion: p['Dirección'], link: p['Link'] };
+    editingPropVentaOriginal = { direccion: p['Dirección'], link: p['Link'], precio: p['Precio'] };
     addPropVentaBtn.textContent = 'Guardar cambios';
     pvCancelEditBtn.style.display = 'block';
     checkAddPropVentaReady();
@@ -5241,8 +5254,21 @@
     const tipoNegocio = (operacion === 'Alquiler' && subtipo === 'Local') ? pvTipoNegocio.value.trim() : '';
     const colaboracion = pvOrigenSeleccionado === 'Apialia' ? 'Apialia' : '';
     const fincaRegia = pvFincaRegiaSeleccionada ? 'Sí' : '';
-    if(!direccion || uploadedPropVentaImageUrls.length === 0 || !lat) return;
     const wasEditingProp = !!editingPropVentaOriginal;
+    // Bajada de precio (como en Idealista): si al editar el precio baja respecto
+    // al que tenía antes, guardamos el precio anterior para pintar la etiqueta.
+    // Si sube, se borra cualquier bajada guardada previamente. Si no cambia,
+    // no se toca nada (para no borrar una bajada ya registrada en otra edición).
+    let precioAnterior = null; // null = no tocar esa columna
+    if(wasEditingProp){
+      const precioViejoNum = pvParsearPrecio(editingPropVentaOriginal.precio);
+      const precioNuevoNum = pvParsearPrecio(precio);
+      if(!isNaN(precioViejoNum) && !isNaN(precioNuevoNum)){
+        if(precioNuevoNum < precioViejoNum) precioAnterior = editingPropVentaOriginal.precio;
+        else if(precioNuevoNum > precioViejoNum) precioAnterior = '';
+      }
+    }
+    if(!direccion || uploadedPropVentaImageUrls.length === 0 || !lat) return;
     addPropVentaBtn.disabled = true;
     addPropVentaBtn.textContent = wasEditingProp ? 'Guardando...' : 'Añadiendo...';
     try{
@@ -5277,6 +5303,7 @@
       if(wasEditingProp){
         payload.direccionOriginal = editingPropVentaOriginal.direccion;
         payload.linkOriginal = editingPropVentaOriginal.link;
+        if(precioAnterior !== null) payload.precioAnterior = precioAnterior;
       }
       await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
       resetPvAddForm();
@@ -5382,9 +5409,12 @@
         </div>
       `;
       const precio = (p['Precio'] || '').toString().trim();
+      const precioAnteriorTxt = (p['PrecioAnterior'] || '').toString().trim();
+      const hayBajadaPrecio = precioAnteriorTxt && pvParsearPrecio(precioAnteriorTxt) > pvParsearPrecio(precio);
       const precioTag = precio
-        ? `<div class="venta-photo-scrim"></div><div class="venta-price-tag">${escVenta(formatPrecioVenta(precio))}</div>`
+        ? `<div class="venta-photo-scrim"></div><div class="venta-price-tag">${hayBajadaPrecio ? `<span class="venta-price-old">${escVenta(formatPrecioVenta(precioAnteriorTxt))}</span>` : ''}${escVenta(formatPrecioVenta(precio))}</div>`
         : '';
+      const bajadaRibbon = hayBajadaPrecio ? `<span class="venta-bajada-ribbon">↓ Bajada de precio</span>` : '';
       const barrio = (p['Barrio'] || '').toString().trim();
       const metros = (p['Metros'] || '').toString().trim();
       const habitaciones = (p['Habitaciones'] || '').toString().trim();
@@ -5419,6 +5449,7 @@
           ${ribbon}
           ${origenBadge}
           ${fincaRegiaBadge}
+          ${bajadaRibbon}
           ${precioTag}
         </div>
         <div class="body">
@@ -5476,14 +5507,26 @@
         const btn = e.currentTarget;
         const input = card.querySelector('.pv-precio-input');
         const nuevoPrecio = input.value.trim();
+        // Bajada de precio (como en Idealista): si el precio nuevo es menor que
+        // el que tenía, guardamos el anterior para pintar la etiqueta; si sube,
+        // se borra cualquier bajada guardada; si no cambia, no se toca.
+        const precioViejoNum = pvParsearPrecio(p['Precio']);
+        const precioNuevoNum = pvParsearPrecio(nuevoPrecio);
+        const payloadPrecio = { action:'actualizar_precio_propiedad_venta', direccion: p['Dirección'], link: p['Link'], precio: nuevoPrecio };
+        let precioAnteriorLocal = null;
+        if(!isNaN(precioViejoNum) && !isNaN(precioNuevoNum)){
+          if(precioNuevoNum < precioViejoNum){ payloadPrecio.precioAnterior = p['Precio']; precioAnteriorLocal = p['Precio']; }
+          else if(precioNuevoNum > precioViejoNum){ payloadPrecio.precioAnterior = ''; precioAnteriorLocal = ''; }
+        }
         btn.disabled = true;
         btn.textContent = 'Guardando...';
         try{
           await fetch(APPS_SCRIPT_URL_VENTA, {
             method:'POST', mode:'no-cors',
-            body: JSON.stringify({ action:'actualizar_precio_propiedad_venta', direccion: p['Dirección'], link: p['Link'], precio: nuevoPrecio })
+            body: JSON.stringify(payloadPrecio)
           });
           p['Precio'] = nuevoPrecio;
+          if(precioAnteriorLocal !== null) p['PrecioAnterior'] = precioAnteriorLocal;
           renderPropiedadesVentaCards();
         } catch(err){ alert('No se pudo guardar el precio. Revisa tu conexión.'); }
         btn.disabled = false;
