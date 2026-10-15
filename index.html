@@ -906,11 +906,18 @@
   .pv-filtro-btn:not(.active){opacity:0.35;}
   .pv-filtro-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px;}
   .pv-filtro-div{width:1px;height:26px;background:var(--border);}
-  .pv-sub-btn{width:40px;height:40px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:17px;background:#fff;border:2px solid var(--border);cursor:pointer;transition:opacity .15s,transform .1s,border-color .2s,box-shadow .2s;}
-  .pv-sub-btn:active{transform:scale(0.92);}
+  .pv-sub-btn{height:36px;flex:none;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:0 13px;font:800 11px/1 'Inter',sans-serif;letter-spacing:.03em;background:#fff;border:2px solid var(--border);color:var(--text);cursor:pointer;transition:opacity .15s,transform .1s,border-color .2s,box-shadow .2s;}
+  .pv-sub-btn:active{transform:scale(0.95);}
   .pv-sub-btn:not(.active){opacity:0.35;}
   .pv-sub-btn.pv-sub-vivienda.active{border-color:var(--navy);box-shadow:0 4px 10px -4px rgba(52,107,147,.5);}
   .pv-sub-btn.pv-sub-local.active{border-color:var(--gold);box-shadow:0 4px 10px -4px rgba(201,162,39,.5);}
+  .pv-finca-btn{height:36px;flex:none;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:0 13px;font:800 11px/1 'Inter',sans-serif;letter-spacing:.03em;background:#fff;border:2px solid var(--border);color:var(--text);cursor:pointer;transition:opacity .15s,transform .1s,border-color .2s,box-shadow .2s;}
+  .pv-finca-btn:active{transform:scale(0.95);}
+  .pv-finca-btn.active{background:linear-gradient(135deg,#f5cf5c,#c9962b);border-color:#c9962b;color:#1a1200;box-shadow:0 4px 10px -4px rgba(201,162,39,.6);}
+  .pv-finca-toggle{height:38px;flex:none;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 15px;font:800 12px/1 'Inter',sans-serif;letter-spacing:.03em;background:#fff;border:2px solid var(--border);color:var(--text);cursor:pointer;transition:background .2s,color .2s,border-color .2s,box-shadow .2s,transform .1s;}
+  .pv-finca-toggle:active{transform:scale(0.97);}
+  .pv-finca-toggle.active{background:linear-gradient(135deg,#f5cf5c,#c9962b);border-color:#c9962b;color:#1a1200;box-shadow:0 4px 10px -4px rgba(201,162,39,.6);}
+  .venta-finca-badge{position:absolute;top:10px;left:10px;z-index:2;display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#f5cf5c,#c9962b);color:#1a1200;font:800 11px/1 'Inter',sans-serif;letter-spacing:.03em;padding:4px 9px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.28);}
   .pv-datos-filtros{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;align-items:flex-end;}
   .pv-datos-filtros label{display:flex;flex-direction:column;gap:5px;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
   .pv-datos-filtros select{background:#fff;color:var(--text);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font:600 13.5px Inter,sans-serif;min-width:140px;cursor:pointer;}
@@ -1652,6 +1659,12 @@
           <button type="button" class="choice-btn" data-origen="Apialia">🤝 Apialia (colaboración)</button>
         </div>
       </div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Destacado <span style="color:var(--muted);font-weight:400;text-transform:none;">(se ve en el mapa público con un icono llamativo)</span></label>
+        <div class="choice-group" id="pvFincaRegiaGroup">
+          <button type="button" class="choice-btn" id="pvFincaRegiaBtn" data-finca="1">👑 Finca Regia</button>
+        </div>
+      </div>
       <div class="form-isla form-isla-blue">
         <div class="form-isla-header">📍 UBICACIÓN Y DATOS BÁSICOS</div>
         <div class="add-piso-row">
@@ -1919,9 +1932,11 @@
         </div>
         <span class="pv-filtro-div" id="pvFiltroDiv" aria-hidden="true" hidden></span>
         <div class="pv-filtro-subtipo" id="pvFiltroSubtipo" style="display:flex;gap:8px;" hidden>
-          <button type="button" class="pv-sub-btn pv-sub-vivienda active" data-subfiltro="Vivienda" title="Vivienda" aria-label="Vivienda">🏠</button>
-          <button type="button" class="pv-sub-btn pv-sub-local active" data-subfiltro="Local" title="Local" aria-label="Local">🏬</button>
+          <button type="button" class="pv-sub-btn pv-sub-vivienda active" data-subfiltro="Vivienda" title="Piso" aria-label="Piso">🏠 Piso</button>
+          <button type="button" class="pv-sub-btn pv-sub-local active" data-subfiltro="Local" title="Local" aria-label="Local">🏬 Local</button>
         </div>
+        <span class="pv-filtro-div" id="pvFiltroDivFinca" aria-hidden="true" hidden></span>
+        <button type="button" class="pv-finca-toggle" id="pvFiltroFincaBtn" data-finca-filtro="1" title="Finca Regia" aria-label="Filtrar solo Finca Regia" aria-pressed="false" hidden>👑 Finca Regia</button>
       </div>
       <div class="pv-datos-filtros" id="pvDatosFiltros" hidden>
         <label>Zona<select id="pvFZona"><option value="">Todas</option></select></label>
@@ -4317,6 +4332,17 @@
   const pvFClear = document.getElementById('pvFClear');
   [pvFZona, pvFPrecio, pvFHab].forEach(sel=>{ sel.addEventListener('change', renderPropiedadesVentaCards); });
   pvFClear.addEventListener('click', ()=>{ pvFZona.value=''; pvFPrecio.value=''; pvFHab.value=''; renderPropiedadesVentaCards(); });
+
+  // ---- Filtro Finca Regia: toggle único, independiente del resto ----
+  let pvFiltroSoloFincaRegia = false;
+  const pvFiltroFincaBtn = document.getElementById('pvFiltroFincaBtn');
+  pvFiltroFincaBtn.addEventListener('click', ()=>{
+    pvFiltroSoloFincaRegia = !pvFiltroSoloFincaRegia;
+    pvFiltroFincaBtn.classList.toggle('active', pvFiltroSoloFincaRegia);
+    pvFiltroFincaBtn.setAttribute('aria-pressed', pvFiltroSoloFincaRegia ? 'true' : 'false');
+    renderPropiedadesVentaCards();
+  });
+
   function pvRellenarFiltrosDatos(){
     const zonaPrevia = pvFZona.value, precioPrevia = pvFPrecio.value;
     const zonas = Array.from(new Set(cachedPropiedadesVenta.map(p=>(p['Barrio']||'').trim()).filter(Boolean))).sort();
@@ -4329,9 +4355,12 @@
     pvFPrecio.value = precioPrevia;
     const hayAmbos = cachedPropiedadesVenta.length >= 2;
     const hayLocal = cachedPropiedadesVenta.some(p=>(p['Subtipo']||'').trim()==='Local');
+    const hayFinca = cachedPropiedadesVenta.some(p=>/^(s[ií]|true|1|x|yes)$/i.test((p['FincaRegia']||'').toString().trim()));
     document.getElementById('pvDatosFiltros').hidden = cachedPropiedadesVenta.length < 2;
     document.getElementById('pvFiltroSubtipo').hidden = !hayLocal;
     document.getElementById('pvFiltroDiv').hidden = !hayLocal;
+    document.getElementById('pvFiltroDivFinca').hidden = !hayFinca;
+    pvFiltroFincaBtn.hidden = !hayFinca;
   }
 
   const pvBarrio = document.getElementById('pvBarrio');
@@ -4523,6 +4552,18 @@
   function resetPvOrigenForm(){
     pvOrigenSeleccionado = 'AGN';
     pvOrigenGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.toggle('active', b.dataset.origen === 'AGN'));
+  }
+
+  // ---- Finca Regia: toggle único, independiente del resto (se ve en el mapa público) ----
+  const pvFincaRegiaBtn = document.getElementById('pvFincaRegiaBtn');
+  let pvFincaRegiaSeleccionada = false;
+  pvFincaRegiaBtn.addEventListener('click', ()=>{
+    pvFincaRegiaSeleccionada = !pvFincaRegiaSeleccionada;
+    pvFincaRegiaBtn.classList.toggle('active', pvFincaRegiaSeleccionada);
+  });
+  function resetPvFincaRegiaForm(){
+    pvFincaRegiaSeleccionada = false;
+    pvFincaRegiaBtn.classList.remove('active');
   }
 
   // ---- Selector de ubicación (lat/lng) para el mapa público de venta ----
@@ -5009,6 +5050,7 @@
   let editingPropVentaOriginal = null; // { direccion, link } de la propiedad que se está editando
 
   function resetPvAddForm(){
+    resetPvFincaRegiaForm();
     pvDireccion.value = ''; pvLink.value = ''; pvFoto.value = ''; pvPrecio.value = ''; pvRefCatastral.value = ''; mostrarPvCatastroEstado('');
     actualizarPvTransporteDireccion();
     document.getElementById('pvTransporteResumen').style.display = 'none';
@@ -5114,6 +5156,9 @@
     pvOrigenSeleccionado = origen;
     pvOrigenGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.toggle('active', b.dataset.origen === origen));
 
+    pvFincaRegiaSeleccionada = /^(s[ií]|true|1|x|yes)$/i.test((p['FincaRegia']||'').toString().trim());
+    pvFincaRegiaBtn.classList.toggle('active', pvFincaRegiaSeleccionada);
+
     uploadedPropVentaImageUrls = (p['Fotos'] || '').toString().split('|').map(s=>s.trim()).filter(Boolean);
     if(uploadedPropVentaImageUrls.length === 0 && p['Imagen']) uploadedPropVentaImageUrls = [p['Imagen']];
     renderPvFotosGrid();
@@ -5195,6 +5240,7 @@
     const gastosIbi = operacion === 'Alquiler' ? pvGastosIbi.value.trim() : '';
     const tipoNegocio = (operacion === 'Alquiler' && subtipo === 'Local') ? pvTipoNegocio.value.trim() : '';
     const colaboracion = pvOrigenSeleccionado === 'Apialia' ? 'Apialia' : '';
+    const fincaRegia = pvFincaRegiaSeleccionada ? 'Sí' : '';
     if(!direccion || uploadedPropVentaImageUrls.length === 0 || !lat) return;
     const wasEditingProp = !!editingPropVentaOriginal;
     addPropVentaBtn.disabled = true;
@@ -5226,7 +5272,7 @@
         mensajeWhatsapp: mensajeWhatsapp,
         lat: lat, lng: lng,
         operacion: operacion, subtipo: subtipo, fianza: fianza, gastosIbi: gastosIbi, tipoNegocio: tipoNegocio,
-        colaboracion: colaboracion
+        colaboracion: colaboracion, fincaRegia: fincaRegia
       };
       if(wasEditingProp){
         payload.direccionOriginal = editingPropVentaOriginal.direccion;
@@ -5292,6 +5338,7 @@
       const hab = parseInt(p['Habitaciones'], 10);
       if(!pvFiltrosActivos.has(operacion)) return false;
       if(!pvSubfiltrosActivos.has(subtipo)) return false;
+      if(pvFiltroSoloFincaRegia && !/^(s[ií]|true|1|x|yes)$/i.test((p['FincaRegia']||'').toString().trim())) return false;
       if(zonaSel && zona !== zonaSel) return false;
       if(!isNaN(precioSel) && !isNaN(precio) && precio > precioSel) return false;
       if(!isNaN(habSel) && !(((!isNaN(hab)?hab:0)) >= habSel)) return false;
@@ -5324,6 +5371,8 @@
       const origenBadge = esApialia
         ? `<div class="venta-ribbon apialia">Apialia</div>`
         : `<span class="venta-origen-star">⭐ AG Núñez</span>`;
+      const esFincaRegia = /^(s[ií]|true|1|x|yes)$/i.test((p['FincaRegia'] || '').toString().trim());
+      const fincaRegiaBadge = esFincaRegia ? `<span class="venta-finca-badge">👑 Finca Regia</span>` : '';
       // Una vez vendida, ya no se puede tocar el estado — solo eliminar.
       const estadoBotones = estado === 'Vendida' ? '' : `
         <div class="estado-venta-group">
@@ -5369,6 +5418,7 @@
           <img src="${p['Imagen'] || ''}" alt="${escVenta(p['Dirección'] || '')}">
           ${ribbon}
           ${origenBadge}
+          ${fincaRegiaBadge}
           ${precioTag}
         </div>
         <div class="body">
