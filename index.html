@@ -1644,6 +1644,30 @@
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
       <button id="togglePropVentaBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;">+ Añadir propiedad</button>
       <button id="togglePropVentaListBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;">👁 Ver propiedades</button>
+      <button id="toggleColaboradoresBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;">🤝 Colaboradores externos</button>
+    </div>
+    <div class="add-piso-card" id="colaboradoresCard" style="display:none;margin-bottom:16px;">
+      <p class="section-desc" style="margin-top:0;">
+        Añade aquí una agencia o colaborador externo (como Apialia o Ancor Investments) para poder
+        elegirlo como Origen al añadir una propiedad. Su logo aparece en el mapa público en las
+        propiedades donde lo elijas; su Nº AICAT / Nº API solo se muestran si los rellenas.
+      </p>
+      <div id="colaboradoresLista" style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;"></div>
+      <div class="form-isla form-isla-blue">
+        <div class="form-isla-header">+ NUEVO COLABORADOR</div>
+        <div class="add-piso-row">
+          <div class="add-piso-field"><label>Nombre</label><input type="text" id="colNombre" placeholder="Ej. Ancor Investments"></div>
+          <div class="add-piso-field">
+            <label>Logo (PNG/JPG, idealmente con fondo transparente)</label>
+            <input type="file" id="colLogo" accept="image/*">
+            <div id="colLogoPreview" style="margin-top:8px;"></div>
+            <p id="colLogoStatus" class="piso-upload-status"></p>
+          </div>
+          <div class="add-piso-field"><label>Nº AICAT <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional)</span></label><input type="text" id="colAicat" placeholder="Ej. 7491"></div>
+          <div class="add-piso-field"><label>Nº API <span style="color:var(--muted);font-weight:400;text-transform:none;">(opcional)</span></label><input type="text" id="colApi" placeholder="Ej. 3474"></div>
+        </div>
+        <button id="colGuardarBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;margin-top:4px;" disabled>Guardar colaborador</button>
+      </div>
     </div>
     <div class="add-piso-card" id="addPropVentaCard" style="display:none;">
       <div class="add-piso-field" style="margin-bottom:14px;">
@@ -1661,7 +1685,7 @@
         </div>
       </div>
       <div class="add-piso-field" style="margin-bottom:14px;">
-        <label>Origen <span style="color:var(--muted);font-weight:400;text-transform:none;">(uso interno tuyo — nunca se muestra en el mapa público)</span></label>
+        <label>Origen <span style="color:var(--muted);font-weight:400;text-transform:none;">(por defecto AG Núñez; Apialia es solo uso interno, los demás colaboradores sí se ven en el mapa público)</span></label>
         <div class="choice-group" id="pvOrigenGroup">
           <button type="button" class="choice-btn active" data-origen="AGN">⭐ AG Núñez (propio)</button>
           <button type="button" class="choice-btn" data-origen="Apialia">🤝 Apialia (colaboración)</button>
@@ -4555,12 +4579,15 @@
   // ---- Origen (AG Núñez propio / colaboración Apialia) — solo uso interno ----
   const pvOrigenGroup = document.getElementById('pvOrigenGroup');
   let pvOrigenSeleccionado = 'AGN';
-  pvOrigenGroup.querySelectorAll('.choice-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      pvOrigenGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      pvOrigenSeleccionado = btn.dataset.origen;
-    });
+  // Delegado en el contenedor (en vez de un listener por botón) para que
+  // también funcione con los botones de colaboradores externos que se añaden
+  // dinámicamente después de cargarlos (ver cargarColaboradores más abajo).
+  pvOrigenGroup.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.choice-btn');
+    if(!btn || !pvOrigenGroup.contains(btn)) return;
+    pvOrigenGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    pvOrigenSeleccionado = btn.dataset.origen;
   });
   function resetPvOrigenForm(){
     pvOrigenSeleccionado = 'AGN';
@@ -4578,6 +4605,143 @@
     pvFincaRegiaSeleccionada = false;
     pvFincaRegiaBtn.classList.remove('active');
   }
+
+  // ---- Colaboradores externos (Apialia es fijo/interno; aquí se gestionan
+  // los demás — Ancor Investments y cualquier otro que Fer vaya añadiendo).
+  // Su logo y, si los rellena, su Nº AICAT/API sí se ven en el mapa público. ----
+  let cachedColaboradores = [];
+  const toggleColaboradoresBtn = document.getElementById('toggleColaboradoresBtn');
+  const colaboradoresCard = document.getElementById('colaboradoresCard');
+  const colaboradoresLista = document.getElementById('colaboradoresLista');
+  const colNombre = document.getElementById('colNombre');
+  const colLogo = document.getElementById('colLogo');
+  const colLogoPreview = document.getElementById('colLogoPreview');
+  const colLogoStatus = document.getElementById('colLogoStatus');
+  const colAicat = document.getElementById('colAicat');
+  const colApi = document.getElementById('colApi');
+  const colGuardarBtn = document.getElementById('colGuardarBtn');
+  let colaboradorLogoUrl = '';
+
+  toggleColaboradoresBtn.addEventListener('click', ()=>{
+    const showing = colaboradoresCard.style.display !== 'none';
+    colaboradoresCard.style.display = showing ? 'none' : 'block';
+  });
+
+  colLogo.addEventListener('change', ()=>{
+    const file = colLogo.files[0];
+    colaboradorLogoUrl = '';
+    checkColGuardarListo();
+    if(!file) return;
+    colLogoStatus.textContent = 'Subiendo logo...';
+    colLogoStatus.className = 'piso-upload-status';
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/auto/upload', { method:'POST', body: fd })
+      .then(res=>res.json())
+      .then(data=>{
+        if(data.secure_url){
+          colaboradorLogoUrl = data.secure_url;
+          colLogoStatus.textContent = 'Logo subido ✓';
+          colLogoStatus.className = 'piso-upload-status ok';
+          colLogoPreview.innerHTML = `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px;display:inline-block;"><img src="${colaboradorLogoUrl}" style="height:40px;display:block;"></div>`;
+        } else {
+          colLogoStatus.textContent = 'Error al subir el logo.';
+          colLogoStatus.className = 'piso-upload-status error';
+        }
+        checkColGuardarListo();
+      })
+      .catch(()=>{
+        colLogoStatus.textContent = 'Error al subir el logo.';
+        colLogoStatus.className = 'piso-upload-status error';
+        checkColGuardarListo();
+      });
+  });
+
+  function checkColGuardarListo(){
+    colGuardarBtn.disabled = !(colNombre.value.trim() && colaboradorLogoUrl);
+  }
+  colNombre.addEventListener('input', checkColGuardarListo);
+
+  colGuardarBtn.addEventListener('click', async ()=>{
+    const nombre = colNombre.value.trim();
+    if(!nombre || !colaboradorLogoUrl) return;
+    colGuardarBtn.disabled = true;
+    colGuardarBtn.textContent = 'Guardando...';
+    try{
+      await fetch(APPS_SCRIPT_URL_VENTA, {
+        method:'POST', mode:'no-cors',
+        body: JSON.stringify({ action:'nuevo_colaborador', nombre, logo: colaboradorLogoUrl, aicat: colAicat.value.trim(), api: colApi.value.trim() })
+      });
+      colNombre.value = ''; colAicat.value = ''; colApi.value = ''; colLogo.value = '';
+      colaboradorLogoUrl = ''; colLogoPreview.innerHTML = ''; colLogoStatus.textContent = '';
+      await cargarColaboradores();
+    } catch(err){ alert('No se pudo guardar el colaborador. Revisa tu conexión.'); }
+    colGuardarBtn.textContent = 'Guardar colaborador';
+    checkColGuardarListo();
+  });
+
+  async function cargarColaboradores(){
+    try{
+      const res = await fetch(APPS_SCRIPT_URL_VENTA + '?tipo=colaboradores');
+      const json = await res.json();
+      cachedColaboradores = (json && json.success) ? json.data : [];
+    } catch(err){ cachedColaboradores = []; }
+    renderColaboradoresLista();
+    renderOrigenBotonesColaboradores();
+  }
+
+  function renderColaboradoresLista(){
+    if(!cachedColaboradores.length){
+      colaboradoresLista.innerHTML = '<p class="section-desc" style="margin:0;">Todavía no has añadido ningún colaborador externo.</p>';
+      return;
+    }
+    colaboradoresLista.innerHTML = cachedColaboradores.map(c=>{
+      const nombre = (c['Nombre']||'').toString();
+      const logo = (c['Logo']||'').toString();
+      const aicat = (c['Aicat']||'').toString().trim();
+      const api = (c['Api']||'').toString().trim();
+      const datos = [aicat ? `Nº AICAT ${aicat}` : '', api ? `Nº API ${api}` : ''].filter(Boolean).join(' · ');
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
+        <div style="background:#fff;border-radius:8px;padding:6px;flex:none;">${logo ? `<img src="${logo}" style="height:32px;display:block;">` : ''}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;">${nombre}</div>
+          ${datos ? `<div style="font-size:12px;color:var(--muted);">${datos}</div>` : ''}
+        </div>
+        <button type="button" class="col-eliminar-btn" data-nombre="${nombre}" style="border:1px solid var(--border);background:#fff;color:var(--muted);border-radius:999px;padding:6px 12px;font:700 12px 'Inter',sans-serif;cursor:pointer;">Eliminar</button>
+      </div>`;
+    }).join('');
+    colaboradoresLista.querySelectorAll('.col-eliminar-btn').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!confirm(`¿Eliminar el colaborador "${btn.dataset.nombre}"? Las propiedades ya guardadas con este origen no se tocan, pero dejará de verse como opción al añadir propiedades nuevas.`)) return;
+        btn.disabled = true;
+        try{
+          await fetch(APPS_SCRIPT_URL_VENTA, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'eliminar_colaborador', nombre: btn.dataset.nombre }) });
+          await cargarColaboradores();
+        } catch(err){ alert('No se pudo eliminar. Revisa tu conexión.'); btn.disabled = false; }
+      });
+    });
+  }
+
+  function renderOrigenBotonesColaboradores(){
+    // Quita los botones de colaboradores que ya estaban pintados (para no
+    // duplicarlos al recargar) y vuelve a pintar uno por cada colaborador.
+    pvOrigenGroup.querySelectorAll('.choice-btn[data-origen-externo]').forEach(b=>b.remove());
+    cachedColaboradores.forEach(c=>{
+      const nombre = (c['Nombre']||'').toString();
+      if(!nombre) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice-btn';
+      btn.dataset.origen = nombre;
+      btn.dataset.origenExterno = '1';
+      btn.textContent = '🤝 ' + nombre;
+      if(pvOrigenSeleccionado === nombre) btn.classList.add('active');
+      pvOrigenGroup.appendChild(btn);
+    });
+  }
+
+  cargarColaboradores();
 
   // ---- Selector de ubicación (lat/lng) para el mapa público de venta ----
   const pvLat = document.getElementById('pvLat');
@@ -5165,7 +5329,7 @@
     pvTipoNegocio.value = p['TipoNegocio'] || '';
     actualizarCamposPorOperacion();
 
-    const origen = (p['Colaboracion'] || '').trim() === 'Apialia' ? 'Apialia' : 'AGN';
+    const origen = (p['Colaboracion'] || '').trim() || 'AGN';
     pvOrigenSeleccionado = origen;
     pvOrigenGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.toggle('active', b.dataset.origen === origen));
 
@@ -5252,7 +5416,10 @@
     const fianza = operacion === 'Alquiler' ? pvFianza.value.trim() : '';
     const gastosIbi = operacion === 'Alquiler' ? pvGastosIbi.value.trim() : '';
     const tipoNegocio = (operacion === 'Alquiler' && subtipo === 'Local') ? pvTipoNegocio.value.trim() : '';
-    const colaboracion = pvOrigenSeleccionado === 'Apialia' ? 'Apialia' : '';
+    // Por defecto (AGN) no se guarda nada en Colaboracion; cualquier otro
+    // origen elegido — Apialia o un colaborador externo añadido en el panel —
+    // se guarda tal cual para poder identificarlo luego en el mapa.
+    const colaboracion = pvOrigenSeleccionado === 'AGN' ? '' : pvOrigenSeleccionado;
     const fincaRegia = pvFincaRegiaSeleccionada ? 'Sí' : '';
     const wasEditingProp = !!editingPropVentaOriginal;
     // Bajada de precio (como en Idealista): si al editar el precio baja respecto
@@ -5394,10 +5561,14 @@
           : '';
       // Origen (uso interno, nunca en el mapa público): cinta naranja "APIALIA"
       // si es colaboración, o una estrellita verde si es propio de AG Núñez.
-      const esApialia = (p['Colaboracion'] || '').trim() === 'Apialia';
-      const origenBadge = esApialia
-        ? `<div class="venta-ribbon apialia">Apialia</div>`
-        : `<span class="venta-origen-star">⭐ AG Núñez</span>`;
+      const colaboracionVal = (p['Colaboracion'] || '').trim();
+      const esApialia = colaboracionVal === 'Apialia';
+      const colaboradorExterno = colaboracionVal && !esApialia ? cachedColaboradores.find(c=>(c['Nombre']||'').toString()===colaboracionVal) : null;
+      const origenBadge = colaboradorExterno
+        ? `<div style="position:absolute;top:10px;right:10px;z-index:2;background:#fff;border-radius:8px;padding:5px 8px;box-shadow:0 2px 6px rgba(0,0,0,.28);">${colaboradorExterno['Logo'] ? `<img src="${colaboradorExterno['Logo']}" style="height:22px;display:block;">` : escVenta(colaboracionVal)}</div>`
+        : esApialia
+          ? `<div class="venta-ribbon apialia">Apialia</div>`
+          : `<span class="venta-origen-star">⭐ AG Núñez</span>`;
       const esFincaRegia = /^(s[ií]|true|1|x|yes)$/i.test((p['FincaRegia'] || '').toString().trim());
       const fincaRegiaBadge = esFincaRegia ? `<span class="venta-finca-badge">👑 Finca Regia</span>` : '';
       // Una vez vendida, ya no se puede tocar el estado — solo eliminar.
