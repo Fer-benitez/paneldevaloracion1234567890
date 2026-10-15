@@ -904,6 +904,19 @@
   .pv-filtro-btn.pv-filtro-venta{background:linear-gradient(135deg,#E3C25C,#9c7a1e);color:#241d05;}
   .pv-filtro-btn.pv-filtro-alquiler{background:linear-gradient(135deg,#5b8dff,var(--alq-blue-dark));color:#fff;}
   .pv-filtro-btn:not(.active){opacity:0.35;}
+  .pv-filtro-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px;}
+  .pv-filtro-div{width:1px;height:26px;background:var(--border);}
+  .pv-sub-btn{width:40px;height:40px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:17px;background:#fff;border:2px solid var(--border);cursor:pointer;transition:opacity .15s,transform .1s,border-color .2s,box-shadow .2s;}
+  .pv-sub-btn:active{transform:scale(0.92);}
+  .pv-sub-btn:not(.active){opacity:0.35;}
+  .pv-sub-btn.pv-sub-vivienda.active{border-color:var(--navy);box-shadow:0 4px 10px -4px rgba(52,107,147,.5);}
+  .pv-sub-btn.pv-sub-local.active{border-color:var(--gold);box-shadow:0 4px 10px -4px rgba(201,162,39,.5);}
+  .pv-datos-filtros{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;align-items:flex-end;}
+  .pv-datos-filtros label{display:flex;flex-direction:column;gap:5px;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
+  .pv-datos-filtros select{background:#fff;color:var(--text);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font:600 13.5px Inter,sans-serif;min-width:140px;cursor:pointer;}
+  .pv-datos-filtros select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(52,107,147,.18);}
+  .pv-datos-filtros .pv-filtro-clear{align-self:flex-end;border:1px solid var(--border);background:#fff;color:var(--muted);border-radius:999px;padding:8px 16px;font:700 12.5px 'Inter',sans-serif;cursor:pointer;}
+  .pv-datos-filtros .pv-filtro-clear:hover{color:var(--text);border-color:var(--navy);}
 
   .operacion-badge{
     display:inline-flex;align-items:center;gap:4px;font-family:'Montserrat',sans-serif;font-weight:800;
@@ -1899,9 +1912,22 @@
       <p class="piso-hint" id="pvHint">Escribe la dirección, sube una foto y coloca el pin en el mapa para poder añadirla.</p>
     </div>
     <div id="propVentaListWrapper" style="display:none;">
-      <div class="pv-filtro-operacion" style="display:flex;gap:8px;margin-bottom:16px;">
-        <button type="button" class="pv-filtro-btn pv-filtro-venta active" data-filtro="Venta">€ Venta</button>
-        <button type="button" class="pv-filtro-btn pv-filtro-alquiler active" data-filtro="Alquiler">🔑 Alquiler</button>
+      <div class="pv-filtro-row">
+        <div class="pv-filtro-operacion" style="display:flex;gap:8px;">
+          <button type="button" class="pv-filtro-btn pv-filtro-venta active" data-filtro="Venta">€ Venta</button>
+          <button type="button" class="pv-filtro-btn pv-filtro-alquiler active" data-filtro="Alquiler">🔑 Alquiler</button>
+        </div>
+        <span class="pv-filtro-div" id="pvFiltroDiv" aria-hidden="true" hidden></span>
+        <div class="pv-filtro-subtipo" id="pvFiltroSubtipo" style="display:flex;gap:8px;" hidden>
+          <button type="button" class="pv-sub-btn pv-sub-vivienda active" data-subfiltro="Vivienda" title="Vivienda" aria-label="Vivienda">🏠</button>
+          <button type="button" class="pv-sub-btn pv-sub-local active" data-subfiltro="Local" title="Local" aria-label="Local">🏬</button>
+        </div>
+      </div>
+      <div class="pv-datos-filtros" id="pvDatosFiltros" hidden>
+        <label>Zona<select id="pvFZona"><option value="">Todas</option></select></label>
+        <label>Precio máx.<select id="pvFPrecio"><option value="">Sin límite</option></select></label>
+        <label>Habitaciones<select id="pvFHab"><option value="">Cualquiera</option><option value="1">1 o más</option><option value="2">2 o más</option><option value="3">3 o más</option></select></label>
+        <button type="button" class="pv-filtro-clear" id="pvFClear">Limpiar</button>
       </div>
       <p id="loadingPropVenta" class="section-desc">Cargando propiedades...</p>
       <div class="cards-grid" id="propVentaGrid" style="margin-bottom:28px;"></div>
@@ -4271,6 +4297,43 @@
     });
   });
 
+  // ---- Filtro Vivienda/Local + Zona/Precio máx./Habitaciones ----
+  let pvSubfiltrosActivos = new Set(['Vivienda','Local']);
+  document.querySelectorAll('.pv-sub-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const sub = btn.dataset.subfiltro;
+      if(pvSubfiltrosActivos.has(sub)){
+        if(pvSubfiltrosActivos.size > 1) pvSubfiltrosActivos.delete(sub);
+      } else {
+        pvSubfiltrosActivos.add(sub);
+      }
+      btn.classList.toggle('active', pvSubfiltrosActivos.has(sub));
+      renderPropiedadesVentaCards();
+    });
+  });
+  const pvFZona = document.getElementById('pvFZona');
+  const pvFPrecio = document.getElementById('pvFPrecio');
+  const pvFHab = document.getElementById('pvFHab');
+  const pvFClear = document.getElementById('pvFClear');
+  [pvFZona, pvFPrecio, pvFHab].forEach(sel=>{ sel.addEventListener('change', renderPropiedadesVentaCards); });
+  pvFClear.addEventListener('click', ()=>{ pvFZona.value=''; pvFPrecio.value=''; pvFHab.value=''; renderPropiedadesVentaCards(); });
+  function pvRellenarFiltrosDatos(){
+    const zonaPrevia = pvFZona.value, precioPrevia = pvFPrecio.value;
+    const zonas = Array.from(new Set(cachedPropiedadesVenta.map(p=>(p['Barrio']||'').trim()).filter(Boolean))).sort();
+    pvFZona.innerHTML = '<option value="">Todas</option>' + zonas.map(z=>`<option>${z}</option>`).join('');
+    pvFZona.value = zonaPrevia;
+    const precios = cachedPropiedadesVenta.map(p=>parseFloat(String(p['Precio']||'').replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.'))).filter(n=>!isNaN(n));
+    const max = precios.length ? Math.max(...precios) : 0;
+    const steps = []; for(let s=800; s<=Math.max(2500,max); s+=200) steps.push(s);
+    pvFPrecio.innerHTML = '<option value="">Sin límite</option>' + steps.map(s=>`<option value="${s}">Hasta ${s.toLocaleString('es-ES')} €</option>`).join('');
+    pvFPrecio.value = precioPrevia;
+    const hayAmbos = cachedPropiedadesVenta.length >= 2;
+    const hayLocal = cachedPropiedadesVenta.some(p=>(p['Subtipo']||'').trim()==='Local');
+    document.getElementById('pvDatosFiltros').hidden = cachedPropiedadesVenta.length < 2;
+    document.getElementById('pvFiltroSubtipo').hidden = !hayLocal;
+    document.getElementById('pvFiltroDiv').hidden = !hayLocal;
+  }
+
   const pvBarrio = document.getElementById('pvBarrio');
   const pvMetros = document.getElementById('pvMetros');
   const pvHabitaciones = document.getElementById('pvHabitaciones');
@@ -5214,12 +5277,26 @@
 
   function renderPropiedadesVentaCards(){
     propVentaGrid.innerHTML = '';
+    pvRellenarFiltrosDatos();
     if(cachedPropiedadesVenta.length === 0){
       emptyPropVenta.textContent = 'Todavía no has añadido ninguna propiedad en venta. Añade una arriba (foto + dirección) para poder asociarle leads.';
       emptyPropVenta.style.display = 'block';
       return;
     }
-    const visibles = cachedPropiedadesVenta.filter(p => pvFiltrosActivos.has((p['Operación']||'Venta').trim() || 'Venta'));
+    const zonaSel = pvFZona.value, precioSel = parseFloat(pvFPrecio.value), habSel = parseInt(pvFHab.value, 10);
+    const visibles = cachedPropiedadesVenta.filter(p => {
+      const operacion = (p['Operación']||'Venta').trim() || 'Venta';
+      const subtipo = (p['Subtipo']||'Vivienda').trim() || 'Vivienda';
+      const zona = (p['Barrio']||'').trim();
+      const precio = parseFloat(String(p['Precio']||'').replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.'));
+      const hab = parseInt(p['Habitaciones'], 10);
+      if(!pvFiltrosActivos.has(operacion)) return false;
+      if(!pvSubfiltrosActivos.has(subtipo)) return false;
+      if(zonaSel && zona !== zonaSel) return false;
+      if(!isNaN(precioSel) && !isNaN(precio) && precio > precioSel) return false;
+      if(!isNaN(habSel) && !(((!isNaN(hab)?hab:0)) >= habSel)) return false;
+      return true;
+    });
     if(visibles.length === 0){
       emptyPropVenta.textContent = 'No hay propiedades de este tipo con el filtro seleccionado.';
       emptyPropVenta.style.display = 'block';
