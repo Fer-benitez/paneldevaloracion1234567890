@@ -1535,11 +1535,13 @@
           <button type="button" class="pv-lang-tab" data-lang-tab="en">🇬🇧 EN</button>
           <button type="button" class="pv-lang-tab" data-lang-tab="de">🇩🇪 DE</button>
           <button type="button" class="pv-lang-tab" data-lang-tab="fr">🇫🇷 FR</button>
+          <button type="button" class="pv-lang-tab" data-lang-tab="ru">🇷🇺 RU</button>
         </div>
         <textarea id="rDescripcion" data-lang-field="rDescripcion" data-lang="es" rows="4" placeholder="Características, zona, ventajas — el texto que verá el público"></textarea>
         <textarea id="rDescripcionEn" data-lang-field="rDescripcion" data-lang="en" rows="4" placeholder="English: features, area, advantages..." hidden></textarea>
         <textarea id="rDescripcionDe" data-lang-field="rDescripcion" data-lang="de" rows="4" placeholder="Deutsch: Merkmale, Lage, Vorteile..." hidden></textarea>
         <textarea id="rDescripcionFr" data-lang-field="rDescripcion" data-lang="fr" rows="4" placeholder="Français : caractéristiques, quartier, atouts..." hidden></textarea>
+        <textarea id="rDescripcionRu" data-lang-field="rDescripcion" data-lang="ru" rows="4" placeholder="Русский: особенности, район, преимущества..." hidden></textarea>
       </div>
       <div class="add-piso-field" style="margin-bottom:14px;">
         <label>Notas internas (croquis, medidas, incidencias)</label>
@@ -1748,12 +1750,14 @@
             <button type="button" class="pv-lang-tab" data-lang-tab="en">🇬🇧 EN</button>
             <button type="button" class="pv-lang-tab" data-lang-tab="de">🇩🇪 DE</button>
             <button type="button" class="pv-lang-tab" data-lang-tab="fr">🇫🇷 FR</button>
+            <button type="button" class="pv-lang-tab" data-lang-tab="ru">🇷🇺 RU</button>
           </div>
           <textarea id="pvDescripcion" data-lang-field="pvDescripcion" data-lang="es" rows="3" placeholder="Notas sobre el piso: distribución, estado, orientación..."></textarea>
           <textarea id="pvDescripcionEn" data-lang-field="pvDescripcion" data-lang="en" rows="3" placeholder="English: layout, condition, orientation..." hidden></textarea>
           <textarea id="pvDescripcionDe" data-lang-field="pvDescripcion" data-lang="de" rows="3" placeholder="Deutsch: Aufteilung, Zustand, Ausrichtung..." hidden></textarea>
           <textarea id="pvDescripcionFr" data-lang-field="pvDescripcion" data-lang="fr" rows="3" placeholder="Français : distribution, état, orientation..." hidden></textarea>
-          <button type="button" id="pvMejorarDescBtn" class="edit-reco-btn" style="width:auto;padding:8px 14px;margin-top:8px;font-size:12.5px;">✨ Corregir español y traducir a EN/DE/FR</button>
+          <textarea id="pvDescripcionRu" data-lang-field="pvDescripcion" data-lang="ru" rows="3" placeholder="Русский: планировка, состояние, ориентация..." hidden></textarea>
+          <button type="button" id="pvMejorarDescBtn" class="edit-reco-btn" style="width:auto;padding:8px 14px;margin-top:8px;font-size:12.5px;">✨ Corregir español y traducir a EN/DE/FR/RU</button>
           <div class="paste-status" id="pvMejorarDescStatus"></div>
         </div>
       </div>
@@ -3038,6 +3042,7 @@
       descripcionEn: document.getElementById('rDescripcionEn').value,
       descripcionDe: document.getElementById('rDescripcionDe').value,
       descripcionFr: document.getElementById('rDescripcionFr').value,
+      descripcionRu: document.getElementById('rDescripcionRu').value,
       notas: document.getElementById('rNotas').value,
       fotos: editingExistingPhotos.map(p=> p.name + ': ' + p.url).concat(recoPhotoLinks).join(' | ')
     };
@@ -4407,7 +4412,8 @@
   const pvDescripcionEn = document.getElementById('pvDescripcionEn');
   const pvDescripcionDe = document.getElementById('pvDescripcionDe');
   const pvDescripcionFr = document.getElementById('pvDescripcionFr');
-  // ---- Pestañas de idioma para las descripciones (ES/EN/DE/FR): un textarea por idioma, oculto salvo el activo ----
+  const pvDescripcionRu = document.getElementById('pvDescripcionRu');
+  // ---- Pestañas de idioma para las descripciones (ES/EN/DE/FR/RU): un textarea por idioma, oculto salvo el activo ----
   document.addEventListener('click', function(ev){
     const tab = ev.target.closest && ev.target.closest('[data-lang-tab]');
     if(!tab) return;
@@ -4875,6 +4881,7 @@
         if(c.descripcionEn) pvDescripcionEn.value = c.descripcionEn;
         if(c.descripcionDe) pvDescripcionDe.value = c.descripcionDe;
         if(c.descripcionFr) pvDescripcionFr.value = c.descripcionFr;
+        if(c.descripcionRu) pvDescripcionRu.value = c.descripcionRu;
         mostrarPvEstadoGenerico('pvMejorarDescStatus', 'Descripción corregida y traducida ✓', true);
       } else {
         // Si el backend incluye "debug" (motivo técnico del fallo), lo añadimos
@@ -5232,7 +5239,7 @@
     actualizarPvTransporteDireccion();
     document.getElementById('pvTransporteResumen').style.display = 'none';
     pvBarrio.value = ''; pvMetros.value = ''; pvHabitaciones.value = ''; pvDescripcion.value = '';
-    pvDescripcionEn.value = ''; pvDescripcionDe.value = ''; pvDescripcionFr.value = '';
+    pvDescripcionEn.value = ''; pvDescripcionDe.value = ''; pvDescripcionFr.value = ''; pvDescripcionRu.value = '';
     resetLangTabs('pvDescripcion');
     pvCeeCodigo.value = '';
     pvCeeConsumoLetra.value = ''; pvCeeConsumoValor.value = '';
@@ -5288,6 +5295,7 @@
     pvDescripcionEn.value = p['Descripción EN'] || '';
     pvDescripcionDe.value = p['Descripción DE'] || '';
     pvDescripcionFr.value = p['Descripción FR'] || '';
+    pvDescripcionRu.value = p['Descripción RU'] || '';
     resetLangTabs('pvDescripcion');
     pvCeeCodigo.value = p['CEE Código Registro'] || '';
     pvCeeConsumoLetra.value = p['CEE Consumo Letra'] || '';
@@ -5382,6 +5390,7 @@
     const descripcionEn = pvDescripcionEn.value.trim();
     const descripcionDe = pvDescripcionDe.value.trim();
     const descripcionFr = pvDescripcionFr.value.trim();
+    const descripcionRu = pvDescripcionRu.value.trim();
     const ceeCodigo = pvCeeCodigo.value.trim();
     const ceeConsumoLetra = pvCeeConsumoLetra.value;
     const ceeConsumoValor = pvCeeConsumoValor.value.trim();
@@ -5447,7 +5456,7 @@
         video: uploadedPropVentaVideoUrl,
         link: link, precio: precio,
         barrio: barrio, metros: metros, habitaciones: habitaciones, descripcion: descripcion,
-        descripcionEn: descripcionEn, descripcionDe: descripcionDe, descripcionFr: descripcionFr,
+        descripcionEn: descripcionEn, descripcionDe: descripcionDe, descripcionFr: descripcionFr, descripcionRu: descripcionRu,
         ceeCodigo: ceeCodigo,
         ceeConsumoLetra: ceeConsumoLetra, ceeConsumoValor: ceeConsumoValor,
         ceeEmisionesLetra: ceeEmisionesLetra, ceeEmisionesValor: ceeEmisionesValor,
