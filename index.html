@@ -2008,6 +2008,7 @@
           <div class="add-piso-field"><label>Nombre</label><input type="text" id="lvNombre"></div>
           <div class="add-piso-field"><label>Teléfono</label><input type="text" id="lvTelefono"></div>
         </div>
+        <div id="lvTelefonoDupWarning" class="paste-status error" style="display:none;margin-bottom:12px;"></div>
         <div class="reco-row-2">
           <div class="add-piso-field"><label>Email</label><input type="text" id="lvEmail"></div>
           <div class="add-piso-field">
@@ -5967,8 +5968,47 @@
     addLeadVentaBtn.disabled = !(lvNombre.value.trim() && lvTelefono.value.trim());
     if(!editingLeadVentaFecha) leadVentaHint.textContent = addLeadVentaBtn.disabled ? 'Escribe al menos el nombre y el teléfono (o pega el contacto arriba).' : '';
   }
+
+  // ---- Aviso de teléfono duplicado en Leads Idealista (mismo activo u otro) ----
+  const lvTelefonoDupWarning = document.getElementById('lvTelefonoDupWarning');
+  function telDigitsVenta(t){
+    let d = String(t || '').replace(/[^0-9]/g, '');
+    // Normaliza prefijos de España (+34 / 0034) para que "611 222 333" y
+    // "+34 611 222 333" se detecten como el mismo número.
+    if(d.length > 9 && d.startsWith('0034')) d = d.slice(4);
+    else if(d.length > 9 && d.startsWith('34')) d = d.slice(2);
+    return d;
+  }
+  function buscarDuplicadoLeadVenta(telefono, excluirFecha){
+    const digits = telDigitsVenta(telefono);
+    if(!digits) return null;
+    return cachedLeadsVenta.find(l => {
+      if(excluirFecha && String(l['Fecha']) === String(excluirFecha)) return false;
+      return telDigitsVenta(l['Teléfono']) === digits;
+    }) || null;
+  }
+  function actualizarAvisoDuplicadoLeadVenta(){
+    const dup = buscarDuplicadoLeadVenta(lvTelefono.value, editingLeadVentaFecha);
+    if(!dup){
+      lvTelefonoDupWarning.style.display = 'none';
+      lvTelefonoDupWarning.textContent = '';
+      return;
+    }
+    const propDup = (dup['Propiedad'] || '').trim();
+    const propActual = lvPropiedad.value || '';
+    const mismoActivo = propActual && propDup && propActual === propDup;
+    const nombreDup = dup['Nombre'] || 'otro contacto';
+    let msg = '⚠️ Este teléfono ya está guardado ';
+    if(mismoActivo) msg += 'en este mismo activo';
+    else if(propDup) msg += 'en otro activo: "' + propDup + '"';
+    else msg += 'sin un activo asignado';
+    msg += ' — lead de "' + nombreDup + '".';
+    lvTelefonoDupWarning.textContent = msg;
+    lvTelefonoDupWarning.style.display = 'block';
+  }
   lvNombre.addEventListener('input', checkLeadVentaReady);
-  lvTelefono.addEventListener('input', checkLeadVentaReady);
+  lvTelefono.addEventListener('input', ()=>{ checkLeadVentaReady(); actualizarAvisoDuplicadoLeadVenta(); });
+  lvPropiedad.addEventListener('change', actualizarAvisoDuplicadoLeadVenta);
 
   let editingLeadVentaFecha = null;
   function resetLeadVentaForm(){
@@ -5982,6 +6022,7 @@
     addLeadVentaBtn.textContent = 'Añadir lead de venta';
     cancelLeadVentaEditBtn.style.display = 'none';
     checkLeadVentaReady();
+    actualizarAvisoDuplicadoLeadVenta();
   }
   cancelLeadVentaEditBtn.addEventListener('click', ()=>{ resetLeadVentaForm(); hideAddLeadVentaCard(); });
 
@@ -6012,10 +6053,20 @@
     cancelLeadVentaEditBtn.style.display = 'block';
     leadVentaHint.textContent = 'Editando a ' + (l['Nombre'] || 'este lead');
     checkLeadVentaReady();
+    actualizarAvisoDuplicadoLeadVenta();
     document.getElementById('addLeadVentaCard').scrollIntoView({ behavior:'smooth', block:'start' });
   }
 
   addLeadVentaBtn.addEventListener('click', async ()=>{
+    const dupAlGuardar = buscarDuplicadoLeadVenta(lvTelefono.value, editingLeadVentaFecha);
+    if(dupAlGuardar){
+      const propDup = (dupAlGuardar['Propiedad'] || '').trim();
+      const propActual = lvPropiedad.value || '';
+      const mismoActivo = propActual && propDup && propActual === propDup;
+      const donde = mismoActivo ? 'en este mismo activo' : (propDup ? 'en otro activo: "' + propDup + '"' : 'sin un activo asignado');
+      const seguro = confirm('Este teléfono ya está guardado ' + donde + ', en el lead de "' + (dupAlGuardar['Nombre'] || 'otro contacto') + '".\n\n¿Quieres guardarlo igualmente?');
+      if(!seguro) return;
+    }
     addLeadVentaBtn.disabled = true;
     const wasEditing = !!editingLeadVentaFecha;
     addLeadVentaBtn.textContent = wasEditing ? 'Guardando...' : 'Añadiendo...';
