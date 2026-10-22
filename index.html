@@ -5695,6 +5695,7 @@
             <button class="pv-editar-btn edit-reco-btn" style="flex:1;width:auto;margin-top:0;">✎ Editar propiedad</button>
             <button class="delete-piso-btn" style="flex:1;">Eliminar</button>
           </div>
+          <button class="pv-flip-operacion-btn edit-reco-btn" style="width:100%;margin-top:6px;">${esAlquilerCard ? '€ Pasar a venta' : '🔑 Pasar a alquiler'}</button>
         </div>
       `;
       card.querySelector('.pv-editar-btn').addEventListener('click', ()=> openPropVentaEdit(p));
@@ -5815,6 +5816,15 @@
           }
         });
       });
+      card.querySelector('.pv-flip-operacion-btn').addEventListener('click', ()=>{
+        openConfirmVenta(
+          ()=> cambiarOperacionPropVenta(p),
+          esAlquilerCard ? '¿Pasar esta propiedad a venta?' : '¿Pasar esta propiedad a alquiler?',
+          esAlquilerCard
+            ? 'Se mostrará como una propiedad en venta en el mapa y en los filtros.'
+            : 'Ya no se mostrará como en venta: pasará a aparecer como alquiler en el mapa y en los filtros, igual que en Idealista cuando un piso cambia de anuncio.'
+        );
+      });
       card.querySelector('.delete-piso-btn').addEventListener('click', ()=>{
         openConfirmVenta(
           async ()=>{
@@ -5846,6 +5856,39 @@
       renderPropiedadesVentaCards();
       populateLvPropiedadSelect();
     } catch(err){ alert('No se pudo guardar. Revisa tu conexión.'); }
+  }
+
+  // NUEVO: cambio rápido Venta <-> Alquiler desde la propia tarjeta (sin abrir
+  // el formulario completo) — igual que en Idealista cuando un piso que
+  // estaba en venta pasa a alquiler. Solo toca Operación y los campos que
+  // únicamente aplican al alquiler (Subtipo/Fianza/GastosIbi/TipoNegocio);
+  // el resto de la propiedad (fotos, descripción, ubicación...) no se tocan.
+  async function cambiarOperacionPropVenta(p){
+    const operacionActual = (p['Operación'] || 'Venta').trim() || 'Venta';
+    const nuevaOperacion = operacionActual === 'Alquiler' ? 'Venta' : 'Alquiler';
+    const nuevoSubtipo = nuevaOperacion === 'Alquiler' ? ((p['Subtipo'] || '').trim() || 'Vivienda') : '';
+    const nuevaFianza = nuevaOperacion === 'Alquiler' ? (p['Fianza'] || '') : '';
+    const nuevoGastosIbi = nuevaOperacion === 'Alquiler' ? (p['GastosIbi'] || '') : '';
+    const nuevoTipoNegocio = (nuevaOperacion === 'Alquiler' && nuevoSubtipo === 'Local') ? (p['TipoNegocio'] || '') : '';
+    try{
+      await fetch(APPS_SCRIPT_URL_VENTA, {
+        method:'POST', mode:'no-cors',
+        body: JSON.stringify({
+          action: 'actualizar_operacion_propiedad_venta',
+          direccion: p['Dirección'], link: p['Link'],
+          operacion: nuevaOperacion, subtipo: nuevoSubtipo, fianza: nuevaFianza,
+          gastosIbi: nuevoGastosIbi, tipoNegocio: nuevoTipoNegocio
+        })
+      });
+      p['Operación'] = nuevaOperacion;
+      p['Subtipo'] = nuevoSubtipo;
+      p['Fianza'] = nuevaFianza;
+      p['GastosIbi'] = nuevoGastosIbi;
+      p['TipoNegocio'] = nuevoTipoNegocio;
+      renderPropiedadesVentaCards();
+      populateLvPropiedadSelect();
+      if(typeof renderLeadsVenta === 'function' && cachedLeadsVenta.length) renderLeadsVenta();
+    } catch(err){ alert('No se pudo cambiar la operación. Revisa tu conexión.'); }
   }
 
   function populateLvPropiedadSelect(){
