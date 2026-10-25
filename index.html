@@ -731,6 +731,7 @@
   .informes-panel{
     position:absolute;top:calc(100% + 12px);right:0;background:var(--white);border-radius:16px;
     box-shadow:0 14px 40px rgba(22,50,74,0.32);padding:18px;width:320px;
+    max-height:calc(100vh - 110px);overflow-y:auto;-webkit-overflow-scrolling:touch;
     opacity:0;visibility:hidden;transform:translateY(-8px);transition:all .2s var(--ease);z-index:300;
   }
   .informes-panel.open{opacity:1;visibility:visible;transform:translateY(0);}
