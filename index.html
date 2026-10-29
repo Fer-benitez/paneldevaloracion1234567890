@@ -541,6 +541,22 @@
   .lead-card .name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;color:var(--navy-darker);margin-bottom:4px;}
   .lead-card .meta{font-size:12.5px;color:var(--muted);margin-bottom:8px;}
   .lead-card .notes{font-size:13px;color:var(--text);margin-bottom:10px;line-height:1.5;}
+  .lead-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .lead-tag{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;
+  }
+  .tag-asalariado-mas1{background:#e5f3ec;color:#2e8b57;}
+  .tag-asalariado-menos1{background:#fff3da;color:#b5790f;}
+  .tag-autonomo{background:#fdeee0;color:#b5651d;}
+  .tag-espana{background:#e5f3ec;color:#2e8b57;}
+  .tag-nomada{background:#fbe8ef;color:#c23a6a;}
+  .tag-ocupantes{background:#eef1f5;color:#346B93;}
+  .tag-ingresos{background:#fff7e0;color:#8a6d17;}
+  .tag-pct-ok{background:#e5f3ec;color:#2e8b57;}
+  .tag-pct-warn{background:#fff3da;color:#b5790f;}
+  .tag-pct-high{background:#fde6e6;color:#c23a3a;}
+  .tag-neutral{background:#eef1f5;color:#64758a;}
   .lead-card .actions{display:flex;gap:8px;flex-wrap:wrap;}
   .lead-card .actions a, .lead-card .actions button{
     font-size:12px;font-weight:700;padding:8px 12px;border-radius:7px;border:none;cursor:pointer;
@@ -4077,6 +4093,44 @@
       const visitaHtml = (l['Día visita'] || horaLimpia)
         ? `<div class="meta visita-programada">📅 Visita: <strong>${l['Día visita'] || ''}</strong>${horaLimpia ? ` <span class="hora-pill">${horaLimpia}</span>` : ''}</div>`
         : '';
+
+      function tagClassFirmante(val){
+        if(val === 'Asalariado +1 año') return 'tag-asalariado-mas1';
+        if(val === 'Asalariado -1 año') return 'tag-asalariado-menos1';
+        if(val === 'Asalariado') return 'tag-asalariado-mas1'; // leads antiguos, antes de separar por antigüedad
+        if(val === 'Autónomo') return 'tag-autonomo';
+        return 'tag-neutral';
+      }
+      function tagClassTrabajador(val){
+        if(val === 'Trabajo en España') return 'tag-espana';
+        if(val === 'Nómada digital') return 'tag-nomada';
+        return 'tag-neutral';
+      }
+      function tagClassPct(pct){
+        const n = parseFloat(pct);
+        if(isNaN(n)) return 'tag-neutral';
+        if(n <= 33) return 'tag-pct-ok';
+        if(n <= 40) return 'tag-pct-warn';
+        return 'tag-pct-high';
+      }
+      const ocupantes = l['Ocupantes'] || '';
+      const firmante1 = l['Situación laboral 1er firmante'] || '';
+      const firmante2 = l['Situación laboral 2º firmante'] || '';
+      const ingresos = l['Ingresos mensuales'] || '';
+      const pctAlquiler = l['% Alquiler/ingresos'] || '';
+      const tipoTrabajador = l['Tipo trabajador'] || '';
+      const tieneSegundoFirmante = firmante2 && firmante2 !== 'No hay segundo firmante';
+      const perfilTagsHtml = (ocupantes || firmante1 || firmante2 || ingresos || tipoTrabajador) ? `
+        <div class="lead-tags">
+          ${ocupantes ? `<span class="lead-tag tag-ocupantes">👥 ${ocupantes} ${ocupantes == 1 ? 'ocupante' : 'ocupantes'}</span>` : ''}
+          ${firmante1 ? `<span class="lead-tag ${tagClassFirmante(firmante1)}">1º firmante: ${firmante1}</span>` : ''}
+          ${tieneSegundoFirmante ? `<span class="lead-tag ${tagClassFirmante(firmante2)}">2º firmante: ${firmante2}</span>` : (firmante2 ? `<span class="lead-tag tag-neutral">Sin 2º firmante</span>` : '')}
+          ${tipoTrabajador ? `<span class="lead-tag ${tagClassTrabajador(tipoTrabajador)}">${tipoTrabajador}</span>` : ''}
+          ${ingresos ? `<span class="lead-tag tag-ingresos">💶 ${ingresos} €/mes</span>` : ''}
+          ${pctAlquiler ? `<span class="lead-tag ${tagClassPct(pctAlquiler)}">🏠 alquiler = ${pctAlquiler}% del ingreso</span>` : ''}
+        </div>
+      ` : '';
+
       card.innerHTML = `
         <div class="lead-number">Lead #${numero || '—'}</div>
         <label class="lead-select-check"><input type="checkbox" class="lead-checkbox"> Seleccionar</label>
@@ -4085,6 +4139,7 @@
         <div class="meta">${l['Fecha'] ? formatDate(l['Fecha']) : '—'} · ${l['Teléfono'] || '—'}${l['Piso interés'] ? ' · ' + l['Piso interés'] : ''}</div>
         ${visitaHtml}
         ${l['Disponibilidad visita'] ? `<div class="meta">🗨️ Dijo que podía: ${l['Disponibilidad visita']}</div>` : ''}
+        ${perfilTagsHtml}
         ${l['Presentación'] ? `<div class="notes"><strong>Sobre ellos:</strong> ${l['Presentación']}</div>` : ''}
         ${l['Trabajo e ingresos'] ? `<div class="notes"><strong>Trabajo/ingresos:</strong> ${l['Trabajo e ingresos']}</div>` : ''}
         <div class="meta">${l['Consentimiento RGPD'] ? '✓ RGPD aceptado' + (l['Fecha consentimiento'] ? ' · ' + l['Fecha consentimiento'] : '') : '✕ RGPD no consta'}</div>
