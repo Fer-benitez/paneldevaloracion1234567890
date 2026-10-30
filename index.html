@@ -886,6 +886,7 @@
   .vcal-day.vcal-hoy .vcal-day-num{color:var(--gold-dark);}
   .vcal-day-chip{font-size:10px;font-weight:700;padding:2px 5px;border-radius:5px;background:#fdf6e2;color:var(--gold-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .vcal-day-chip.alquiler{background:#e7f0ff;color:var(--alq-blue-dark);}
+  .vcal-day-chip.origen-l{background:#e3f6ea;color:#1a7d44;}
   .vcal-day-chip.realizada{background:#f0f0f0;color:#8a8a8a;text-decoration:line-through;}
   .vcal-day-more{font-size:10px;font-weight:700;color:var(--muted,#8a8a8a);}
 
@@ -897,10 +898,12 @@
   .vcal-day-popup-body{padding:10px 18px 18px;display:flex;flex-direction:column;gap:10px;}
   .vcal-visita-item{border:1.5px solid var(--border);border-left:4px solid var(--gold-dark);border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .12s;}
   .vcal-visita-item.alquiler{border-left-color:var(--alq-blue-dark);}
+  .vcal-visita-item.origen-l{border-left-color:#1a7d44;}
   .vcal-visita-item:hover{border-color:var(--navy);}
   .vcal-visita-item.realizada{opacity:.65;}
   .vcal-visita-hora{display:inline-block;background:var(--gold-dark);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;margin-right:8px;}
   .vcal-visita-hora.alquiler{background:var(--alq-blue-dark);}
+  .vcal-visita-hora.origen-l{background:#1a7d44;}
   .vcal-visita-hora.sin-hora{background:var(--muted,#8a8a8a);}
   .vcal-visita-nombre{font-weight:800;font-size:13.5px;color:var(--navy-dark);}
   .vcal-visita-meta{font-size:12px;color:var(--muted,#8a8a8a);margin-top:2px;}
@@ -1722,8 +1725,34 @@
       </div>
       <div class="leads-column" id="leadsColN2">
         <div class="leads-column-title"><span class="leads-num">2</span>Visitas</div>
+        <div class="visitas-view-toggle">
+          <button type="button" class="visitas-view-btn active" id="visitasViewListaBtnL">📋 Lista</button>
+          <button type="button" class="visitas-view-btn" id="visitasViewCalBtnL">📅 Calendario</button>
+        </div>
         <div id="leadsGridN2"></div>
         <div class="empty-state" id="emptyLeadsN2" style="display:none;">Sin leads en Nivel 2.</div>
+
+        <div id="visitasCalendarioL" style="display:none;">
+          <div class="vcal-header">
+            <button type="button" class="vcal-nav" id="vcalPrevBtnL">←</button>
+            <div class="vcal-mes" id="vcalMesLabelL">—</div>
+            <button type="button" class="vcal-nav" id="vcalNextBtnL">→</button>
+            <button type="button" class="vcal-hoy-btn" id="vcalHoyBtnL">Hoy</button>
+          </div>
+          <div class="vcal-grid" id="vcalGridL"></div>
+          <p class="section-desc" style="margin-top:10px;font-size:11.5px;">Es el mismo calendario que ves en Leads Idealista → Visitas: junta las visitas de aquí (🟢 L) y las de Idealista (€ Venta / 🔑 Alquiler) en un solo sitio.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popup del día: lista de visitas de la fecha pinchada en el calendario (mismo calendario compartido con Leads Idealista) -->
+    <div class="vcal-day-overlay" id="vcalDayOverlayL" style="display:none;">
+      <div class="vcal-day-popup">
+        <div class="vcal-day-popup-header">
+          <div class="vcal-day-popup-title" id="vcalDayTitleL">—</div>
+          <button type="button" class="vcal-day-popup-close" id="vcalDayCloseBtnL">✕</button>
+        </div>
+        <div class="vcal-day-popup-body" id="vcalDayBodyL"></div>
       </div>
     </div>
   </div>
@@ -2182,6 +2211,7 @@
             <button type="button" class="vcal-hoy-btn" id="vcalHoyBtn">Hoy</button>
           </div>
           <div class="vcal-grid" id="vcalGrid"></div>
+          <p class="section-desc" style="margin-top:10px;font-size:11.5px;">Es el mismo calendario que ves en Leads (L) → Visitas: junta las visitas de aquí (€ Venta / 🔑 Alquiler) y las de L (🟢 WhatsApp) en un solo sitio.</p>
         </div>
       </div>
     </div>
@@ -2315,6 +2345,13 @@
       if(btn.dataset.tab === 'leads' && !leadsLoaded){
         leadsLoaded = true;
         loadLeads();
+        // El calendario de Visitas es compartido con Leads Idealista: para que
+        // ya muestre esas visitas aunque todavía no se haya abierto esa
+        // pestaña, se cargan también sus leads en segundo plano.
+        if(!ventaLoaded){
+          ventaLoaded = true;
+          loadPropiedadesVenta().then(()=> loadLeadsVenta());
+        }
       }
       if(btn.dataset.tab === 'venta' && !ventaLoaded){
         ventaLoaded = true;
@@ -2322,6 +2359,13 @@
         // en memoria (cachedPropiedadesVenta) para poder mostrar el mensaje de
         // WhatsApp guardado en su piso en vez del genérico por defecto.
         loadPropiedadesVenta().then(()=> loadLeadsVenta());
+      }
+      // El calendario de Visitas de Idealista también es compartido con L: si
+      // se entra directamente a Idealista sin haber abierto L, se cargan sus
+      // leads en segundo plano para que el calendario los tenga desde ya.
+      if(btn.dataset.tab === 'venta' && !leadsLoaded){
+        leadsLoaded = true;
+        loadLeads();
       }
       // Super Contactos usa los mismos leads de Idealista (cachedLeadsVenta) —
       // si todavía no se han cargado nunca, los carga igual que la pestaña
@@ -4006,6 +4050,11 @@
         enGrupo.forEach(l => leadsGridN2.appendChild(buildLeadCard(l, '1', numberMap.get(leadKey(l)))));
       });
     }
+
+    // El calendario es compartido con Leads Idealista: si cualquiera de los
+    // dos widgets está abierto en vista calendario, se refresca al cambiar
+    // algo aquí en L (nueva visita, hora, marcada como realizada...).
+    if(typeof refrescarCalendariosVisitasSiActivos === 'function') refrescarCalendariosVisitasSiActivos();
   }
 
   let loadLeadsInFlight = false;
@@ -6684,20 +6733,22 @@
     // dos quedan sincronizados automáticamente sin tener que acordarse de
     // llamarlo aparte cada vez que algo cambia (estrella, fotos, campos...).
     renderSuperContactos();
-    if(vcalViewActiva === 'calendario') renderVisitasCalendario();
+    refrescarCalendariosVisitasSiActivos();
   }
 
-  // ==================== CALENDARIO DE VISITAS ====================
-  // Vista alternativa a la lista Hoy/Mañana/Otro: un calendario mensual para
-  // cuando las visitas ya no caen solo en esos 3 cubos sino repartidas en
-  // distintos días de la semana o la semana que viene. Junta Venta Y Alquiler
-  // (toda la cartera de Fer), no solo la pestaña activa, porque el objetivo
-  // es ver de un vistazo cuántas visitas hay un día concreto y con quién.
-  let vcalViewActiva = 'lista';
-  let vcalFechaMes = new Date(); vcalFechaMes.setDate(1); vcalFechaMes.setHours(0,0,0,0);
+  // ==================== CALENDARIO DE VISITAS (COMPARTIDO: L + Idealista) ====================
+  // Un único calendario de datos (visitasDelMesUnificado) alimenta DOS widgets
+  // de calendario en pantalla — uno en Leads (L) y otro en Leads Idealista —
+  // para que lo que se anota en un sitio (día/hora de visita, visita
+  // realizada...) se vea también en el otro, sin tener que entrar a las dos
+  // secciones para saber qué visitas hay un día dado. Vista alternativa a la
+  // lista Hoy/Mañana/Otro: un calendario mensual para cuando las visitas no
+  // caen solo en esos 3 cubos sino repartidas en días concretos.
   const VCAL_DOW = ['L','M','X','J','V','S','D'];
   const VCAL_MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
+  // Fecha/estado de una visita de Leads Idealista (usa 'VisitaRealizada' +
+  // 'VisitaRealizadaFecha', que SÍ guardan cuándo se marcó como hecha).
   function fechaVisitaLead(l){
     const realizada = (l['VisitaRealizada'] || '').toString().trim() === 'Sí';
     if(realizada){
@@ -6713,150 +6764,245 @@
     const especifica = parseFechaOtroDisplay(dia);
     return especifica ? { fecha: especifica, realizada: false } : null;
   }
+  // Fecha/estado de una visita de Leads (L) — usa 'Visita realizada' (sin
+  // fecha propia de cuándo se marcó, ese dato no se guarda en este sistema),
+  // así que se ubica siempre por 'Día visita'/'Hora visita', realizada o no.
+  function fechaVisitaLeadL(l){
+    const dia = (l['Día visita'] || '').toString().trim();
+    if(!dia) return null;
+    const realizada = (l['Visita realizada'] || '').toString().trim() === 'Sí';
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    if(dia === 'Hoy') return { fecha: hoy, realizada: realizada };
+    if(dia === 'Mañana'){ const m = new Date(hoy); m.setDate(m.getDate()+1); return { fecha: m, realizada: realizada }; }
+    if(dia === 'Otro') return null;
+    const especifica = parseFechaOtroDisplay(dia);
+    return especifica ? { fecha: especifica, realizada: realizada } : null;
+  }
   function mismaFechaDia(a, b){
     return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   }
-  function visitasDelMes(anio, mes){
-    // { diaDelMes: [ {lead, fecha, realizada, numero} ... ] }
-    // OJO: se recorren TODOS los leads (Nivel 1 "Entrada" y Nivel 2 "Visitas"),
-    // no solo los que ya están en la columna Visitas — el día/hora de la
-    // visita se puede rellenar desde que se crea el lead, antes de moverlo a
-    // Nivel 2, y el calendario es la agenda completa, no solo ese cajón.
+  function visitasDelMesUnificado(anio, mes){
+    // { diaDelMes: [ {lead, fecha, realizada, numero, origen, nombre, telefono, propiedad, operacion} ... ] }
+    // OJO: se recorren TODOS los leads (Nivel 1 "Entrada" y Nivel 2 "Visitas")
+    // de los DOS sistemas — Leads Idealista (cachedLeadsVenta) y Leads de
+    // WhatsApp (cachedLeads) — no solo los que ya están en la columna
+    // Visitas: el día/hora se puede rellenar desde que se crea el lead, y el
+    // calendario es la agenda completa compartida entre las dos secciones.
     const mapa = new Map();
-    const numeros = numerosEntradaLeadsVenta();
+    const numerosVenta = numerosEntradaLeadsVenta();
     cachedLeadsVenta.forEach(l=>{
       const info = fechaVisitaLead(l);
       if(!info) return;
       if(info.fecha.getFullYear() !== anio || info.fecha.getMonth() !== mes) return;
       const dia = info.fecha.getDate();
       if(!mapa.has(dia)) mapa.set(dia, []);
-      mapa.get(dia).push({ lead: l, fecha: info.fecha, realizada: info.realizada, numero: numeros.get(claveLeadVenta(l)) });
+      mapa.get(dia).push({
+        lead: l, fecha: info.fecha, realizada: info.realizada,
+        numero: numerosVenta.get(claveLeadVenta(l)),
+        origen: 'Idealista',
+        nombre: l['Nombre'] || 'Sin nombre',
+        telefono: l['Teléfono'] || '',
+        propiedad: l['Propiedad'] || 'Sin piso',
+        operacion: ((l['Operación'] || 'Venta').trim() || 'Venta')
+      });
+    });
+    const numerosL = getLeadNumberMap();
+    cachedLeads.forEach(l=>{
+      const info = fechaVisitaLeadL(l);
+      if(!info) return;
+      if(info.fecha.getFullYear() !== anio || info.fecha.getMonth() !== mes) return;
+      const dia = info.fecha.getDate();
+      if(!mapa.has(dia)) mapa.set(dia, []);
+      mapa.get(dia).push({
+        lead: l, fecha: info.fecha, realizada: info.realizada,
+        numero: numerosL.get(leadKey(l)),
+        origen: 'L',
+        nombre: l['Nombre'] || 'Sin nombre',
+        telefono: l['Teléfono'] || '',
+        propiedad: l['Piso interés'] || 'Sin piso',
+        operacion: 'Alquiler'
+      });
     });
     mapa.forEach(arr => arr.sort((a,b)=>{
-      const ha = formatHoraVenta(a.lead['Hora visita']) || '99:99';
-      const hb = formatHoraVenta(b.lead['Hora visita']) || '99:99';
+      const ha = formatHora(a.lead['Hora visita']) || '99:99';
+      const hb = formatHora(b.lead['Hora visita']) || '99:99';
       return ha.localeCompare(hb);
     }));
     return mapa;
   }
-  function renderVisitasCalendario(){
-    const grid = document.getElementById('vcalGrid');
-    const label = document.getElementById('vcalMesLabel');
-    if(!grid || !label) return;
-    const anio = vcalFechaMes.getFullYear();
-    const mes = vcalFechaMes.getMonth();
-    label.textContent = VCAL_MESES[mes] + ' de ' + anio;
-    const visitasPorDia = visitasDelMes(anio, mes);
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-
-    grid.innerHTML = '';
-    VCAL_DOW.forEach(d=>{
-      const el = document.createElement('div');
-      el.className = 'vcal-dow';
-      el.textContent = d;
-      grid.appendChild(el);
-    });
-
-    const primerDia = new Date(anio, mes, 1);
-    // getDay(): 0=domingo..6=sábado → lo pasamos a L..D (0=lunes..6=domingo)
-    const offset = (primerDia.getDay() + 6) % 7;
-    const diasEnMes = new Date(anio, mes + 1, 0).getDate();
-
-    for(let i = 0; i < offset; i++){
-      const vacio = document.createElement('div');
-      vacio.className = 'vcal-day vcal-empty';
-      grid.appendChild(vacio);
-    }
-
-    for(let dia = 1; dia <= diasEnMes; dia++){
-      const fechaCelda = new Date(anio, mes, dia);
-      const visitas = visitasPorDia.get(dia) || [];
-      const cell = document.createElement('div');
-      cell.className = 'vcal-day' + (mismaFechaDia(fechaCelda, hoy) ? ' vcal-hoy' : '') + (visitas.length === 0 ? ' vcal-sin-visitas' : '');
-      const numEl = document.createElement('div');
-      numEl.className = 'vcal-day-num';
-      numEl.textContent = dia;
-      cell.appendChild(numEl);
-      visitas.slice(0, 3).forEach(v=>{
-        const esAlquiler = ((v.lead['Operación'] || 'Venta').trim() || 'Venta') === 'Alquiler';
-        const chip = document.createElement('div');
-        chip.className = 'vcal-day-chip' + (esAlquiler ? ' alquiler' : '') + (v.realizada ? ' realizada' : '');
-        const hora = formatHoraVenta(v.lead['Hora visita']);
-        chip.textContent = (hora ? hora + ' ' : '') + (v.lead['Nombre'] || 'Sin nombre');
-        cell.appendChild(chip);
-      });
-      if(visitas.length > 3){
-        const mas = document.createElement('div');
-        mas.className = 'vcal-day-more';
-        mas.textContent = '+' + (visitas.length - 3) + ' más';
-        cell.appendChild(mas);
-      }
-      if(visitas.length > 0){
-        cell.addEventListener('click', ()=> abrirVcalDiaPopup(fechaCelda, visitas));
-      }
-      grid.appendChild(cell);
+  // Lleva al lead correspondiente (cambiando de pestaña si hace falta) desde
+  // el popup del día, sea de L o de Idealista.
+  function irAVisitaDesdeCalendario(v){
+    if(!v.numero) return;
+    if(v.origen === 'Idealista'){
+      const tabBtn = document.querySelector('.tab-btn[data-tab="venta"]');
+      if(tabBtn && !tabBtn.classList.contains('active')) tabBtn.click();
+      const listaBtn = document.getElementById('visitasViewListaBtn');
+      if(listaBtn) listaBtn.click();
+      goToLeadVentaNumber(v.numero);
+    } else {
+      const tabBtn = document.querySelector('.tab-btn[data-tab="leads"]');
+      if(tabBtn && !tabBtn.classList.contains('active')) tabBtn.click();
+      const listaBtn = document.getElementById('visitasViewListaBtnL');
+      if(listaBtn) listaBtn.click();
+      goToLeadNumber(v.numero);
     }
   }
-  function abrirVcalDiaPopup(fecha, visitas){
-    const overlay = document.getElementById('vcalDayOverlay');
-    const title = document.getElementById('vcalDayTitle');
-    const body = document.getElementById('vcalDayBody');
-    if(!overlay || !title || !body) return;
-    title.textContent = fecha.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
-    body.innerHTML = '';
-    visitas.forEach(v=>{
-      const esAlquiler = ((v.lead['Operación'] || 'Venta').trim() || 'Venta') === 'Alquiler';
-      const hora = formatHoraVenta(v.lead['Hora visita']);
-      const item = document.createElement('div');
-      item.className = 'vcal-visita-item' + (esAlquiler ? ' alquiler' : '') + (v.realizada ? ' realizada' : '');
-      item.innerHTML = `
-        <span class="vcal-visita-hora${esAlquiler ? ' alquiler' : ''}${hora ? '' : ' sin-hora'}">${hora ? escVenta(hora) : '—'}</span>
-        <span class="vcal-visita-nombre">${escVenta(v.lead['Nombre'] || 'Sin nombre')}</span>
-        <div class="vcal-visita-meta">${esAlquiler ? '🔑 Alquiler' : '€ Venta'} · ${escVenta(v.lead['Propiedad'] || 'Sin piso')}${v.lead['Teléfono'] ? ' · ' + escVenta(v.lead['Teléfono']) : ''}${v.realizada ? ' · ✓ Realizada' : ''}</div>
-      `;
-      item.addEventListener('click', ()=>{
-        overlay.style.display = 'none';
-        if(!v.numero) return;
-        document.getElementById('visitasViewListaBtn').click();
-        goToLeadVentaNumber(v.numero);
+  // Fábrica del widget de calendario: crea una instancia independiente (su
+  // propio mes navegado y su propio estado lista/calendario) pero las dos
+  // instancias leen SIEMPRE de visitasDelMesUnificado(), así que muestran
+  // exactamente la misma información aunque vivan en pestañas distintas.
+  function crearCalendarioVisitasCompartido(cfg){
+    let viewActiva = 'lista';
+    let fechaMes = new Date(); fechaMes.setDate(1); fechaMes.setHours(0,0,0,0);
+
+    function render(){
+      const grid = document.getElementById(cfg.gridId);
+      const label = document.getElementById(cfg.labelId);
+      if(!grid || !label) return;
+      const anio = fechaMes.getFullYear();
+      const mes = fechaMes.getMonth();
+      label.textContent = VCAL_MESES[mes] + ' de ' + anio;
+      const visitasPorDia = visitasDelMesUnificado(anio, mes);
+      const hoy = new Date(); hoy.setHours(0,0,0,0);
+
+      grid.innerHTML = '';
+      VCAL_DOW.forEach(d=>{
+        const el = document.createElement('div');
+        el.className = 'vcal-dow';
+        el.textContent = d;
+        grid.appendChild(el);
       });
-      body.appendChild(item);
+
+      const primerDia = new Date(anio, mes, 1);
+      // getDay(): 0=domingo..6=sábado → lo pasamos a L..D (0=lunes..6=domingo)
+      const offset = (primerDia.getDay() + 6) % 7;
+      const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+
+      for(let i = 0; i < offset; i++){
+        const vacio = document.createElement('div');
+        vacio.className = 'vcal-day vcal-empty';
+        grid.appendChild(vacio);
+      }
+
+      for(let dia = 1; dia <= diasEnMes; dia++){
+        const fechaCelda = new Date(anio, mes, dia);
+        const visitas = visitasPorDia.get(dia) || [];
+        const cell = document.createElement('div');
+        cell.className = 'vcal-day' + (mismaFechaDia(fechaCelda, hoy) ? ' vcal-hoy' : '') + (visitas.length === 0 ? ' vcal-sin-visitas' : '');
+        const numEl = document.createElement('div');
+        numEl.className = 'vcal-day-num';
+        numEl.textContent = dia;
+        cell.appendChild(numEl);
+        visitas.slice(0, 3).forEach(v=>{
+          const esL = v.origen === 'L';
+          const esAlquiler = v.operacion === 'Alquiler';
+          const chip = document.createElement('div');
+          chip.className = 'vcal-day-chip' + (esL ? ' origen-l' : (esAlquiler ? ' alquiler' : '')) + (v.realizada ? ' realizada' : '');
+          const hora = formatHora(v.lead['Hora visita']);
+          chip.textContent = (esL ? 'L· ' : '') + (hora ? hora + ' ' : '') + v.nombre;
+          cell.appendChild(chip);
+        });
+        if(visitas.length > 3){
+          const mas = document.createElement('div');
+          mas.className = 'vcal-day-more';
+          mas.textContent = '+' + (visitas.length - 3) + ' más';
+          cell.appendChild(mas);
+        }
+        if(visitas.length > 0){
+          cell.addEventListener('click', ()=> abrirDiaPopup(fechaCelda, visitas));
+        }
+        grid.appendChild(cell);
+      }
+    }
+
+    function abrirDiaPopup(fecha, visitas){
+      const overlay = document.getElementById(cfg.overlayId);
+      const title = document.getElementById(cfg.titleId);
+      const body = document.getElementById(cfg.bodyId);
+      if(!overlay || !title || !body) return;
+      title.textContent = fecha.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+      body.innerHTML = '';
+      visitas.forEach(v=>{
+        const esL = v.origen === 'L';
+        const esAlquiler = v.operacion === 'Alquiler';
+        const hora = formatHora(v.lead['Hora visita']);
+        const item = document.createElement('div');
+        item.className = 'vcal-visita-item' + (esL ? ' origen-l' : (esAlquiler ? ' alquiler' : '')) + (v.realizada ? ' realizada' : '');
+        const origenEtiqueta = esL ? '🟢 Leads WhatsApp (L)' : (esAlquiler ? '🔑 Alquiler · Idealista' : '€ Venta · Idealista');
+        item.innerHTML = `
+          <span class="vcal-visita-hora${esL ? ' origen-l' : (esAlquiler ? ' alquiler' : '')}${hora ? '' : ' sin-hora'}">${hora ? escVenta(hora) : '—'}</span>
+          <span class="vcal-visita-nombre">${escVenta(v.nombre)}</span>
+          <div class="vcal-visita-meta">${origenEtiqueta} · ${escVenta(v.propiedad)}${v.telefono ? ' · ' + escVenta(v.telefono) : ''}${v.realizada ? ' · ✓ Realizada' : ''}</div>
+        `;
+        item.addEventListener('click', ()=>{
+          overlay.style.display = 'none';
+          irAVisitaDesdeCalendario(v);
+        });
+        body.appendChild(item);
+      });
+      overlay.style.display = 'flex';
+    }
+
+    document.getElementById(cfg.listaBtnId).addEventListener('click', ()=>{
+      viewActiva = 'lista';
+      document.getElementById(cfg.listaBtnId).classList.add('active');
+      document.getElementById(cfg.calBtnId).classList.remove('active');
+      const lista = document.getElementById(cfg.listaContainerId);
+      lista.style.display = '';
+      const empty = document.getElementById(cfg.emptyId);
+      if(empty) empty.style.display = (lista.children.length === 0) ? 'block' : 'none';
+      document.getElementById(cfg.calendarContainerId).style.display = 'none';
     });
-    overlay.style.display = 'flex';
+    document.getElementById(cfg.calBtnId).addEventListener('click', ()=>{
+      viewActiva = 'calendario';
+      document.getElementById(cfg.calBtnId).classList.add('active');
+      document.getElementById(cfg.listaBtnId).classList.remove('active');
+      document.getElementById(cfg.listaContainerId).style.display = 'none';
+      const empty = document.getElementById(cfg.emptyId);
+      if(empty) empty.style.display = 'none';
+      document.getElementById(cfg.calendarContainerId).style.display = 'block';
+      render();
+    });
+    document.getElementById(cfg.prevBtnId).addEventListener('click', ()=>{ fechaMes.setMonth(fechaMes.getMonth() - 1); render(); });
+    document.getElementById(cfg.nextBtnId).addEventListener('click', ()=>{ fechaMes.setMonth(fechaMes.getMonth() + 1); render(); });
+    document.getElementById(cfg.hoyBtnId).addEventListener('click', ()=>{
+      fechaMes = new Date(); fechaMes.setDate(1); fechaMes.setHours(0,0,0,0);
+      render();
+    });
+    const closeBtn = document.getElementById(cfg.closeBtnId);
+    const overlayEl = document.getElementById(cfg.overlayId);
+    if(closeBtn) closeBtn.addEventListener('click', ()=> overlayEl.style.display = 'none');
+    if(overlayEl) overlayEl.addEventListener('click', (e)=>{ if(e.target === overlayEl) overlayEl.style.display = 'none'; });
+
+    return {
+      render: render,
+      estaEnCalendario: ()=> viewActiva === 'calendario'
+    };
   }
 
-  document.getElementById('visitasViewListaBtn').addEventListener('click', ()=>{
-    vcalViewActiva = 'lista';
-    document.getElementById('visitasViewListaBtn').classList.add('active');
-    document.getElementById('visitasViewCalBtn').classList.remove('active');
-    document.getElementById('leadsVentaGridN2').style.display = '';
-    const empty = document.getElementById('emptyLeadsVentaN2');
-    const gridN2 = document.getElementById('leadsVentaGridN2');
-    if(empty) empty.style.display = (gridN2.children.length === 0) ? 'block' : 'none';
-    document.getElementById('visitasCalendario').style.display = 'none';
+  const calVisitasVenta = crearCalendarioVisitasCompartido({
+    gridId: 'vcalGrid', labelId: 'vcalMesLabel',
+    overlayId: 'vcalDayOverlay', titleId: 'vcalDayTitle', bodyId: 'vcalDayBody', closeBtnId: 'vcalDayCloseBtn',
+    listaBtnId: 'visitasViewListaBtn', calBtnId: 'visitasViewCalBtn',
+    prevBtnId: 'vcalPrevBtn', nextBtnId: 'vcalNextBtn', hoyBtnId: 'vcalHoyBtn',
+    listaContainerId: 'leadsVentaGridN2', emptyId: 'emptyLeadsVentaN2', calendarContainerId: 'visitasCalendario'
   });
-  document.getElementById('visitasViewCalBtn').addEventListener('click', ()=>{
-    vcalViewActiva = 'calendario';
-    document.getElementById('visitasViewCalBtn').classList.add('active');
-    document.getElementById('visitasViewListaBtn').classList.remove('active');
-    document.getElementById('leadsVentaGridN2').style.display = 'none';
-    const empty = document.getElementById('emptyLeadsVentaN2');
-    if(empty) empty.style.display = 'none';
-    document.getElementById('visitasCalendario').style.display = 'block';
-    renderVisitasCalendario();
+  const calVisitasL = crearCalendarioVisitasCompartido({
+    gridId: 'vcalGridL', labelId: 'vcalMesLabelL',
+    overlayId: 'vcalDayOverlayL', titleId: 'vcalDayTitleL', bodyId: 'vcalDayBodyL', closeBtnId: 'vcalDayCloseBtnL',
+    listaBtnId: 'visitasViewListaBtnL', calBtnId: 'visitasViewCalBtnL',
+    prevBtnId: 'vcalPrevBtnL', nextBtnId: 'vcalNextBtnL', hoyBtnId: 'vcalHoyBtnL',
+    listaContainerId: 'leadsGridN2', emptyId: 'emptyLeadsN2', calendarContainerId: 'visitasCalendarioL'
   });
-  document.getElementById('vcalPrevBtn').addEventListener('click', ()=>{
-    vcalFechaMes.setMonth(vcalFechaMes.getMonth() - 1);
-    renderVisitasCalendario();
-  });
-  document.getElementById('vcalNextBtn').addEventListener('click', ()=>{
-    vcalFechaMes.setMonth(vcalFechaMes.getMonth() + 1);
-    renderVisitasCalendario();
-  });
-  document.getElementById('vcalHoyBtn').addEventListener('click', ()=>{
-    vcalFechaMes = new Date(); vcalFechaMes.setDate(1); vcalFechaMes.setHours(0,0,0,0);
-    renderVisitasCalendario();
-  });
+  // Como el calendario es compartido (misma información en las dos
+  // pestañas), cualquier cambio en cualquiera de los dos sistemas de leads
+  // debe refrescar los DOS widgets si están abiertos en vista calendario —
+  // no solo el de la sección que se acaba de guardar.
+  function refrescarCalendariosVisitasSiActivos(){
+    if(calVisitasVenta.estaEnCalendario()) calVisitasVenta.render();
+    if(calVisitasL.estaEnCalendario()) calVisitasL.render();
+  }
   document.getElementById('vcalDayCloseBtn').addEventListener('click', ()=>{
     document.getElementById('vcalDayOverlay').style.display = 'none';
   });
