@@ -623,7 +623,7 @@
     70%{box-shadow:0 0 0 14px rgba(52,107,147,0);}
     100%{box-shadow:0 0 0 0 rgba(52,107,147,0);}
   }
-  .lead-card.lead-highlight{
+  .lead-card.lead-highlight, .card.lead-highlight{
     animation:leadHighlightPulse 1.1s var(--ease) 2;
     border-color:var(--navy);
   }
@@ -899,12 +899,15 @@
   .vcal-visita-item{border:1.5px solid var(--border);border-left:4px solid var(--gold-dark);border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .12s;}
   .vcal-visita-item.alquiler{border-left-color:var(--alq-blue-dark);}
   .vcal-visita-item.origen-l{border-left-color:#1a7d44;}
+  .vcal-visita-item.origen-v{border-left-color:#6b3fa0;}
   .vcal-visita-item:hover{border-color:var(--navy);}
   .vcal-visita-item.realizada{opacity:.65;}
   .vcal-visita-hora{display:inline-block;background:var(--gold-dark);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;margin-right:8px;}
   .vcal-visita-hora.alquiler{background:var(--alq-blue-dark);}
   .vcal-visita-hora.origen-l{background:#1a7d44;}
+  .vcal-visita-hora.origen-v{background:#6b3fa0;}
   .vcal-visita-hora.sin-hora{background:var(--muted,#8a8a8a);}
+  .trayectoria-btn{margin-top:4px;margin-bottom:8px;}
   .vcal-visita-nombre{font-weight:800;font-size:13.5px;color:var(--navy-dark);}
   .vcal-visita-meta{font-size:12px;color:var(--muted,#8a8a8a);margin-top:2px;}
 
@@ -2291,6 +2294,19 @@
   </div>
 </div>
 
+<!-- Trayectoria completa de un lead (teléfono), accesible desde L, Leads
+     Idealista, Super Contactos y el Panel de valoración. Vive fuera de
+     cualquier .tab-panel para que no le afecte el display:none de la
+     pestaña inactiva. -->
+<div class="reco-detail-overlay" id="trayectoriaOverlay">
+  <div class="reco-detail-card">
+    <button class="reco-detail-close" id="trayectoriaClose">✕</button>
+    <h2 id="trayectoriaTitle">Trayectoria</h2>
+    <p id="trayectoriaSubtitle" class="reco-detail-subtitle"></p>
+    <div id="trayectoriaBody"></div>
+  </div>
+</div>
+
 <button id="backToTopBtn" class="back-to-top" aria-label="Volver arriba" title="Volver arriba">↑</button>
 
 <footer>
@@ -2702,6 +2718,7 @@
 
       const card = document.createElement('div');
       card.className = 'card ' + statusClass;
+      card.dataset.trayKey = (c['Fecha'] || '') + '|' + (c['Teléfono'] || '');
       card.innerHTML = `
         <div class="card-grid">
           <div class="card-data">
@@ -2714,6 +2731,7 @@
             <div class="data-row"><span>DNI/NIE</span><span>${c['DNI/NIE'] || '—'}</span></div>
             ${(c['Nombre completo 2'] || c['DNI/NIE 2']) ? `<div class="data-row"><span>2º titular</span><span>${c['Nombre completo 2'] || '—'}${c['DNI/NIE 2'] ? ' · ' + c['DNI/NIE 2'] : ''}</span></div>` : ''}
             <div class="data-row"><span>Teléfono</span><span>${c['Teléfono'] || '—'}</span></div>
+            ${c['Teléfono'] ? `<button class="trayectoria-btn edit-reco-btn" style="width:auto;padding:6px 12px;font-size:11.5px;">🧭 Ver trayectoria de este lead</button>` : ''}
             <div class="data-row"><span>Email</span><span>${c['Email'] || '—'}</span></div>
             <div class="data-row"><span>Personas / Mascotas</span><span>${c['Nº personas'] || '—'} · ${c['Mascotas'] || '—'}</span></div>
             <div class="data-row"><span>Garantías</span><span>${c['Garantías'] || '—'}</span></div>
@@ -2796,6 +2814,11 @@
       zipBtn.addEventListener('click', ()=>{
         openZipInfo(c, zipBtn);
       });
+
+      const trayBtn = card.querySelector('.trayectoria-btn');
+      if(trayBtn){
+        trayBtn.addEventListener('click', ()=> abrirTrayectoria(c['Teléfono'], c['Nombre']));
+      }
 
       const deleteBtn = card.querySelector('.delete-btn');
       deleteBtn.addEventListener('click', ()=>{
@@ -4212,7 +4235,12 @@
           <button class="edit-lead-btn">✎ Editar</button>
           <button class="del-btn">Eliminar</button>
         </div>
+        ${l['Teléfono'] ? `<button class="trayectoria-btn edit-reco-btn" style="width:auto;padding:6px 12px;margin-top:8px;font-size:11.5px;">🧭 Ver trayectoria</button>` : ''}
       `;
+      const trayBtnL = card.querySelector('.trayectoria-btn');
+      if(trayBtnL){
+        trayBtnL.addEventListener('click', ()=> abrirTrayectoria(l['Teléfono'], l['Nombre']));
+      }
       card.querySelector('.lead-checkbox').addEventListener('change', (e)=>{
         const key = l['Fecha'] + '|' + l['Teléfono'];
         if(e.target.checked){ selectedLeads.add(key); card.classList.add('select-checked'); }
@@ -7168,7 +7196,12 @@
         <button class="edit-lead-btn">✎ Editar</button>
         <button class="del-btn">Eliminar</button>
       </div>
+      ${l['Teléfono'] ? `<button class="trayectoria-btn edit-reco-btn" style="width:auto;padding:6px 12px;margin-top:8px;font-size:11.5px;">🧭 Ver trayectoria</button>` : ''}
     `;
+    const trayBtnVenta = card.querySelector('.trayectoria-btn');
+    if(trayBtnVenta){
+      trayBtnVenta.addEventListener('click', ()=> abrirTrayectoria(l['Teléfono'], l['Nombre']));
+    }
 
     if(moveTarget === '1'){
       card.querySelector('.visita-realizada-venta-btn').addEventListener('click', async (e)=>{
@@ -7466,7 +7499,12 @@
       <div class="actions" style="margin-top:10px;">
         ${waPhone ? `<a class="wa-link" href="https://wa.me/${waPhone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
       </div>
+      ${l['Teléfono'] ? `<button class="trayectoria-btn edit-reco-btn" style="width:auto;padding:6px 12px;margin-top:8px;font-size:11.5px;">🧭 Ver trayectoria</button>` : ''}
     `;
+    const trayBtnSuper = card.querySelector('.trayectoria-btn');
+    if(trayBtnSuper){
+      trayBtnSuper.addEventListener('click', ()=> abrirTrayectoria(l['Teléfono'], l['Nombre']));
+    }
 
     card.querySelectorAll('.postit-header').forEach(header => {
       header.addEventListener('click', ()=>{
@@ -7590,6 +7628,174 @@
     });
   });
   document.getElementById('leadsVentaColN1').classList.add('mobile-active');
+
+  // ==================== TRAYECTORIA COMPARTIDA (L + Leads Idealista + Panel de valoración) ====================
+  // Une por teléfono (normalizado) los tres sitios donde puede aparecer la
+  // misma persona a lo largo de su recorrido: el lead en L o en Leads
+  // Idealista, y la Ficha completa que llega al Panel de valoración. Vive en
+  // este bloque porque es el único que ve a la vez las variables privadas de
+  // Leads Idealista (cachedLeadsVenta, claveLeadVenta...) y las globales de L
+  // y del Panel de valoración (cachedLeads, allCandidates...), y se expone en
+  // window.abrirTrayectoria para que los botones de las otras pestañas (que
+  // viven en otro <script>) puedan llamarlo.
+  function normalizarTelefono(t){
+    let d = String(t || '').replace(/[^0-9]/g, '');
+    if(d.length > 9 && d.startsWith('0034')) d = d.slice(4);
+    else if(d.length > 9 && d.startsWith('34')) d = d.slice(2);
+    return d;
+  }
+
+  function asegurarDatosTrayectoria(){
+    const tareas = [];
+    if(typeof leadsLoaded !== 'undefined' && !leadsLoaded){ leadsLoaded = true; tareas.push(loadLeads()); }
+    if(!ventaLoaded){ ventaLoaded = true; tareas.push(loadPropiedadesVenta().then(()=> loadLeadsVenta())); }
+    if(typeof valoracionLoaded !== 'undefined' && !valoracionLoaded){ valoracionLoaded = true; tareas.push(loadCandidates()); }
+    return Promise.all(tareas);
+  }
+
+  function buscarTrayectoriaPorTelefono(telefonoRef){
+    const digits = normalizarTelefono(telefonoRef);
+    if(!digits) return [];
+    const eventos = [];
+
+    const numerosL = getLeadNumberMap();
+    cachedLeads.forEach(l=>{
+      if(normalizarTelefono(l['Teléfono']) !== digits) return;
+      eventos.push({
+        origen: 'L', etiqueta: 'Lead (L · WhatsApp)',
+        fecha: parseFechaLead(l['Fecha']), fechaTexto: l['Fecha'] ? formatDate(l['Fecha']) : '—',
+        piso: l['Piso interés'] || '', numero: numerosL.get(leadKey(l))
+      });
+    });
+
+    const numerosVenta = numerosEntradaLeadsVenta();
+    cachedLeadsVenta.forEach(l=>{
+      if(normalizarTelefono(l['Teléfono']) !== digits) return;
+      const operacion = (l['Operación'] || 'Venta').trim() || 'Venta';
+      eventos.push({
+        origen: 'Idealista', operacion,
+        etiqueta: operacion === 'Alquiler' ? 'Lead Idealista (alquiler)' : 'Lead Idealista (venta)',
+        fecha: parseFechaVenta(l['Fecha']), fechaTexto: l['Fecha'] ? formatDateVenta(l['Fecha']) : '—',
+        piso: l['Propiedad'] || '', numero: numerosVenta.get(claveLeadVenta(l))
+      });
+    });
+
+    allCandidates.forEach(c=>{
+      if(normalizarTelefono(c['Teléfono']) !== digits) return;
+      const fechaObj = c['Fecha'] ? new Date(c['Fecha']) : null;
+      eventos.push({
+        origen: 'Valoracion', etiqueta: 'Ficha completa (Panel de valoración)',
+        fecha: (fechaObj && !isNaN(fechaObj)) ? fechaObj : null,
+        fechaTexto: c['Fecha'] ? formatDate(c['Fecha']) : '—',
+        piso: c['Piso'] || '', trayKey: (c['Fecha'] || '') + '|' + (c['Teléfono'] || '')
+      });
+    });
+
+    eventos.sort((a,b)=>{
+      if(!a.fecha && !b.fecha) return 0;
+      if(!a.fecha) return 1;
+      if(!b.fecha) return -1;
+      return a.fecha - b.fecha;
+    });
+    return eventos;
+  }
+
+  function origenClaseTrayectoria(ev){
+    if(ev.origen === 'L') return 'origen-l';
+    if(ev.origen === 'Valoracion') return 'origen-v';
+    if(ev.origen === 'Idealista' && ev.operacion === 'Alquiler') return 'alquiler';
+    return '';
+  }
+
+  const trayectoriaOverlay = document.getElementById('trayectoriaOverlay');
+  const trayectoriaTitleEl = document.getElementById('trayectoriaTitle');
+  const trayectoriaSubtitleEl = document.getElementById('trayectoriaSubtitle');
+  const trayectoriaBodyEl = document.getElementById('trayectoriaBody');
+  const trayectoriaCloseBtn = document.getElementById('trayectoriaClose');
+  if(trayectoriaCloseBtn){
+    trayectoriaCloseBtn.addEventListener('click', ()=> trayectoriaOverlay.classList.remove('show'));
+  }
+  if(trayectoriaOverlay){
+    trayectoriaOverlay.addEventListener('click', (e)=>{ if(e.target === trayectoriaOverlay) trayectoriaOverlay.classList.remove('show'); });
+  }
+
+  async function abrirTrayectoria(telefono, nombreActual){
+    if(!trayectoriaOverlay) return;
+    trayectoriaTitleEl.textContent = nombreActual ? ('Trayectoria de ' + nombreActual) : 'Trayectoria';
+    trayectoriaSubtitleEl.textContent = telefono ? ('📞 ' + telefono) : '';
+    trayectoriaBodyEl.innerHTML = '<p style="font-size:13.5px;color:var(--muted,#8a8a8a);">Buscando en L, Leads Idealista y el Panel de valoración...</p>';
+    trayectoriaOverlay.classList.add('show');
+
+    await asegurarDatosTrayectoria();
+
+    const eventos = buscarTrayectoriaPorTelefono(telefono);
+    if(eventos.length === 0){
+      trayectoriaBodyEl.innerHTML = '<p style="font-size:13.5px;color:var(--muted,#8a8a8a);">No hay más registros con este teléfono en Leads, Leads Idealista ni en el Panel de valoración.</p>';
+      return;
+    }
+    trayectoriaBodyEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;">' + eventos.map((ev, i)=>{
+      const esUltimo = i === eventos.length - 1;
+      const puedeIr = !!(ev.numero || ev.trayKey);
+      return `
+      <div class="vcal-visita-item ${origenClaseTrayectoria(ev)}" data-idx="${i}" style="${puedeIr ? '' : 'cursor:default;opacity:.75;'}">
+        <span class="vcal-visita-hora ${origenClaseTrayectoria(ev)}">${escVenta(ev.fechaTexto)}</span>
+        <strong>${escVenta(ev.etiqueta)}</strong>${esUltimo ? ' <span style="color:var(--muted,#8a8a8a);font-size:11px;">· más reciente</span>' : ''}
+        <div style="font-size:12.5px;color:var(--text,#444);margin-top:3px;">${escVenta(ev.piso || 'Sin piso indicado')}</div>
+      </div>`;
+    }).join('') + '</div>';
+    trayectoriaBodyEl.querySelectorAll('.vcal-visita-item').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const ev = eventos[parseInt(el.dataset.idx, 10)];
+        irATrayectoria(ev);
+      });
+    });
+  }
+  window.abrirTrayectoria = abrirTrayectoria;
+
+  function irATrayectoria(ev){
+    if(!ev || !(ev.numero || ev.trayKey)) return;
+    trayectoriaOverlay.classList.remove('show');
+    if(ev.origen === 'L'){
+      const tabBtn = document.querySelector('.tab-btn[data-tab="leads"]');
+      if(tabBtn && !tabBtn.classList.contains('active')) tabBtn.click();
+      const listaBtn = document.getElementById('visitasViewListaBtnL');
+      if(listaBtn) listaBtn.click();
+      goToLeadNumber(ev.numero);
+    } else if(ev.origen === 'Idealista'){
+      const tabBtn = document.querySelector('.tab-btn[data-tab="venta"]');
+      if(tabBtn && !tabBtn.classList.contains('active')) tabBtn.click();
+      const listaBtn = document.getElementById('visitasViewListaBtn');
+      if(listaBtn) listaBtn.click();
+      goToLeadVentaNumber(ev.numero);
+    } else if(ev.origen === 'Valoracion'){
+      irAFichaValoracion(ev.trayKey);
+    }
+  }
+
+  function irAFichaValoracion(trayKey){
+    const tabBtn = document.querySelector('.tab-btn[data-tab="valoracion"]');
+    if(tabBtn && !tabBtn.classList.contains('active')) tabBtn.click();
+    const buscarYResaltar = ()=>{
+      const candidato = allCandidates.find(c => ((c['Fecha']||'') + '|' + (c['Teléfono']||'')) === trayKey);
+      if(candidato && (currentFilter !== 'todos' || currentPiso)){
+        currentFilter = 'todos'; currentPiso = '';
+        document.querySelectorAll('#tab-valoracion .filter-btn').forEach(b=> b.classList.toggle('active', b.dataset.filter === 'todos'));
+        pisoFilter.value = '';
+        renderCards();
+      }
+      let card = null;
+      document.querySelectorAll('#tab-valoracion .card[data-tray-key]').forEach(el=>{
+        if(el.dataset.trayKey === trayKey) card = el;
+      });
+      if(!card) return;
+      card.scrollIntoView({ behavior:'smooth', block:'center' });
+      card.classList.remove('lead-highlight');
+      void card.offsetWidth;
+      card.classList.add('lead-highlight');
+      setTimeout(()=> card.classList.remove('lead-highlight'), 2300);
+    };
+    setTimeout(buscarYResaltar, 60);
+  }
 })();
 </script>
 
