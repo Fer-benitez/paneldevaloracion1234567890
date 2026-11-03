@@ -1300,7 +1300,7 @@
               <div class="activo-ico">RS</div>
               <div class="activo-info">
                 <div class="activo-name">Roig i Solé 16</div>
-                <div class="activo-tag tag-live">4 informes</div>
+                <div class="activo-tag tag-live">3 informes</div>
               </div>
               <svg class="activo-chev" width="11" height="7" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
@@ -1320,10 +1320,6 @@
               </a>
               <a class="informe-row" href="informes/Analisis_Inquilinos_Roig_i_Sole_16_Floridalma.html" target="_blank" rel="noopener">
                 <span class="informe-row-name">Floridalma Valle Romero</span>
-                <span class="informe-row-arrow">→</span>
-              </a>
-              <a class="informe-row" href="informes/Analisis_Inquilinos_Roig_i_Sole_16_Daniel.html" target="_blank" rel="noopener">
-                <span class="informe-row-name">Daniel Gavilanes y Lidia Maldonado</span>
                 <span class="informe-row-arrow">→</span>
               </a>
             </div>
@@ -1767,6 +1763,14 @@
         <input type="number" id="leadGotoInput" class="lead-search-input" placeholder="Ir al lead nº" style="min-width:110px;" min="1">
         <button id="leadGotoBtn" class="edit-reco-btn" style="width:auto;padding:8px 16px;margin-bottom:0;">Ir →</button>
       </div>
+    </div>
+
+    <div class="filter-group" id="leadSemaforoFilterGroup" style="margin-bottom:16px;">
+      <span style="font-size:13px;font-weight:600;color:var(--navy-dark);">Filtrar por semáforo:</span>
+      <button class="filter-btn active" data-sema-filter="todos">Todos</button>
+      <button class="filter-btn" data-sema-filter="verde">🟢 Habilitados</button>
+      <button class="filter-btn" data-sema-filter="rojo">🔴 Descartados</button>
+      <button class="filter-btn" data-sema-filter="">Sin marcar</button>
     </div>
 
     <div class="add-piso-card" id="addLeadCard" style="display:none;">
@@ -4259,6 +4263,21 @@
     });
   }
 
+  // ---- Filtro por semáforo (verde/rojo/sin marcar) — L no usa "ambar" ----
+  let currentLeadSemaforo = 'todos';
+  document.querySelectorAll('#leadSemaforoFilterGroup .filter-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#leadSemaforoFilterGroup .filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLeadSemaforo = btn.dataset.semaFilter;
+      renderLeads();
+    });
+  });
+  function leadMatchesSemaforo(l, filtro){
+    if(filtro === 'todos') return true;
+    return (l['Semáforo'] || '') === filtro;
+  }
+
   // ---- Buscador por nombre o teléfono ----
   const leadSearchInput = document.getElementById('leadSearchInput');
   let currentLeadSearch = '';
@@ -4301,12 +4320,15 @@
       return;
     }
     const escondidoPorFiltro = !leadMatchesSearch(target, currentLeadSearch)
-      || (currentLeadPiso && (target['Piso interés'] || '') !== currentLeadPiso);
+      || (currentLeadPiso && (target['Piso interés'] || '') !== currentLeadPiso)
+      || !leadMatchesSemaforo(target, currentLeadSemaforo);
     if(escondidoPorFiltro){
       currentLeadPiso = '';
       currentLeadSearch = '';
+      currentLeadSemaforo = 'todos';
       leadPisoFilter.value = '';
       leadSearchInput.value = '';
+      document.querySelectorAll('#leadSemaforoFilterGroup .filter-btn').forEach(b=> b.classList.toggle('active', b.dataset.semaFilter === 'todos'));
       renderLeads();
     }
     const card = document.querySelector('.lead-card[data-numero="' + n + '"]');
@@ -4339,10 +4361,10 @@
     renderLeadsStats();
     const numberMap = getLeadNumberMap();
 
-    const filtroActivo = !!currentLeadPiso || !!currentLeadSearch.trim();
+    const filtroActivo = !!currentLeadPiso || !!currentLeadSearch.trim() || currentLeadSemaforo !== 'todos';
     const leadsFiltrados = cachedLeads.filter(l => {
       const matchesPiso = !currentLeadPiso || (l['Piso interés'] || '') === currentLeadPiso;
-      return matchesPiso && leadMatchesSearch(l, currentLeadSearch);
+      return matchesPiso && leadMatchesSearch(l, currentLeadSearch) && leadMatchesSemaforo(l, currentLeadSemaforo);
     });
 
     const n1 = leadsFiltrados.filter(l => String(l['Nivel']) !== '2');
