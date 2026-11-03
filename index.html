@@ -1300,7 +1300,7 @@
               <div class="activo-ico">RS</div>
               <div class="activo-info">
                 <div class="activo-name">Roig i Solé 16</div>
-                <div class="activo-tag tag-live">3 informes</div>
+                <div class="activo-tag tag-live">4 informes</div>
               </div>
               <svg class="activo-chev" width="11" height="7" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
@@ -1320,6 +1320,10 @@
               </a>
               <a class="informe-row" href="informes/Analisis_Inquilinos_Roig_i_Sole_16_Floridalma.html" target="_blank" rel="noopener">
                 <span class="informe-row-name">Floridalma Valle Romero</span>
+                <span class="informe-row-arrow">→</span>
+              </a>
+              <a class="informe-row" href="informes/Analisis_Inquilinos_Roig_i_Sole_16_Daniel.html" target="_blank" rel="noopener">
+                <span class="informe-row-name">Daniel Gavilanes y Lidia Maldonado</span>
                 <span class="informe-row-arrow">→</span>
               </a>
             </div>
@@ -1435,7 +1439,83 @@
 
   <!-- ==================== TAB F — FORMULARIOS POR PISO ==================== -->
   <div class="tab-panel active" id="tab-formularios">
-    <p class="section-desc"><strong>Esto es solo para ti y tu colaborador</strong> — el cliente nunca ve esta página. Cada piso tiene su propio formulario, diseñado aparte y publicado en su propia URL. Aquí simplemente los registras para llevar el control: cuántos formularios hay, quién los ha rellenado, etc.</p>
+    <p class="section-desc"><strong>Esto es solo para ti y tu colaborador</strong> — el cliente nunca ve esta página. Cada piso tiene su propio formulario. Con "Crear formulario de Leads (pre-visita)" lo generas aquí mismo —fotos, descripción, precio y condiciones— y te da el link al momento, sin publicar nada en GitHub. Para una Ficha completa, o algo muy personalizado, sigue valiendo el registro manual de abajo.</p>
+
+    <button id="toggleCrearFormLeadsBtn" class="edit-reco-btn" style="width:auto;padding:10px 18px;margin-bottom:16px;">+ Crear formulario de Leads (pre-visita)</button>
+
+    <div class="reco-form" id="crearFormLeadsCard" style="display:none;">
+      <div class="reco-section-title">Datos del piso</div>
+      <div class="add-piso-row">
+        <div class="add-piso-field">
+          <label>Nombre del piso</label>
+          <input type="text" id="flNombre" placeholder="Ej. Carrer Duero 46">
+        </div>
+        <div class="add-piso-field">
+          <label>Barrio</label>
+          <input type="text" id="flBarrio" placeholder="Ej. Pubilla Cases">
+        </div>
+      </div>
+      <div class="reco-row-4">
+        <div class="add-piso-field"><label>Habitaciones</label><input type="number" id="flHabitaciones"></div>
+        <div class="add-piso-field"><label>Baños</label><input type="number" id="flBanos"></div>
+        <div class="add-piso-field"><label>m² construidos</label><input type="number" id="flM2"></div>
+        <div class="add-piso-field"><label>Planta</label><input type="text" id="flPlanta" placeholder="Ej. 1ª"></div>
+      </div>
+      <div class="add-piso-row">
+        <div class="add-piso-field">
+          <label>Ascensor</label>
+          <div class="choice-group" id="flAscensorGroup">
+            <button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn active">No</button>
+          </div>
+        </div>
+        <div class="add-piso-field"><label>Alquiler (€/mes)</label><input type="number" id="flAlquiler" placeholder="Ej. 741"></div>
+      </div>
+      <div class="add-piso-row">
+        <div class="add-piso-field">
+          <label>Parking</label>
+          <div class="choice-group" id="flParkingGroup">
+            <button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn active">No</button>
+          </div>
+        </div>
+        <div class="add-piso-field">
+          <label>Balcón</label>
+          <div class="choice-group" id="flBalconGroup">
+            <button type="button" class="choice-btn">Sí</button><button type="button" class="choice-btn active">No</button>
+          </div>
+        </div>
+      </div>
+      <div class="add-piso-field">
+        <label>Fianza / condiciones económicas</label>
+        <input type="text" id="flFianza" placeholder="Ej. 1 mes de fianza + 1 mes de agencia">
+      </div>
+      <div class="add-piso-field">
+        <label>Sobre el barrio (opcional, lo que verá el interesado)</label>
+        <textarea id="flBarrioDescripcion" rows="2" placeholder="Ej. El Fort Pienc es un barrio céntrico y muy bien comunicado..."></textarea>
+      </div>
+      <div class="add-piso-field">
+        <label>Descripción del piso (lo que verá el interesado)</label>
+        <textarea id="flDescripcion" rows="3" placeholder="Ej. Piso luminoso reformado, a 5 min del metro..."></textarea>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Otras condiciones (opcional)</label>
+        <textarea id="flCondiciones" rows="2" placeholder="Ej. No se admiten mascotas. Imprescindible nómina o aval."></textarea>
+      </div>
+      <div class="add-piso-field" style="margin-bottom:14px;">
+        <label>Fotos del piso (puedes subir varias; la ⭐ marca la portada)</label>
+        <input type="file" id="flFoto" accept="image/*" multiple>
+        <div class="pv-fotos-grid" id="flFotosGrid"></div>
+      </div>
+      <div id="flUploadStatus" class="piso-upload-status"></div>
+      <button id="crearFormLeadsBtn" class="add-piso-btn" disabled>Crear formulario y generar link</button>
+      <p class="piso-hint" id="flHint">Completa el nombre, el alquiler y sube al menos una foto.</p>
+      <div id="flResultado" style="display:none;margin-top:14px;padding:14px 16px;background:var(--bg);border-radius:10px;">
+        <p style="font-size:13px;font-weight:700;color:var(--navy-dark);margin-bottom:8px;">✓ Formulario creado — ya está también registrado abajo, en "Leads (pre-visita)"</p>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="flLinkGenerado" readonly style="flex:1;padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;background:var(--white);">
+          <button type="button" id="flCopiarLinkBtn" class="edit-reco-btn" style="width:auto;padding:8px 14px;margin:0;">Copiar</button>
+        </div>
+      </div>
+    </div>
 
     <div class="add-piso-card">
       <div class="add-piso-row">
@@ -2513,6 +2593,232 @@
     }
     addPisoBtn.textContent = 'Añadir a Gestión';
     addPisoBtn.disabled = true;
+  });
+
+  // ==================== Creador de formularios de Leads (pre-visita), sin pasar por GitHub ====================
+  // Sube las fotos a Cloudinary, guarda los datos del piso en la hoja
+  // "FormulariosLeads" (una página pública genérica, ya publicada UNA sola
+  // vez, los lee por su "id" en la URL) y registra el piso en "Pisos" —lo
+  // mismo que hace "Añadir a Gestión" a mano— con el link ya listo.
+  const FORMULARIO_LEADS_BASE_URL = 'https://fer-benitez.github.io/formulario-leads/';
+
+  const toggleCrearFormLeadsBtn = document.getElementById('toggleCrearFormLeadsBtn');
+  const crearFormLeadsCard = document.getElementById('crearFormLeadsCard');
+  toggleCrearFormLeadsBtn.addEventListener('click', ()=>{
+    const abierto = crearFormLeadsCard.style.display !== 'none';
+    crearFormLeadsCard.style.display = abierto ? 'none' : 'block';
+    toggleCrearFormLeadsBtn.textContent = abierto ? '+ Crear formulario de Leads (pre-visita)' : '✕ Cerrar';
+  });
+
+  const flNombre = document.getElementById('flNombre');
+  const flBarrio = document.getElementById('flBarrio');
+  const flHabitaciones = document.getElementById('flHabitaciones');
+  const flBanos = document.getElementById('flBanos');
+  const flM2 = document.getElementById('flM2');
+  const flPlanta = document.getElementById('flPlanta');
+  const flAlquiler = document.getElementById('flAlquiler');
+  const flFianza = document.getElementById('flFianza');
+  const flBarrioDescripcion = document.getElementById('flBarrioDescripcion');
+  const flDescripcion = document.getElementById('flDescripcion');
+  const flCondiciones = document.getElementById('flCondiciones');
+  const flFoto = document.getElementById('flFoto');
+  const flFotosGrid = document.getElementById('flFotosGrid');
+  const flUploadStatus = document.getElementById('flUploadStatus');
+  const crearFormLeadsBtn = document.getElementById('crearFormLeadsBtn');
+  const flHint = document.getElementById('flHint');
+  const flResultado = document.getElementById('flResultado');
+  const flLinkGenerado = document.getElementById('flLinkGenerado');
+  const flCopiarLinkBtn = document.getElementById('flCopiarLinkBtn');
+
+  let ascensorFormLeads = 'No';
+  const flAscensorGroup = document.getElementById('flAscensorGroup');
+  flAscensorGroup.querySelectorAll('.choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      flAscensorGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      ascensorFormLeads = btn.textContent.trim();
+    });
+  });
+
+  let parkingFormLeads = 'No';
+  const flParkingGroup = document.getElementById('flParkingGroup');
+  flParkingGroup.querySelectorAll('.choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      flParkingGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      parkingFormLeads = btn.textContent.trim();
+    });
+  });
+
+  let balconFormLeads = 'No';
+  const flBalconGroup = document.getElementById('flBalconGroup');
+  flBalconGroup.querySelectorAll('.choice-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      flBalconGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      balconFormLeads = btn.textContent.trim();
+    });
+  });
+
+  let uploadedFormLeadsImageUrls = []; // la primera (índice 0) es la portada
+
+  function renderFlFotosGrid(){
+    flFotosGrid.innerHTML = uploadedFormLeadsImageUrls.map((url, idx) => `
+      <div class="pv-foto-thumb${idx === 0 ? ' is-portada' : ''}">
+        <img src="${url}" alt="Foto ${idx + 1}">
+        <div class="pv-foto-star" data-idx="${idx}">${idx === 0 ? '⭐ Portada' : 'Poner de portada'}</div>
+        <div class="remove-x" data-idx="${idx}" title="Quitar foto">✕</div>
+      </div>
+    `).join('');
+    flFotosGrid.querySelectorAll('.remove-x').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        uploadedFormLeadsImageUrls.splice(parseInt(btn.dataset.idx), 1);
+        renderFlFotosGrid();
+        checkCrearFormLeadsReady();
+      });
+    });
+    flFotosGrid.querySelectorAll('.pv-foto-star').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const idx = parseInt(el.dataset.idx);
+        if(idx === 0) return;
+        const [elegida] = uploadedFormLeadsImageUrls.splice(idx, 1);
+        uploadedFormLeadsImageUrls.unshift(elegida);
+        renderFlFotosGrid();
+      });
+    });
+  }
+
+  flFoto.addEventListener('change', ()=>{
+    const files = Array.from(flFoto.files || []);
+    if(files.length === 0) return;
+    crearFormLeadsBtn.disabled = true;
+    flUploadStatus.textContent = `Subiendo 0 de ${files.length} foto(s)...`;
+    flUploadStatus.className = 'piso-upload-status';
+
+    let subidas = 0;
+    const resultados = new Array(files.length).fill(null);
+
+    const subirUna = (file, idx) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      return fetch('https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/auto/upload', { method:'POST', body: fd })
+        .then(res=> res.json())
+        .then(data=>{
+          if(data.secure_url){ resultados[idx] = data.secure_url; }
+        })
+        .catch(()=>{})
+        .finally(()=>{
+          subidas++;
+          flUploadStatus.textContent = `Subiendo ${subidas} de ${files.length} foto(s)...`;
+          if(subidas === files.length){
+            const nuevas = resultados.filter(Boolean);
+            uploadedFormLeadsImageUrls = uploadedFormLeadsImageUrls.concat(nuevas);
+            renderFlFotosGrid();
+            flUploadStatus.textContent = nuevas.length === files.length ? 'Fotos subidas ✓' : 'Alguna foto no se pudo subir.';
+            flUploadStatus.className = 'piso-upload-status ' + (nuevas.length === files.length ? 'ok' : 'error');
+            flFoto.value = '';
+            checkCrearFormLeadsReady();
+          }
+        });
+    };
+    files.forEach((file, idx) => subirUna(file, idx));
+  });
+
+  function checkCrearFormLeadsReady(){
+    const listo = !!(flNombre.value.trim() && flAlquiler.value.trim() && uploadedFormLeadsImageUrls.length > 0);
+    crearFormLeadsBtn.disabled = !listo;
+    if(listo){
+      flHint.textContent = '';
+    } else {
+      const faltan = [];
+      if(!flNombre.value.trim()) faltan.push('el nombre del piso');
+      if(!flAlquiler.value.trim()) faltan.push('el alquiler');
+      if(uploadedFormLeadsImageUrls.length === 0) faltan.push('al menos una foto');
+      flHint.textContent = 'Falta ' + faltan.join(', ') + '.';
+    }
+  }
+  [flNombre, flAlquiler].forEach(el => el.addEventListener('input', checkCrearFormLeadsReady));
+
+  // Genera un identificador único y legible para la URL, aquí mismo en el
+  // cliente: el envío usa mode:'no-cors', así que nunca se podría leer de
+  // vuelta un id generado por el servidor.
+  function slugFormLeads(s){
+    return String(s || '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  crearFormLeadsBtn.addEventListener('click', async ()=>{
+    crearFormLeadsBtn.disabled = true;
+    crearFormLeadsBtn.textContent = 'Creando...';
+    const nombre = flNombre.value.trim();
+    const base = slugFormLeads(nombre) || 'formulario';
+    const id = base + '-' + Date.now().toString(36).slice(-5);
+    const link = FORMULARIO_LEADS_BASE_URL + '?id=' + encodeURIComponent(id);
+    const fotosFinal = uploadedFormLeadsImageUrls.slice();
+    try{
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST', mode:'no-cors',
+        body: JSON.stringify({
+          action:'guardar_formulario_leads',
+          id: id,
+          pisoNombre: nombre,
+          fotos: fotosFinal.join('|'),
+          habitaciones: flHabitaciones.value.trim(),
+          banos: flBanos.value.trim(),
+          m2: flM2.value.trim(),
+          planta: flPlanta.value.trim(),
+          ascensor: ascensorFormLeads,
+          parking: parkingFormLeads,
+          balcon: balconFormLeads,
+          alquiler: flAlquiler.value.trim(),
+          fianza: flFianza.value.trim(),
+          barrio: flBarrio.value.trim(),
+          barrioDescripcion: flBarrioDescripcion.value.trim(),
+          descripcion: flDescripcion.value.trim(),
+          condiciones: flCondiciones.value.trim()
+        })
+      });
+      await fetch(APPS_SCRIPT_URL, {
+        method:'POST', mode:'no-cors',
+        body: JSON.stringify({ action:'nuevo_piso', piso: nombre, imagen: fotosFinal[0] || '', link: link, tipo: 'Leads (pre-visita)' })
+      });
+      flLinkGenerado.value = link;
+      flResultado.style.display = 'block';
+
+      // Deja el formulario listo para crear el siguiente, sin perder el link recién generado.
+      flNombre.value = ''; flBarrio.value = ''; flHabitaciones.value = ''; flBanos.value = '';
+      flM2.value = ''; flPlanta.value = ''; flAlquiler.value = ''; flFianza.value = '';
+      flBarrioDescripcion.value = ''; flDescripcion.value = ''; flCondiciones.value = '';
+      uploadedFormLeadsImageUrls = [];
+      renderFlFotosGrid();
+      flAscensorGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      flAscensorGroup.querySelectorAll('.choice-btn')[1].classList.add('active');
+      ascensorFormLeads = 'No';
+      flParkingGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      flParkingGroup.querySelectorAll('.choice-btn')[1].classList.add('active');
+      parkingFormLeads = 'No';
+      flBalconGroup.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+      flBalconGroup.querySelectorAll('.choice-btn')[1].classList.add('active');
+      balconFormLeads = 'No';
+      checkCrearFormLeadsReady();
+
+      await loadPisos();
+    } catch(err){
+      alert('No se pudo crear el formulario. Revisa tu conexión.');
+    }
+    crearFormLeadsBtn.textContent = 'Crear formulario y generar link';
+  });
+
+  flCopiarLinkBtn.addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(flLinkGenerado.value);
+      flCopiarLinkBtn.textContent = 'Copiado ✓';
+      setTimeout(()=> flCopiarLinkBtn.textContent = 'Copiar', 1800);
+    } catch(err){
+      flLinkGenerado.select();
+    }
   });
 
   let cachedPisos = [];
