@@ -7385,20 +7385,24 @@
   function calcularBarometroVenta(l){
     // Cuanto más completas y "positivas" las respuestas de la fase de
     // investigación, más puntos — esto es lo que pinta la tarjeta de verde.
+    // Recalibrado el 6 nov 2026 con las preguntas mejoradas: hipoteca y
+    // urgencia pasan a tener 4 niveles cada una (antes 3), y "Aprobada"/
+    // "Sin hipoteca" son las dos opciones ⭐ (comprador listo para firmar ya).
     let puntos = 0;
     if((l['InvBuscan'] || '').toString().trim()) puntos += 1;
     if((l['InvPara'] || '').toString().trim()) puntos += 1;
     if((l['InvPresupuesto'] || '').toString().trim()) puntos += 1;
+    if((l['InvCaracteristicas'] || '').toString().trim()) puntos += 1;
     const hip = (l['InvHipoteca'] || '').toString().trim();
-    if(hip === 'Sí') puntos += 2;
-    else if(hip === 'En trámite') puntos += 1;
+    if(hip === 'Aprobada' || hip === 'Sin hipoteca') puntos += 2;
+    else if(hip === 'Pre-aprobada' || hip === 'En trámite') puntos += 1;
     const urg = (l['InvUrgencia'] || '').toString().trim();
     if(urg === 'Inmediata') puntos += 2;
-    else if(urg === '1-3 meses') puntos += 1;
-    const maximo = 7;
+    else if(urg === '3 meses' || urg === '6 meses') puntos += 1;
+    const maximo = 8;
     if(puntos <= 0) return { nivel: 0, puntos, maximo };
-    if(puntos <= 2) return { nivel: 1, puntos, maximo };
-    if(puntos <= 4) return { nivel: 2, puntos, maximo };
+    if(puntos <= 3) return { nivel: 1, puntos, maximo };
+    if(puntos <= 5) return { nivel: 2, puntos, maximo };
     return { nivel: 3, puntos, maximo };
   }
 
@@ -7424,6 +7428,15 @@
     const invHipoteca = (l['InvHipoteca'] || '').toString();
     const invPresupuesto = (l['InvPresupuesto'] || '').toString();
     const invUrgencia = (l['InvUrgencia'] || '').toString();
+    const invM2 = (l['InvM2'] || '').toString();
+    const invCaracteristicas = (l['InvCaracteristicas'] || '').toString().split('|').map(s=>s.trim()).filter(Boolean);
+    const invPrimeraVivienda = (l['InvPrimeraVivienda'] || '').toString();
+
+    const INV_CARACTERISTICAS_OPCIONES = ['Terraza','Parking','Interior','Exterior','Ático','Piso','Chalet','Piscina'];
+    const INV_CARACTERISTICAS_ICONOS = { 'Terraza':'🌿','Parking':'🚗','Interior':'🚪','Exterior':'🪟','Ático':'🏙️','Piso':'🏢','Chalet':'🏡','Piscina':'🏊' };
+    const INV_PARA_OPCIONES = [['Persona sola','🧍'],['Pareja','👫'],['Familia','👨‍👩‍👧'],['Inversión','💰']];
+    const INV_URGENCIA_OPCIONES = ['Más adelante','6 meses','3 meses','Inmediata'];
+    const INV_HIPOTECA_OPCIONES = [['En trámite',''],['Pre-aprobada',''],['Aprobada','⭐'],['Sin hipoteca','⭐']];
     const propiedadLead = cachedPropiedadesVenta.find(p => (p['Dirección']||'').trim() && (p['Dirección']||'').trim() === (l['Propiedad']||'').trim());
     const plantillaWa = (propiedadLead && (propiedadLead['MensajeWhatsapp']||'').trim())
       ? propiedadLead['MensajeWhatsapp'].trim()
@@ -7462,34 +7475,44 @@
       <button class="inv-toggle" style="margin-top:9px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">🔍 Fase de investigación</button>
       <div class="inv-box" style="margin-top:8px;display:none;">
         <div class="add-piso-field" style="margin-bottom:8px;">
-          <label style="margin-bottom:4px;">¿Qué están buscando?</label>
-          <input type="text" class="inv-buscan" value="${escVenta(invBuscan)}" placeholder="Ej. piso 3 hab. con terraza, zona Sant Gervasi..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
+          <label style="margin-bottom:4px;">¿Qué están buscando idealmente?</label>
+          <input type="text" class="inv-buscan" value="${escVenta(invBuscan)}" placeholder="Ej. piso 3 hab. con terraza, zona Sant Gervasi..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;margin-bottom:8px;">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+            <label style="margin:0;white-space:nowrap;font-size:12.5px;color:var(--muted,#8a8a8a);">m² aprox.</label>
+            <input type="text" class="inv-m2" value="${escVenta(invM2)}" placeholder="Ej. 80" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;max-width:90px;">
+          </div>
+          <div class="choice-group inv-caracteristicas-group" style="gap:6px;margin-top:0;">
+            ${INV_CARACTERISTICAS_OPCIONES.map(op=>`<button type="button" class="choice-btn inv-carac-btn ${invCaracteristicas.includes(op)?'active':''}" data-value="${op}" style="padding:7px 10px;font-size:12.5px;">${INV_CARACTERISTICAS_ICONOS[op]} ${op}</button>`).join('')}
+          </div>
         </div>
         <div class="add-piso-field" style="margin-bottom:8px;">
-          <label style="margin-bottom:4px;">¿Es para vosotros, una familia, una persona sola?</label>
-          <input type="text" class="inv-para" value="${escVenta(invPara)}" placeholder="Ej. pareja joven, familia con 2 hijos..." style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
+          <label style="margin-bottom:4px;">¿Es para...?</label>
+          <div class="choice-group inv-para-group" style="gap:6px;margin-top:0;">
+            ${INV_PARA_OPCIONES.map(op=>`<button type="button" class="choice-btn inv-para-btn ${invPara===op[0]?'active':''}" data-value="${op[0]}" style="padding:7px 10px;font-size:12.5px;">${op[1]} ${op[0]}</button>`).join('')}
+          </div>
         </div>
         <div class="add-piso-field" style="margin-bottom:8px;">
-          <label style="margin-bottom:4px;">¿Tenéis hipoteca aprobada?</label>
-          <select class="inv-hipoteca" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
-            <option value="" ${invHipoteca===''?'selected':''}>— Sin responder —</option>
-            <option value="Sí" ${invHipoteca==='Sí'?'selected':''}>Sí</option>
-            <option value="En trámite" ${invHipoteca==='En trámite'?'selected':''}>En trámite</option>
-            <option value="No" ${invHipoteca==='No'?'selected':''}>No</option>
-          </select>
+          <label style="margin-bottom:4px;">¿Primera vivienda?</label>
+          <div class="choice-group inv-primera-group" style="gap:6px;margin-top:0;">
+            <button type="button" class="choice-btn inv-primera-btn ${invPrimeraVivienda==='Sí'?'active':''}" data-value="Sí" style="padding:7px 14px;font-size:12.5px;">Sí</button>
+            <button type="button" class="choice-btn inv-primera-btn ${invPrimeraVivienda==='No'?'active':''}" data-value="No" style="padding:7px 14px;font-size:12.5px;">No</button>
+          </div>
         </div>
         <div class="add-piso-field" style="margin-bottom:8px;">
-          <label style="margin-bottom:4px;">¿Qué presupuesto manejáis?</label>
+          <label style="margin-bottom:4px;">Presupuesto límite</label>
           <input type="text" class="inv-presupuesto" value="${escVenta(invPresupuesto)}" placeholder="Ej. 300.000 - 350.000 €" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
         </div>
+        <div class="add-piso-field" style="margin-bottom:8px;">
+          <label style="margin-bottom:4px;">Urgencia</label>
+          <div class="choice-group inv-urgencia-group" style="gap:6px;margin-top:0;">
+            ${INV_URGENCIA_OPCIONES.map(op=>`<button type="button" class="choice-btn inv-urgencia-btn ${invUrgencia===op?'active':''}" data-value="${op}" style="padding:7px 10px;font-size:12.5px;">${op}</button>`).join('')}
+          </div>
+        </div>
         <div class="add-piso-field" style="margin-bottom:0;">
-          <label style="margin-bottom:4px;">¿Para cuándo queréis comprar? (urgencia)</label>
-          <select class="inv-urgencia" style="padding:8px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:7px;">
-            <option value="" ${invUrgencia===''?'selected':''}>— Sin responder —</option>
-            <option value="Inmediata" ${invUrgencia==='Inmediata'?'selected':''}>Inmediata</option>
-            <option value="1-3 meses" ${invUrgencia==='1-3 meses'?'selected':''}>1-3 meses</option>
-            <option value="Más adelante" ${invUrgencia==='Más adelante'?'selected':''}>Más adelante</option>
-          </select>
+          <label style="margin-bottom:4px;">Hipoteca</label>
+          <div class="choice-group inv-hipoteca-group" style="gap:6px;margin-top:0;">
+            ${INV_HIPOTECA_OPCIONES.map(op=>`<button type="button" class="choice-btn inv-hipoteca-btn ${invHipoteca===op[0]?'active':''}" data-value="${op[0]}" style="padding:7px 10px;font-size:12.5px;">${op[0]}${op[1]?(' '+op[1]):''}</button>`).join('')}
+          </div>
         </div>
         <button class="inv-guardar-btn edit-reco-btn" style="width:auto;padding:8px 14px;margin-top:8px;margin-bottom:0;font-size:12px;">Guardar respuestas</button>
       </div>
@@ -7629,14 +7652,36 @@
       const showing = invBox.style.display !== 'none';
       invBox.style.display = showing ? 'none' : 'block';
     });
+    // Características: multi-selección independiente (no excluyente, a diferencia
+    // del resto de choice-groups de la ficha, que son de selección única).
+    card.querySelectorAll('.inv-carac-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ btn.classList.toggle('active'); });
+    });
+    // Es para / Primera vivienda / Urgencia / Hipoteca: selección única (como el resto de choice-groups).
+    [['.inv-para-btn'], ['.inv-primera-btn'], ['.inv-urgencia-btn'], ['.inv-hipoteca-btn']].forEach(([sel])=>{
+      card.querySelectorAll(sel).forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          card.querySelectorAll(sel).forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+    });
     card.querySelector('.inv-guardar-btn').addEventListener('click', async (e)=>{
       const btn = e.currentTarget;
+      const caracSeleccionadas = Array.from(card.querySelectorAll('.inv-carac-btn.active')).map(b=>b.dataset.value);
+      const paraBtnActivo = card.querySelector('.inv-para-btn.active');
+      const primeraBtnActivo = card.querySelector('.inv-primera-btn.active');
+      const urgenciaBtnActivo = card.querySelector('.inv-urgencia-btn.active');
+      const hipotecaBtnActivo = card.querySelector('.inv-hipoteca-btn.active');
       const cambios = {
         InvBuscan: card.querySelector('.inv-buscan').value.trim(),
-        InvPara: card.querySelector('.inv-para').value.trim(),
-        InvHipoteca: card.querySelector('.inv-hipoteca').value,
+        InvM2: card.querySelector('.inv-m2').value.trim(),
+        InvCaracteristicas: caracSeleccionadas.join('|'),
+        InvPara: paraBtnActivo ? paraBtnActivo.dataset.value : '',
+        InvPrimeraVivienda: primeraBtnActivo ? primeraBtnActivo.dataset.value : '',
+        InvHipoteca: hipotecaBtnActivo ? hipotecaBtnActivo.dataset.value : '',
         InvPresupuesto: card.querySelector('.inv-presupuesto').value.trim(),
-        InvUrgencia: card.querySelector('.inv-urgencia').value
+        InvUrgencia: urgenciaBtnActivo ? urgenciaBtnActivo.dataset.value : ''
       };
       btn.disabled = true;
       btn.textContent = 'Guardando...';
