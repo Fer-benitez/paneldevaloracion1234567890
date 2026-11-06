@@ -1416,6 +1416,14 @@
         </div>
       </div>
       </div>
+
+      <!-- Acceso directo al calendario de visitas, al mismo nivel que Proceso/Informes:
+           un clic desde cualquier pestaña, sin tener que entrar en Leads/Idealista
+           primero. Es el mismo calendario compartido (visitas de L + Idealista). -->
+      <button class="informes-btn" id="calendarioAccesoBtn" type="button">
+        <span>📅 Calendario</span>
+      </button>
+      </div>
     </div>
   </div>
   <div class="wrap header-copy">
@@ -1423,6 +1431,39 @@
     <p>Formularios por piso y panel de valoración, todo en un mismo sitio.</p>
   </div>
 </header>
+
+<!-- Modal del acceso directo al calendario (botón "📅 Calendario" del header).
+     Reutiliza exactamente el mismo calendario compartido de Leads/Idealista
+     (visitasDelMesUnificado), solo que aquí se abre de golpe desde cualquier
+     pestaña, sin tener que navegar hasta Visitas primero. -->
+<div class="vcal-day-overlay" id="calendarioAccesoOverlay" style="display:none;z-index:600;">
+  <div class="vcal-day-popup" style="max-width:620px;">
+    <div class="vcal-day-popup-header">
+      <div class="vcal-day-popup-title">📅 Calendario de visitas</div>
+      <button type="button" class="vcal-day-popup-close" id="calendarioAccesoCloseBtn">✕</button>
+    </div>
+    <div class="vcal-day-popup-body">
+      <div class="vcal-header">
+        <button type="button" class="vcal-nav" id="vcalPrevBtnHeader">←</button>
+        <div class="vcal-mes" id="vcalMesLabelHeader">—</div>
+        <button type="button" class="vcal-nav" id="vcalNextBtnHeader">→</button>
+        <button type="button" class="vcal-hoy-btn" id="vcalHoyBtnHeader">Hoy</button>
+      </div>
+      <div class="vcal-grid" id="vcalGridHeader"></div>
+      <p class="section-desc" style="margin-top:10px;font-size:11.5px;">Junta las visitas de Leads (L → WhatsApp) y de Leads Idealista (€ Venta / 🔑 Alquiler) en un solo sitio.</p>
+    </div>
+  </div>
+</div>
+<!-- Popup del día dentro del acceso directo — por encima del modal anterior. -->
+<div class="vcal-day-overlay" id="vcalDayOverlayHeader" style="display:none;z-index:650;">
+  <div class="vcal-day-popup">
+    <div class="vcal-day-popup-header">
+      <div class="vcal-day-popup-title" id="vcalDayTitleHeader">—</div>
+      <button type="button" class="vcal-day-popup-close" id="vcalDayCloseBtnHeader">✕</button>
+    </div>
+    <div class="vcal-day-popup-body" id="vcalDayBodyHeader"></div>
+  </div>
+</div>
 
 <div class="tab-bar">
   <div class="wrap tab-group">
@@ -7402,32 +7443,39 @@
         item.addEventListener('click', ()=>{
           overlay.style.display = 'none';
           irAVisitaDesdeCalendario(v);
+          if(cfg.onAfterNavigate) cfg.onAfterNavigate();
         });
         body.appendChild(item);
       });
       overlay.style.display = 'flex';
     }
 
-    document.getElementById(cfg.listaBtnId).addEventListener('click', ()=>{
-      viewActiva = 'lista';
-      document.getElementById(cfg.listaBtnId).classList.add('active');
-      document.getElementById(cfg.calBtnId).classList.remove('active');
-      const lista = document.getElementById(cfg.listaContainerId);
-      lista.style.display = '';
-      const empty = document.getElementById(cfg.emptyId);
-      if(empty) empty.style.display = (lista.children.length === 0) ? 'block' : 'none';
-      document.getElementById(cfg.calendarContainerId).style.display = 'none';
-    });
-    document.getElementById(cfg.calBtnId).addEventListener('click', ()=>{
-      viewActiva = 'calendario';
-      document.getElementById(cfg.calBtnId).classList.add('active');
-      document.getElementById(cfg.listaBtnId).classList.remove('active');
-      document.getElementById(cfg.listaContainerId).style.display = 'none';
-      const empty = document.getElementById(cfg.emptyId);
-      if(empty) empty.style.display = 'none';
-      document.getElementById(cfg.calendarContainerId).style.display = 'block';
-      render();
-    });
+    // El toggle Lista/Calendario es opcional: el acceso directo del header
+    // (calVisitasHeader) no tiene vista "lista" — siempre muestra el
+    // calendario — así que no declara listaBtnId/calBtnId y nos saltamos
+    // este bloque para esa instancia.
+    if(cfg.listaBtnId && cfg.calBtnId){
+      document.getElementById(cfg.listaBtnId).addEventListener('click', ()=>{
+        viewActiva = 'lista';
+        document.getElementById(cfg.listaBtnId).classList.add('active');
+        document.getElementById(cfg.calBtnId).classList.remove('active');
+        const lista = document.getElementById(cfg.listaContainerId);
+        lista.style.display = '';
+        const empty = document.getElementById(cfg.emptyId);
+        if(empty) empty.style.display = (lista.children.length === 0) ? 'block' : 'none';
+        document.getElementById(cfg.calendarContainerId).style.display = 'none';
+      });
+      document.getElementById(cfg.calBtnId).addEventListener('click', ()=>{
+        viewActiva = 'calendario';
+        document.getElementById(cfg.calBtnId).classList.add('active');
+        document.getElementById(cfg.listaBtnId).classList.remove('active');
+        document.getElementById(cfg.listaContainerId).style.display = 'none';
+        const empty = document.getElementById(cfg.emptyId);
+        if(empty) empty.style.display = 'none';
+        document.getElementById(cfg.calendarContainerId).style.display = 'block';
+        render();
+      });
+    }
     document.getElementById(cfg.prevBtnId).addEventListener('click', ()=>{ fechaMes.setMonth(fechaMes.getMonth() - 1); render(); });
     document.getElementById(cfg.nextBtnId).addEventListener('click', ()=>{ fechaMes.setMonth(fechaMes.getMonth() + 1); render(); });
     document.getElementById(cfg.hoyBtnId).addEventListener('click', ()=>{
@@ -7459,11 +7507,42 @@
     prevBtnId: 'vcalPrevBtnL', nextBtnId: 'vcalNextBtnL', hoyBtnId: 'vcalHoyBtnL',
     listaContainerId: 'leadsGridN2', emptyId: 'emptyLeadsN2', calendarContainerId: 'visitasCalendarioL'
   });
+  // Acceso directo al calendario (botón "📅 Calendario" del header): una
+  // tercera instancia del mismo widget compartido, sin vista "lista" (no
+  // hace falta cfg.listaBtnId/calBtnId/listaContainerId/emptyId/calendarContainerId
+  // — ver el guard de arriba), que vive en su propio modal y se puede abrir
+  // desde cualquier pestaña sin tener que entrar antes en Leads/Idealista.
+  const calendarioAccesoOverlay = document.getElementById('calendarioAccesoOverlay');
+  const calVisitasHeader = crearCalendarioVisitasCompartido({
+    gridId: 'vcalGridHeader', labelId: 'vcalMesLabelHeader',
+    overlayId: 'vcalDayOverlayHeader', titleId: 'vcalDayTitleHeader', bodyId: 'vcalDayBodyHeader', closeBtnId: 'vcalDayCloseBtnHeader',
+    prevBtnId: 'vcalPrevBtnHeader', nextBtnId: 'vcalNextBtnHeader', hoyBtnId: 'vcalHoyBtnHeader',
+    onAfterNavigate: ()=>{ calendarioAccesoOverlay.style.display = 'none'; }
+  });
+  document.getElementById('calendarioAccesoBtn').addEventListener('click', async ()=>{
+    calendarioAccesoOverlay.style.display = 'flex';
+    // Acceso directo: si todavía no se visitó ninguna pestaña de Leads, los
+    // datos de las visitas (cachedLeadsVenta/cachedLeads) aún no se habrían
+    // cargado — se fuerza su carga aquí (misma función que usa la
+    // Trayectoria) para que el calendario no aparezca vacío.
+    await asegurarDatosTrayectoria();
+    calVisitasHeader.render();
+  });
+  document.getElementById('calendarioAccesoCloseBtn').addEventListener('click', ()=>{
+    calendarioAccesoOverlay.style.display = 'none';
+  });
+  calendarioAccesoOverlay.addEventListener('click', (e)=>{
+    if(e.target === calendarioAccesoOverlay) calendarioAccesoOverlay.style.display = 'none';
+  });
+
   // Como el calendario es compartido (misma información en las dos
   // pestañas), cualquier cambio en cualquiera de los dos sistemas de leads
   // debe refrescar los DOS widgets si están abiertos en vista calendario —
-  // no solo el de la sección que se acaba de guardar.
+  // no solo el de la sección que se acaba de guardar. El acceso directo del
+  // header se refresca igual, mirando si su modal está visible (no tiene
+  // viewActiva 'lista'/'calendario' porque no tiene vista de lista).
   function refrescarCalendariosVisitasSiActivos(){
+    if(calendarioAccesoOverlay.style.display !== 'none') calVisitasHeader.render();
     if(calVisitasVenta.estaEnCalendario()) calVisitasVenta.render();
     if(calVisitasL.estaEnCalendario()) calVisitasL.render();
   }
