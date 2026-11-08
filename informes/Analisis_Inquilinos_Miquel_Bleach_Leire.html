@@ -163,6 +163,8 @@
   .status-badge.ambar .circle{background:var(--amber);}
   .status-badge.rojo{background:var(--red-wash);color:var(--red-ink);}
   .status-badge.rojo .circle{background:var(--red);}
+  .status-badge.gris{background:#eef1f5;color:var(--muted);}
+  .status-badge.gris .circle{background:#aab4c0;}
 
   /* sector público / empleo público badge */
   .pubsector-badge{display:inline-flex;align-items:center;gap:7px;background:var(--navy-darker);color:#fff;font-size:11.5px;font-weight:800;padding:7px 14px 7px 11px;border-radius:999px;letter-spacing:.01em;box-shadow:0 2px 8px rgba(22,50,74,0.25);}
@@ -433,8 +435,8 @@
         <div class="icon" id="verdictIcon">!</div>
         <div class="txt">
           <span class="verdict-source">Análisis de documentos</span>
-          <b id="verdictTitle">Perfil económico sólido y verificado de ambos titulares; esfuerzo de renta saludable, pero sin garantías adicionales aportadas</b>
-          <span id="verdictDesc">Leire Redondo aporta contrato de trabajo indefinido como arquitecta en Blanch, Conca, Roger i Areu arquitectes associats S.L.P. desde el 24/02/2025 (nómina neta fija de 2.014,77&nbsp;€/mes, idéntica en agosto, septiembre y octubre de 2026) y una vida laboral con alta ininterrumpida desde mayo de 2023. Santiago Lobón Cisneros aporta contrato indefinido como Project Manager en Wenea Urban Solutions SL desde el 10/02/2025, con una subida salarial firmada en abril de 2026 (de 40.000&nbsp;€ a 45.000&nbsp;€ brutos/año) ya reflejada en sus 3 últimas nóminas (promedio 2.043,15&nbsp;€/mes). El ingreso combinado verificado por nómina es de 4.057,92&nbsp;€/mes, lo que sitúa el esfuerzo de la renta solicitada (1.189&nbsp;€) en el 29,3&nbsp;%, por debajo del umbral recomendado del 35&nbsp;%, con un reparto equilibrado entre ambos titulares (≈50/50, sin concentración de riesgo). Quedan pendientes: ningún aval o fiador aportado (la ficha indica "Ninguna de momento"), un error de transcripción en el NIF de Santiago en la ficha, y discrepancias de domicilio registrado que conviene regularizar. Este documento es un resumen económico y documental, no un dictamen legal.</span>
+          <b id="verdictTitle">Perfil económico sólido y verificado de ambos titulares; esfuerzo de renta saludable, sin necesidad de garantías adicionales</b>
+          <span id="verdictDesc">Leire Redondo aporta contrato de trabajo indefinido como arquitecta en Blanch, Conca, Roger i Areu arquitectes associats S.L.P. desde el 24/02/2025 (nómina neta fija de 2.014,77&nbsp;€/mes, idéntica en agosto, septiembre y octubre de 2026) y una vida laboral con alta ininterrumpida desde mayo de 2023. Santiago Lobón Cisneros aporta contrato indefinido como Project Manager en Wenea Urban Solutions SL desde el 10/02/2025, con una subida salarial firmada en abril de 2026 (de 40.000&nbsp;€ a 45.000&nbsp;€ brutos/año) ya reflejada en sus 3 últimas nóminas (promedio 2.043,15&nbsp;€/mes). El ingreso combinado verificado por nómina es de 4.057,92&nbsp;€/mes, lo que sitúa el esfuerzo de la renta solicitada (1.189&nbsp;€) en el 29,3&nbsp;%, por debajo del umbral recomendado del 35&nbsp;% y del 30&nbsp;% que exime de aval/fiador, con un reparto equilibrado entre ambos titulares (≈50/50, sin concentración de riesgo). Quedan pendientes: un error de transcripción en el NIF de Santiago en la ficha y discrepancias de domicilio registrado que conviene regularizar. Este documento es un resumen económico y documental, no un dictamen legal.</span>
         </div>
       </div>
     </div>
@@ -591,10 +593,10 @@ Prometemos cuidar el piso y tener una relación transparente con el propietario.
         <div class="value">24,8 – 29,3 %</div>
         <div class="foot">24,8 % sobre lo declarado (4.800 €) · 29,3 % sobre lo verificado por nómina (4.057,92 €) — ambos por debajo del 35 %</div>
       </div>
-      <div class="tile warn">
+      <div class="tile">
         <div class="label">Garantía declarada</div>
-        <div class="value">Ninguna de momento</div>
-        <div class="foot">No se ha aportado documentación de aval/fiador; ambos titulares cuentan con empleo indefinido estable</div>
+        <div class="value">No requerida</div>
+        <div class="foot">El candidato no necesita aportar aval/fiador; esfuerzo sobre la renta por debajo del 30 % y ambos titulares con empleo indefinido estable</div>
       </div>
     </div>
 
@@ -729,11 +731,11 @@ Prometemos cuidar el piso y tener una relación transparente con el propietario.
     </div>
 
     <h2 class="section">Verificación documental</h2>
-    <div class="verif-summary">
-      <div class="vs-icon">✓</div>
-      <div class="vs-body">
-        <b>Documentación completa de ambos titulares</b>
-        <p>DNI, contrato, nóminas y vida laboral aportados y verificados para Leire y Santiago. La declaración de la renta de Santiago corresponde a un ejercicio anterior a su contrato y subida salarial actuales — se ha priorizado la nómina reciente como ingreso de referencia. No se ha realizado cotejo en vivo en la Sede Electrónica de la AEAT para este expediente.</p>
+    <div class="aeat-verify-banner">
+      <div class="aeat-icon">✓</div>
+      <div class="aeat-txt">
+        <b>Ambas declaraciones de la renta verificadas en vivo en la Sede Electrónica de la AEAT</b>
+        <span>Leire — CSV 6W2DZ4Y6EK7WRQQX (expediente 2025100Q19GQ5NZS, presentada 06/05/2026): documento auténtico, coincide con el PDF aportado. Santiago — CSV SJTJAC6ESMKPHC9F (expediente 2025100LSNDVS0SG, presentada 13/05/2026): documento auténtico, coincide con el PDF aportado. La de Santiago sigue correspondiendo a un ejercicio anterior a su contrato y subida salarial actuales — se ha priorizado su nómina reciente como ingreso de referencia.</span>
       </div>
     </div>
     <div class="doc-wrap">
@@ -756,8 +758,8 @@ Prometemos cuidar el piso y tener una relación transparente con el propietario.
       </tr>
       <tr>
         <td>Declaración de la renta</td><td>Leire</td>
-        <td class="status"><span class="status-badge verde"><span class="circle"></span>Aportado</span></td>
-        <td>IRPF 2025 (Modelo 100): rendimiento neto reducido del trabajo 25.822,05 €/año. Incluye deducción autonómica por alquiler de su vivienda actual (550 €/mes). No se ha realizado cotejo en vivo en la Sede Electrónica de la AEAT para este expediente</td>
+        <td class="status"><span class="status-badge verde"><span class="circle"></span>Aportado</span><span class="aeat-mini-badge">✓ AEAT</span></td>
+        <td>IRPF 2025 (Modelo 100): rendimiento neto reducido del trabajo 25.822,05 €/año. Incluye deducción autonómica por alquiler de su vivienda actual (550 €/mes). Verificado en vivo en la Sede Electrónica de la AEAT (CSV 6W2DZ4Y6EK7WRQQX): documento auténtico, coincide con el PDF aportado</td>
       </tr>
       <tr>
         <td>Vida laboral</td><td>Leire</td>
@@ -781,8 +783,8 @@ Prometemos cuidar el piso y tener una relación transparente con el propietario.
       </tr>
       <tr>
         <td>Declaración de la renta</td><td>Santiago</td>
-        <td class="status"><span class="status-badge ambar"><span class="circle"></span>Aportado, desactualizada</span></td>
-        <td>IRPF 2025: rendimiento neto reducido del trabajo 31.396,37 €/año. Corresponde a un ejercicio y salario anteriores al contrato y la subida actuales; se ha priorizado la nómina reciente como ingreso verificado</td>
+        <td class="status"><span class="status-badge ambar"><span class="circle"></span>Aportado, desactualizada</span><span class="aeat-mini-badge">✓ AEAT</span></td>
+        <td>IRPF 2025: rendimiento neto reducido del trabajo 31.396,37 €/año. Verificado en vivo en la Sede Electrónica de la AEAT (CSV SJTJAC6ESMKPHC9F): documento auténtico. Corresponde a un ejercicio y salario anteriores al contrato y la subida actuales; se ha priorizado la nómina reciente como ingreso verificado</td>
       </tr>
       <tr>
         <td>Vida laboral</td><td>Santiago</td>
@@ -791,8 +793,8 @@ Prometemos cuidar el piso y tener una relación transparente con el propietario.
       </tr>
       <tr>
         <td>Garantías (avalista/fiador)</td><td>Hogar</td>
-        <td class="status"><span class="status-badge rojo"><span class="circle"></span>Falta</span></td>
-        <td>La ficha indica "Ninguna de momento"; no se ha aportado documentación de aval ni fiador</td>
+        <td class="status"><span class="status-badge gris"><span class="circle"></span>No aplica — no requerida</span></td>
+        <td>El candidato ha indicado que no necesita aportar avalista/fiador. El esfuerzo sobre la renta no supera el 30&nbsp;% (29,3&nbsp;% verificado), por lo que no se considera una garantía pendiente</td>
       </tr>
     </table>
     </div>
@@ -802,40 +804,33 @@ Prometemos cuidar el piso y tener una relación transparente con el propietario.
       <div class="flag sev-media">
         <div class="num">1</div>
         <div class="body">
-          <div class="toprow"><b class="ttl">Sin garantías adicionales (aval/fiador) aportadas</b><span class="sev-chip">Media</span></div>
-          <p>La ficha indica "Ninguna de momento" en garantías y no se ha aportado documentación de aval bancario ni fiador. El esfuerzo de la renta es saludable (29,3 % sobre lo verificado) y ambos titulares cuentan con contrato indefinido estable, por lo que no resulta imprescindible, pero conviene valorar si el propietario quiere exigirlo.</p>
-        </div>
-      </div>
-      <div class="flag sev-media">
-        <div class="num">2</div>
-        <div class="body">
           <div class="toprow"><b class="ttl">La declaración de la renta 2025 de Santiago no refleja su situación actual</b><span class="sev-chip">Media</span></div>
           <p>El IRPF 2025 aportado corresponde a un ejercicio anterior a su incorporación a Wenea Urban Solutions (10/02/2025) y a la subida salarial de mayo de 2026 (de 40.000 € a 45.000 € brutos/año). Para este informe se ha priorizado la nómina más reciente (agosto–octubre 2026) como ingreso verificado de referencia, al ser el dato más actual y fiable.</p>
         </div>
       </div>
       <div class="flag sev-baja">
-        <div class="num">3</div>
+        <div class="num">2</div>
         <div class="body">
           <div class="toprow"><b class="ttl">Discrepancia en el NIF de Santiago en la ficha</b><span class="sev-chip">Baja</span></div>
           <p>La ficha indica "5146687Y" (falta un dígito), mientras que su NIF real y verificado en DNI, nóminas, vida laboral e IRPF es 51466876Y. El resto de datos personales coincide en todos los documentos — parece un simple error de transcripción, no una cuestión de identidad.</p>
         </div>
       </div>
       <div class="flag sev-baja">
-        <div class="num">4</div>
+        <div class="num">3</div>
         <div class="body">
           <div class="toprow"><b class="ttl">Domicilio registrado de Leire desactualizado</b><span class="sev-chip">Baja</span></div>
           <p>Su DNI y su vida laboral constan con domicilio en Erandio (Bizkaia), mientras reside y trabaja en Barcelona desde hace varios años (nómina, contrato e IRPF con deducción autonómica catalana por alquiler). Probablemente solo pendiente de actualizar el padrón.</p>
         </div>
       </div>
       <div class="flag sev-baja">
-        <div class="num">5</div>
+        <div class="num">4</div>
         <div class="body">
           <div class="toprow"><b class="ttl">Breve periodo de desempleo de Santiago antes de su empleo actual</b><span class="sev-chip">Baja</span></div>
           <p>Percibió prestación por desempleo entre agosto de 2024 y febrero de 2025 (~6 meses) tras finalizar su etapa en Solarmente S.L., antes de incorporarse a Wenea Urban Solutions. El periodo ya está resuelto y seguido de una trayectoria positiva, con subida salarial reciente.</p>
         </div>
       </div>
       <div class="flag sev-baja">
-        <div class="num">6</div>
+        <div class="num">5</div>
         <div class="body">
           <div class="toprow"><b class="ttl">Residencias fiscales declaradas distintas en el IRPF 2025</b><span class="sev-chip">Baja</span></div>
           <p>Leire declara residencia fiscal en Cataluña y Santiago en Madrid para el ejercicio 2025. Es coherente con su propia carta de presentación, donde explican que llevan dos años conviviendo en un piso compartido y ahora buscan formalizar su domicilio conjunto en Barcelona.</p>
@@ -1178,11 +1173,11 @@ Prometemos cuidar el piso y tener una relación transparente con el propietario.
     antiguedad_display: 'Desde 24/02/2025 y 10/02/2025 (ambos indefinidos)',
     ingresos_verificados_display: '4.057,92 € (nóminas combinadas)',
     antiguedad_meses: 20,
-    garantias_display: 'Ninguna aportada',
-    garantias_class: 'low',
+    garantias_display: 'No requerida (esfuerzo < 30 %)',
+    garantias_class: 'ok',
     coherencia_nivel: 'Alta',
     flags_alta: 0,
-    flags_media: 2,
+    flags_media: 1,
     flags_baja: 4,
     personas: 2,
     titulares_total: 2
