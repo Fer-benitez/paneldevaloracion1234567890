@@ -1515,7 +1515,7 @@
 <div class="tab-bar">
   <div class="wrap tab-group">
     <button class="tab-btn active" data-tab="formularios"><span class="letter">F</span>Formularios</button>
-    <button class="tab-btn" data-tab="valoracion"><span class="letter">V</span>Panel de valoración</button>
+    <button class="tab-btn" data-tab="valoracion"><span class="letter">V</span>Panel de documentos</button>
     <button class="tab-btn" data-tab="reconocimiento"><span class="letter">R</span>Reconocimiento</button>
     <button class="tab-btn" data-tab="leads"><span class="letter">L</span>Leads</button>
     <button class="tab-btn tab-venta" data-tab="venta"><span class="letter">€</span>Leads Idealista</button>
@@ -1652,9 +1652,9 @@
     <div class="toolbar">
       <div class="filter-group">
         <button class="filter-btn active" data-filter="todos">Todos</button>
-        <button class="filter-btn" data-filter="verde">🟢 Adelante</button>
-        <button class="filter-btn" data-filter="ambar">🟡 Dudas</button>
-        <button class="filter-btn" data-filter="rojo">🔴 Rechazar</button>
+        <button class="filter-btn" data-filter="verde">🟢 Doc. descargados y analizados</button>
+        <button class="filter-btn" data-filter="ambar">🟡 Descargado sin analizar</button>
+        <button class="filter-btn" data-filter="rojo">🔴 No analizado y rechazado</button>
         <button class="filter-btn" data-filter="">Sin valorar</button>
         <select id="pisoFilter" class="piso-select">
           <option value="">Todos los pisos</option>
@@ -3153,9 +3153,9 @@
           <div class="card-review">
             <div class="review-label">Tu valoración</div>
             <div class="semaforo">
-              <button class="sema-btn ${c['Semáforo']==='verde'?'selected':''}" data-val="verde"><span class="circle"></span>Adelante</button>
-              <button class="sema-btn ${c['Semáforo']==='ambar'?'selected':''}" data-val="ambar"><span class="circle"></span>Dudas</button>
-              <button class="sema-btn ${c['Semáforo']==='rojo'?'selected':''}" data-val="rojo"><span class="circle"></span>Rechazar</button>
+              <button class="sema-btn ${c['Semáforo']==='verde'?'selected':''}" data-val="verde"><span class="circle"></span>Doc. descargados y analizados</button>
+              <button class="sema-btn ${c['Semáforo']==='ambar'?'selected':''}" data-val="ambar"><span class="circle"></span>Descargado sin analizar</button>
+              <button class="sema-btn ${c['Semáforo']==='rojo'?'selected':''}" data-val="rojo"><span class="circle"></span>No analizado y rechazado</button>
             </div>
             <textarea class="review-notes" placeholder="Impresión de la visita, banderas rojas, lo que consideres...">${c['Notas Fernando'] || ''}</textarea>
             <button class="save-btn">Guardar valoración</button>
@@ -3244,7 +3244,7 @@
   }
 
   function statusBadge(status){
-    const labels = { verde:'Adelante', ambar:'Dudas', rojo:'Rechazado' };
+    const labels = { verde:'Doc. descargados y analizados', ambar:'Descargado sin analizar', rojo:'No analizado y rechazado' };
     if(!status || !labels[status]) return '';
     return `<span class="status-badge ${status}"><span class="circle"></span>${labels[status]}</span>`;
   }
@@ -8389,7 +8389,7 @@
       if(normalizarTelefono(c['Teléfono']) !== digits) return;
       const fechaObj = c['Fecha'] ? new Date(c['Fecha']) : null;
       eventos.push({
-        origen: 'Valoracion', etiqueta: 'Ficha completa (Panel de valoración)',
+        origen: 'Valoracion', etiqueta: 'Ficha completa (Panel de documentos)',
         fecha: (fechaObj && !isNaN(fechaObj)) ? fechaObj : null,
         fechaTexto: c['Fecha'] ? formatDate(c['Fecha']) : '—',
         piso: c['Piso'] || '', trayKey: (c['Fecha'] || '') + '|' + (c['Teléfono'] || '')
@@ -8428,14 +8428,14 @@
     if(!trayectoriaOverlay) return;
     trayectoriaTitleEl.textContent = nombreActual ? ('Trayectoria de ' + nombreActual) : 'Trayectoria';
     trayectoriaSubtitleEl.textContent = telefono ? ('📞 ' + telefono) : '';
-    trayectoriaBodyEl.innerHTML = '<p style="font-size:13.5px;color:var(--muted,#8a8a8a);">Buscando en L, Leads Idealista y el Panel de valoración...</p>';
+    trayectoriaBodyEl.innerHTML = '<p style="font-size:13.5px;color:var(--muted,#8a8a8a);">Buscando en L, Leads Idealista y el Panel de documentos...</p>';
     trayectoriaOverlay.classList.add('show');
 
     await asegurarDatosTrayectoria();
 
     const eventos = buscarTrayectoriaPorTelefono(telefono);
     if(eventos.length === 0){
-      trayectoriaBodyEl.innerHTML = '<p style="font-size:13.5px;color:var(--muted,#8a8a8a);">No hay más registros con este teléfono en Leads, Leads Idealista ni en el Panel de valoración.</p>';
+      trayectoriaBodyEl.innerHTML = '<p style="font-size:13.5px;color:var(--muted,#8a8a8a);">No hay más registros con este teléfono en Leads, Leads Idealista ni en el Panel de documentos.</p>';
       return;
     }
     trayectoriaBodyEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;">' + eventos.map((ev, i)=>{
