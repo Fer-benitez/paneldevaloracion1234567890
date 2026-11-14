@@ -6975,19 +6975,42 @@
   const lvMensaje = document.getElementById('lvMensaje');
 
   function parseIdealistaPaste(raw){
+    const EMAIL_RE = /[\w.+-]+@[\w-]+\.[A-Za-z]{2,}/;
+    const PHONE_RE = /[\d\s()+-]{7,}/;
     const rawLines = String(raw || '').replace(/\r\n/g, '\n').split('\n');
     const idx1 = rawLines.findIndex(l => l.trim().length > 0);
     if(idx1 === -1) return null;
     const nombre = rawLines[idx1].trim();
-    let idx2 = idx1 + 1;
-    while(idx2 < rawLines.length && rawLines[idx2].trim() === '') idx2++;
-    const contactLine = rawLines[idx2] || '';
-    const emailMatch = contactLine.match(/[\w.+-]+@[\w-]+\.[A-Za-z]{2,}/);
-    const email = emailMatch ? emailMatch[0] : '';
-    const beforeEmail = emailMatch ? contactLine.slice(0, emailMatch.index) : contactLine;
-    const phoneMatch = beforeEmail.match(/[\d\s()+-]{7,}/);
-    const telefono = (phoneMatch ? phoneMatch[0] : beforeEmail).replace(/\s+/g, ' ').trim();
-    const mensaje = rawLines.slice(idx2 + 1).join('\n').trim();
+
+    let telefono = '';
+    let email = '';
+    let i = idx1 + 1;
+    while(i < rawLines.length && rawLines[i].trim() === '') i++;
+
+    if(i < rawLines.length){
+      const line1 = rawLines[i];
+      const emailMatch1 = line1.match(EMAIL_RE);
+      if(emailMatch1){
+        // Formato antiguo: teléfono y email en la misma línea.
+        email = emailMatch1[0];
+        const resto = line1.slice(0, emailMatch1.index) + ' ' + line1.slice(emailMatch1.index + emailMatch1[0].length);
+        const phoneMatch1 = resto.match(PHONE_RE);
+        if(phoneMatch1) telefono = phoneMatch1[0].replace(/\s+/g, ' ').trim();
+        i++;
+      } else {
+        // Formato de Idealista: teléfono y email en líneas separadas.
+        const phoneMatch1 = line1.match(PHONE_RE);
+        telefono = (phoneMatch1 ? phoneMatch1[0] : line1).replace(/\s+/g, ' ').trim();
+        i++;
+        while(i < rawLines.length && rawLines[i].trim() === '') i++;
+        if(i < rawLines.length){
+          const emailMatch2 = rawLines[i].match(EMAIL_RE);
+          if(emailMatch2){ email = emailMatch2[0]; i++; }
+        }
+      }
+    }
+
+    const mensaje = rawLines.slice(i).join('\n').trim();
     return { nombre, telefono, email, mensaje };
   }
 
