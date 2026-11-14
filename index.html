@@ -573,6 +573,8 @@
   .tag-pct-warn{background:#fff3da;color:#b5790f;}
   .tag-pct-high{background:#fde6e6;color:#c23a3a;}
   .tag-neutral{background:#eef1f5;color:#64758a;}
+  .tag-generico-badge{background:var(--navy-dark);color:#fff;}
+  .tag-generico-op{background:#fff3df;color:#8a5a00;}
   .lead-card .actions{display:flex;gap:8px;flex-wrap:wrap;}
   .lead-card .actions a, .lead-card .actions button{
     font-size:12px;font-weight:700;padding:8px 12px;border-radius:7px;border:none;cursor:pointer;
@@ -1907,6 +1909,21 @@
         <input type="number" id="leadGotoInput" class="lead-search-input" placeholder="Ir al lead nº" style="min-width:110px;" min="1">
         <button id="leadGotoBtn" class="edit-reco-btn" style="width:auto;padding:8px 16px;margin-bottom:0;">Ir →</button>
       </div>
+    </div>
+
+    <div class="filter-group" id="leadGenericFilterGroup" style="margin-bottom:16px;display:none;">
+      <span style="font-size:13px;font-weight:600;color:var(--navy-dark);">🌐 Dentro de GENÉRICO, filtrar por:</span>
+      <select id="leadGenericOpFilter" class="piso-select">
+        <option value="">Alquiler/Compra — todos</option>
+        <option value="Alquiler">🏠 Alquiler</option>
+        <option value="Compra">🔑 Compra</option>
+      </select>
+      <select id="leadGenericZonaFilter" class="piso-select">
+        <option value="">Zona — todas</option>
+      </select>
+      <select id="leadGenericHabFilter" class="piso-select">
+        <option value="">Habitaciones — todas</option>
+      </select>
     </div>
 
     <div class="filter-group" id="leadSemaforoFilterGroup" style="margin-bottom:16px;">
@@ -4529,12 +4546,64 @@
     currentLeadPiso = leadPisoFilter.value;
     renderLeads();
   });
+
+  // ---- Sub-filtro dentro de GENÉRICO (leads del formulario amplio, todos
+  // agrupados bajo "Piso interés" = "GENÉRICO"): aquí se puede acotar por
+  // operación, zona o habitaciones, que es lo que antes se perdía al
+  // fragmentar cada lead en su propio "piso". ----
+  const GENERICO_PISO = 'GENÉRICO';
+  const leadGenericFilterGroup = document.getElementById('leadGenericFilterGroup');
+  const leadGenericOpFilter = document.getElementById('leadGenericOpFilter');
+  const leadGenericZonaFilter = document.getElementById('leadGenericZonaFilter');
+  const leadGenericHabFilter = document.getElementById('leadGenericHabFilter');
+  let currentLeadGenericOp = '';
+  let currentLeadGenericZona = '';
+  let currentLeadGenericHab = '';
+  leadGenericOpFilter.addEventListener('change', ()=>{ currentLeadGenericOp = leadGenericOpFilter.value; renderLeads(); });
+  leadGenericZonaFilter.addEventListener('change', ()=>{ currentLeadGenericZona = leadGenericZonaFilter.value; renderLeads(); });
+  leadGenericHabFilter.addEventListener('change', ()=>{ currentLeadGenericHab = leadGenericHabFilter.value; renderLeads(); });
+
   function populateLeadPisoFilter(){
     const pisos = [...new Set(cachedLeads.map(l => l['Piso interés']).filter(Boolean))].sort();
     leadPisoFilter.innerHTML = '<option value="">Todos</option>' +
       pisos.map(p => `<option value="${p}">${p}</option>`).join('');
     if(pisos.includes(currentLeadPiso)){ leadPisoFilter.value = currentLeadPiso; }
     else { leadPisoFilter.value = ''; currentLeadPiso = ''; }
+
+    if(currentLeadPiso === GENERICO_PISO){
+      leadGenericFilterGroup.style.display = 'flex';
+      const genericos = cachedLeads.filter(l => (l['Piso interés'] || '') === GENERICO_PISO);
+      const zonasSet = new Set();
+      genericos.forEach(l => {
+        (l['Zonas interés'] || '').split(',').map(z => z.trim()).filter(Boolean).forEach(z => zonasSet.add(z));
+      });
+      const zonas = [...zonasSet].sort((a,b)=> a.localeCompare(b, 'es'));
+      leadGenericZonaFilter.innerHTML = '<option value="">Zona — todas</option>' +
+        zonas.map(z => `<option value="${z}">${z}</option>`).join('');
+      if(zonas.includes(currentLeadGenericZona)){ leadGenericZonaFilter.value = currentLeadGenericZona; }
+      else { leadGenericZonaFilter.value = ''; currentLeadGenericZona = ''; }
+
+      const habsSet = new Set(genericos.map(l => (l['Habitaciones deseadas'] || '').trim()).filter(Boolean));
+      const habs = [...habsSet].sort();
+      leadGenericHabFilter.innerHTML = '<option value="">Habitaciones — todas</option>' +
+        habs.map(h => `<option value="${h}">${h}</option>`).join('');
+      if(habs.includes(currentLeadGenericHab)){ leadGenericHabFilter.value = currentLeadGenericHab; }
+      else { leadGenericHabFilter.value = ''; currentLeadGenericHab = ''; }
+
+      leadGenericOpFilter.value = currentLeadGenericOp;
+    } else {
+      leadGenericFilterGroup.style.display = 'none';
+      currentLeadGenericOp = ''; currentLeadGenericZona = ''; currentLeadGenericHab = '';
+      leadGenericOpFilter.value = ''; leadGenericZonaFilter.value = ''; leadGenericHabFilter.value = '';
+    }
+  }
+
+  function leadMatchesGenericSubfilter(l){
+    if(currentLeadPiso !== GENERICO_PISO) return true;
+    if(currentLeadGenericOp && (l['Tipo operación'] || '') !== currentLeadGenericOp) return false;
+    if(currentLeadGenericZona && !(l['Zonas interés'] || '').includes(currentLeadGenericZona)) return false;
+    if(currentLeadGenericHab && (l['Habitaciones deseadas'] || '').trim() !== currentLeadGenericHab) return false;
+    return true;
   }
 
   // ---- Resumen de leads totales y por piso/localidad ----
@@ -4667,10 +4736,11 @@
     renderLeadsStats();
     const numberMap = getLeadNumberMap();
 
-    const filtroActivo = !!currentLeadPiso || !!currentLeadSearch.trim() || currentLeadSemaforo !== 'todos';
+    const filtroActivo = !!currentLeadPiso || !!currentLeadSearch.trim() || currentLeadSemaforo !== 'todos'
+      || !!currentLeadGenericOp || !!currentLeadGenericZona || !!currentLeadGenericHab;
     const leadsFiltrados = cachedLeads.filter(l => {
       const matchesPiso = !currentLeadPiso || (l['Piso interés'] || '') === currentLeadPiso;
-      return matchesPiso && leadMatchesSearch(l, currentLeadSearch) && leadMatchesSemaforo(l, currentLeadSemaforo);
+      return matchesPiso && leadMatchesSearch(l, currentLeadSearch) && leadMatchesSemaforo(l, currentLeadSemaforo) && leadMatchesGenericSubfilter(l);
     });
 
     const n1 = leadsFiltrados.filter(l => String(l['Nivel']) !== '2');
@@ -4834,25 +4904,76 @@
       const pctAlquiler = l['% Alquiler/ingresos'] || '';
       const tipoTrabajador = l['Tipo trabajador'] || '';
       const tieneSegundoFirmante = firmante2 && firmante2 !== 'No hay segundo firmante';
+      // Lead genérico (formulario de alquiler/compra sin piso concreto): trae "Nombre 2"
+      // del segundo firmante, así que aquí identificamos por nombre en vez de "1º/2º
+      // firmante" — más claro cuando son dos personas. Los leads de siempre (atados a
+      // un piso, sin "Nombre 2") se quedan exactamente igual que antes.
+      const nombre2Generico = l['Nombre 2'] || '';
+      const etiquetaFirmante1 = nombre2Generico ? (l['Nombre'] || '1º firmante') : '1º firmante';
+      const etiquetaFirmante2 = nombre2Generico || '2º firmante';
       const perfilTagsHtml = (ocupantes || firmante1 || firmante2 || ingresos || tipoTrabajador) ? `
         <div class="lead-tags">
           ${ocupantes ? `<span class="lead-tag tag-ocupantes">👥 ${ocupantes} ${ocupantes == 1 ? 'ocupante' : 'ocupantes'}</span>` : ''}
-          ${firmante1 ? `<span class="lead-tag ${tagClassFirmante(firmante1)}">1º firmante: ${firmante1}</span>` : ''}
-          ${tieneSegundoFirmante ? `<span class="lead-tag ${tagClassFirmante(firmante2)}">2º firmante: ${firmante2}</span>` : (firmante2 ? `<span class="lead-tag tag-neutral">Sin 2º firmante</span>` : '')}
+          ${firmante1 ? `<span class="lead-tag ${tagClassFirmante(firmante1)}">${etiquetaFirmante1}: ${firmante1}</span>` : ''}
+          ${tieneSegundoFirmante ? `<span class="lead-tag ${tagClassFirmante(firmante2)}">${etiquetaFirmante2}: ${firmante2}</span>` : (firmante2 ? `<span class="lead-tag tag-neutral">Sin 2º firmante</span>` : '')}
           ${tipoTrabajador ? `<span class="lead-tag ${tagClassTrabajador(tipoTrabajador)}">${tipoTrabajador}</span>` : ''}
           ${ingresos ? `<span class="lead-tag tag-ingresos">💶 ${ingresos} €/mes</span>` : ''}
           ${pctAlquiler ? `<span class="lead-tag ${tagClassPct(pctAlquiler)}">🏠 alquiler = ${pctAlquiler}% del ingreso</span>` : ''}
         </div>
       ` : '';
 
+      // Lead GENÉRICO (formulario amplio de alquiler/compra, sin piso concreto):
+      // trae "Tipo operación" — solo estos leads lo tienen, así que es el marcador
+      // seguro para distinguirlos de los leads de siempre (atados a un piso).
+      // Aquí mostramos lo que busca en la propiedad, que no aparecía en ningún
+      // sitio de la tarjeta.
+      const esGenerico = !!(l['Tipo operación'] || '');
+      let genericDetailsHtml = '';
+      if(esGenerico){
+        const tipoOp = l['Tipo operación'] || '';
+        const zonas = l['Zonas interés'] || '';
+        const hab = l['Habitaciones deseadas'] || '';
+        const banos = l['Baños deseados'] || '';
+        const m2 = l['M2 deseados'] || '';
+        const estado = l['Estado deseado'] || '';
+        const planta = l['Planta deseada'] || '';
+        const ascensor = l['Ascensor deseado'] || '';
+        const terraza = l['Terraza/balcón deseado'] || '';
+        const parking = l['Parking deseado'] || '';
+        const hipoteca = l['Hipoteca'] || '';
+        const entrada = l['Entrada disponible'] || '';
+        const presupuestoAlq = l['Presupuesto alquiler'] || '';
+        const presupuestoCompra = l['Presupuesto compra'] || '';
+        genericDetailsHtml = `
+          <div class="lead-tags">
+            <span class="lead-tag tag-generico-badge">🌐 GENÉRICO</span>
+            <span class="lead-tag tag-generico-op">${tipoOp === 'Compra' ? '🔑 Compra' : '🏠 Alquiler'}</span>
+            ${zonas ? `<span class="lead-tag tag-neutral">📍 ${zonas}</span>` : ''}
+            ${hab ? `<span class="lead-tag tag-neutral">🛏️ ${hab} hab.</span>` : ''}
+            ${banos ? `<span class="lead-tag tag-neutral">🛁 ${banos} baño${banos === '1' ? '' : 's'}</span>` : ''}
+            ${m2 ? `<span class="lead-tag tag-neutral">📐 ${m2} m²</span>` : ''}
+            ${estado ? `<span class="lead-tag tag-neutral">🛠️ ${estado}</span>` : ''}
+            ${planta ? `<span class="lead-tag tag-neutral">🏢 ${planta}</span>` : ''}
+            ${ascensor ? `<span class="lead-tag tag-neutral">🛗 ${ascensor === 'Sí' ? 'Con ascensor' : 'Ascensor no necesario'}</span>` : ''}
+            ${terraza ? `<span class="lead-tag tag-neutral">🌿 ${terraza === 'Sí' ? 'Con terraza/balcón' : 'Terraza no necesaria'}</span>` : ''}
+            ${parking ? `<span class="lead-tag tag-neutral">🅿️ ${parking === 'Sí' ? 'Con parking' : 'Parking no necesario'}</span>` : ''}
+            ${tipoOp === 'Compra' && hipoteca ? `<span class="lead-tag tag-neutral">🏦 Hipoteca: ${hipoteca}</span>` : ''}
+            ${tipoOp === 'Compra' && entrada ? `<span class="lead-tag tag-neutral">💰 Entrada: ${entrada}</span>` : ''}
+            ${presupuestoAlq ? `<span class="lead-tag tag-ingresos">💶 Máx. alquiler: ${presupuestoAlq} €</span>` : ''}
+            ${presupuestoCompra ? `<span class="lead-tag tag-ingresos">💶 Presupuesto: ${presupuestoCompra} €</span>` : ''}
+          </div>
+        `;
+      }
+
       card.innerHTML = `
         <div class="lead-number">Lead #${numero || '—'}</div>
         <label class="lead-select-check"><input type="checkbox" class="lead-checkbox"> Seleccionar</label>
         ${moveTarget === '2' ? `<div class="entrada-hora">🕐 Entró a las <span class="entrada-pill">${horaLlegada(l['Fecha']) || '—'}</span></div>` : ''}
         <div class="name">${l['Nombre'] || 'Sin nombre'}</div>
-        <div class="meta">${l['Fecha'] ? formatDate(l['Fecha']) : '—'} · ${l['Teléfono'] || '—'}${l['Piso interés'] ? ' · ' + l['Piso interés'] : ''}</div>
+        <div class="meta">${l['Fecha'] ? formatDate(l['Fecha']) : '—'} · ${l['Teléfono'] || '—'}${!esGenerico && l['Piso interés'] ? ' · ' + l['Piso interés'] : ''}${l['Email'] ? ' · ' + l['Email'] : ''}</div>
         ${visitaHtml}
         ${l['Disponibilidad visita'] ? `<div class="meta">🗨️ Dijo que podía: ${l['Disponibilidad visita']}</div>` : ''}
+        ${genericDetailsHtml}
         ${perfilTagsHtml}
         ${l['Presentación'] ? `<div class="notes"><strong>Sobre ellos:</strong> ${l['Presentación']}</div>` : ''}
         ${l['Trabajo e ingresos'] ? `<div class="notes"><strong>Trabajo/ingresos:</strong> ${l['Trabajo e ingresos']}</div>` : ''}
