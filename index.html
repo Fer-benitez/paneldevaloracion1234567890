@@ -6520,6 +6520,49 @@
     }
   };
 
+  // ---- Cruce con L: desde cada propiedad, ver qué leads GENÉRICOS (del
+  // formulario amplio alquiler/compra, agrupados todos bajo "GENÉRICO" en la
+  // pestaña L) encajan con ella — misma operación (Venta↔Compra, Alquiler↔
+  // Alquiler) y, si coincide, la misma zona. No se filtra por habitaciones,
+  // solo se muestra como dato. ----
+  function normalizarTextoGenerico(s){
+    return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
+  function encontrarLeadsGenericosParaPropiedad(p){
+    const operacionPiso = (p['Operación'] || 'Venta').trim() || 'Venta';
+    const operacionGenericaEquivalente = operacionPiso === 'Alquiler' ? 'Alquiler' : 'Compra';
+    const barrio = normalizarTextoGenerico(p['Barrio'] || '');
+    const genericos = (typeof cachedLeads !== 'undefined' ? cachedLeads : [])
+      .filter(l => (l['Piso interés'] || '') === 'GENÉRICO' && (l['Tipo operación'] || '') === operacionGenericaEquivalente);
+    const conZona = [], sinZona = [];
+    genericos.forEach(l => {
+      const coincideZona = !!barrio && normalizarTextoGenerico(l['Zonas interés'] || '').includes(barrio);
+      (coincideZona ? conZona : sinZona).push({ lead: l, coincideZona });
+    });
+    return [...conZona, ...sinZona];
+  }
+  function renderLeadsGenericosMatchBox(matches, p){
+    if(matches.length === 0){
+      return `<p style="font-size:12.5px;color:var(--muted,#8a8a8a);margin:0;">Todavía no hay ningún lead GENÉRICO (pestaña L) de este tipo de operación guardado.</p>`;
+    }
+    const direccionMsg = encodeURIComponent(
+      'Hola! Soy Fer, de Fincas A.G. Núñez. Tengo un piso que podría encajar con lo que buscas: ' +
+      (p['Dirección'] || '') + (p['Barrio'] ? ' (' + p['Barrio'] + ')' : '') + '. ¿Te gustaría que te pase más información?'
+    );
+    return matches.map(({ lead, coincideZona }) => {
+      const waPhone = String(lead['Teléfono'] || '').replace(/[^0-9]/g, '');
+      const zonas = lead['Zonas interés'] || '';
+      const hab = lead['Habitaciones deseadas'] || '';
+      return `
+        <div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12.5px;">
+          <div style="font-weight:700;">${escVenta(lead['Nombre'] || 'Sin nombre')}${coincideZona ? ' <span style="color:var(--green);font-weight:700;">· coincide en zona</span>' : ''}</div>
+          <div style="color:var(--muted,#8a8a8a);">${zonas ? '📍 ' + escVenta(zonas) : ''}${hab ? ' · 🛏️ ' + escVenta(hab) + ' hab.' : ''}</div>
+          ${waPhone ? `<a href="https://wa.me/${waPhone}?text=${direccionMsg}" target="_blank" rel="noopener" style="display:inline-block;margin-top:4px;color:var(--green);font-weight:700;text-decoration:none;">💬 WhatsApp</a>` : '<span style="color:var(--muted,#8a8a8a);">Sin teléfono</span>'}
+        </div>
+      `;
+    }).join('');
+  }
+
   function renderPropiedadesVentaCards(){
     propVentaGrid.innerHTML = '';
     pvRellenarFiltrosDatos();
@@ -6659,6 +6702,8 @@
           </div>
           ${descripcion ? `<button class="pv-desc-toggle" style="margin-top:6px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">✎ Ver descripción</button>
           <div class="pv-desc-box" style="margin-top:6px;display:none;font-size:12.5px;color:var(--text,#444);line-height:1.4;white-space:pre-wrap;">${escVenta(descripcion)}</div>` : ''}
+          <button class="pv-leads-generico-toggle" style="margin-top:6px;background:transparent;border:none;color:var(--gold-dark);font-weight:700;font-size:12px;cursor:pointer;padding:0;font-family:'Inter',sans-serif;display:block;">🌐 Ver leads genéricos interesados</button>
+          <div class="pv-leads-generico-box" style="margin-top:8px;display:none;"></div>
           <div class="actions" style="margin-top:9px;">
             ${p['Link'] ? `<a class="idealista-link" href="${p['Link']}" target="_blank" rel="noopener">Ver en Idealista</a>` : ''}
             <button class="pv-editar-btn edit-reco-btn" style="flex:1;width:auto;margin-top:0;">✎ Editar propiedad</button>
@@ -6677,6 +6722,20 @@
           pvDescToggle.textContent = showing ? '✎ Ver descripción' : '✎ Ocultar descripción';
         });
       }
+      const pvLeadsGenToggle = card.querySelector('.pv-leads-generico-toggle');
+      const pvLeadsGenBox = card.querySelector('.pv-leads-generico-box');
+      pvLeadsGenToggle.addEventListener('click', ()=>{
+        const showing = pvLeadsGenBox.style.display !== 'none';
+        if(showing){
+          pvLeadsGenBox.style.display = 'none';
+          pvLeadsGenToggle.textContent = '🌐 Ver leads genéricos interesados';
+          return;
+        }
+        const matches = encontrarLeadsGenericosParaPropiedad(p);
+        pvLeadsGenBox.innerHTML = renderLeadsGenericosMatchBox(matches, p);
+        pvLeadsGenBox.style.display = 'block';
+        pvLeadsGenToggle.textContent = '🌐 Ocultar leads genéricos' + (matches.length ? ` (${matches.length})` : '');
+      });
       const pvPrecioBox = card.querySelector('.pv-precio-box');
       card.querySelector('.pv-precio-toggle').addEventListener('click', (e)=>{
         const showing = pvPrecioBox.style.display !== 'none';
