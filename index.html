@@ -4552,6 +4552,18 @@
   // operación, zona o habitaciones, que es lo que antes se perdía al
   // fragmentar cada lead en su propio "piso". ----
   const GENERICO_PISO = 'GENÉRICO';
+  // Fuente de verdad para "¿es un lead genérico?": la presencia del campo
+  // "Tipo operación" (solo lo rellena el formulario amplio), NO el texto
+  // exacto de "Piso interés". Así, aunque ese texto llegue con espacios,
+  // mayúsculas distintas o cualquier variación desde la hoja, todos los
+  // leads genéricos caen siempre en el MISMO bucket "GENÉRICO" — evitando
+  // que una comparación de strings textual (antes inconsistente: unos
+  // sitios recortaban espacios con .trim() y otros no) deje el filtro sin
+  // resultados aunque el pill de arriba sí cuente bien.
+  function canonicalPiso(l){
+    if(l && l['Tipo operación']) return GENERICO_PISO;
+    return String((l && l['Piso interés']) || '').trim();
+  }
   const leadGenericFilterGroup = document.getElementById('leadGenericFilterGroup');
   const leadGenericOpFilter = document.getElementById('leadGenericOpFilter');
   const leadGenericZonaFilter = document.getElementById('leadGenericZonaFilter');
@@ -4564,7 +4576,7 @@
   leadGenericHabFilter.addEventListener('change', ()=>{ currentLeadGenericHab = leadGenericHabFilter.value; renderLeads(); });
 
   function populateLeadPisoFilter(){
-    const pisos = [...new Set(cachedLeads.map(l => l['Piso interés']).filter(Boolean))].sort();
+    const pisos = [...new Set(cachedLeads.map(canonicalPiso).filter(Boolean))].sort();
     leadPisoFilter.innerHTML = '<option value="">Todos</option>' +
       pisos.map(p => `<option value="${p}">${p}</option>`).join('');
     if(pisos.includes(currentLeadPiso)){ leadPisoFilter.value = currentLeadPiso; }
@@ -4572,10 +4584,10 @@
 
     if(currentLeadPiso === GENERICO_PISO){
       leadGenericFilterGroup.style.display = 'flex';
-      const genericos = cachedLeads.filter(l => (l['Piso interés'] || '') === GENERICO_PISO);
+      const genericos = cachedLeads.filter(l => canonicalPiso(l) === GENERICO_PISO);
       const zonasSet = new Set();
       genericos.forEach(l => {
-        (l['Zonas interés'] || '').split(',').map(z => z.trim()).filter(Boolean).forEach(z => zonasSet.add(z));
+        String(l['Zonas interés'] || '').split(',').map(z => z.trim()).filter(Boolean).forEach(z => zonasSet.add(z));
       });
       const zonas = [...zonasSet].sort((a,b)=> a.localeCompare(b, 'es'));
       leadGenericZonaFilter.innerHTML = '<option value="">Zona — todas</option>' +
@@ -4583,7 +4595,10 @@
       if(zonas.includes(currentLeadGenericZona)){ leadGenericZonaFilter.value = currentLeadGenericZona; }
       else { leadGenericZonaFilter.value = ''; currentLeadGenericZona = ''; }
 
-      const habsSet = new Set(genericos.map(l => (l['Habitaciones deseadas'] || '').trim()).filter(Boolean));
+      // Google Sheets puede devolver "Habitaciones deseadas" como número (2) en
+      // vez de texto ("2") si la celda se autodetectó como numérica — de ahí el
+      // String(...) antes de comparar/():trim, si no revienta todo el renderLeads().
+      const habsSet = new Set(genericos.map(l => String(l['Habitaciones deseadas'] || '').trim()).filter(Boolean));
       const habs = [...habsSet].sort();
       leadGenericHabFilter.innerHTML = '<option value="">Habitaciones — todas</option>' +
         habs.map(h => `<option value="${h}">${h}</option>`).join('');
@@ -4600,9 +4615,9 @@
 
   function leadMatchesGenericSubfilter(l){
     if(currentLeadPiso !== GENERICO_PISO) return true;
-    if(currentLeadGenericOp && (l['Tipo operación'] || '') !== currentLeadGenericOp) return false;
-    if(currentLeadGenericZona && !(l['Zonas interés'] || '').includes(currentLeadGenericZona)) return false;
-    if(currentLeadGenericHab && (l['Habitaciones deseadas'] || '').trim() !== currentLeadGenericHab) return false;
+    if(currentLeadGenericOp && String(l['Tipo operación'] || '') !== currentLeadGenericOp) return false;
+    if(currentLeadGenericZona && !String(l['Zonas interés'] || '').includes(currentLeadGenericZona)) return false;
+    if(currentLeadGenericHab && String(l['Habitaciones deseadas'] || '').trim() !== currentLeadGenericHab) return false;
     return true;
   }
 
@@ -4613,7 +4628,7 @@
     const counts = {};
     let sinPiso = 0;
     cachedLeads.forEach(l=>{
-      const piso = (l['Piso interés'] || '').trim();
+      const piso = canonicalPiso(l);
       if(!piso){ sinPiso++; return; }
       counts[piso] = (counts[piso] || 0) + 1;
     });
@@ -4739,7 +4754,7 @@
     const filtroActivo = !!currentLeadPiso || !!currentLeadSearch.trim() || currentLeadSemaforo !== 'todos'
       || !!currentLeadGenericOp || !!currentLeadGenericZona || !!currentLeadGenericHab;
     const leadsFiltrados = cachedLeads.filter(l => {
-      const matchesPiso = !currentLeadPiso || (l['Piso interés'] || '') === currentLeadPiso;
+      const matchesPiso = !currentLeadPiso || canonicalPiso(l) === currentLeadPiso;
       return matchesPiso && leadMatchesSearch(l, currentLeadSearch) && leadMatchesSemaforo(l, currentLeadSemaforo) && leadMatchesGenericSubfilter(l);
     });
 
@@ -4950,7 +4965,7 @@
             <span class="lead-tag tag-generico-op">${tipoOp === 'Compra' ? '🔑 Compra' : '🏠 Alquiler'}</span>
             ${zonas ? `<span class="lead-tag tag-neutral">📍 ${zonas}</span>` : ''}
             ${hab ? `<span class="lead-tag tag-neutral">🛏️ ${hab} hab.</span>` : ''}
-            ${banos ? `<span class="lead-tag tag-neutral">🛁 ${banos} baño${banos === '1' ? '' : 's'}</span>` : ''}
+            ${banos ? `<span class="lead-tag tag-neutral">🛁 ${banos} baño${String(banos) === '1' ? '' : 's'}</span>` : ''}
             ${m2 ? `<span class="lead-tag tag-neutral">📐 ${m2} m²</span>` : ''}
             ${estado ? `<span class="lead-tag tag-neutral">🛠️ ${estado}</span>` : ''}
             ${planta ? `<span class="lead-tag tag-neutral">🏢 ${planta}</span>` : ''}
@@ -6532,8 +6547,11 @@
     const operacionPiso = (p['Operación'] || 'Venta').trim() || 'Venta';
     const operacionGenericaEquivalente = operacionPiso === 'Alquiler' ? 'Alquiler' : 'Compra';
     const barrio = normalizarTextoGenerico(p['Barrio'] || '');
+    // Basta con "Tipo operación" para saber que es un lead del formulario
+    // amplio — no dependemos del texto exacto de "Piso interés" (puede
+    // variar: espacios, mayúsculas, ediciones manuales en la hoja...).
     const genericos = (typeof cachedLeads !== 'undefined' ? cachedLeads : [])
-      .filter(l => (l['Piso interés'] || '') === 'GENÉRICO' && (l['Tipo operación'] || '') === operacionGenericaEquivalente);
+      .filter(l => !!(l['Tipo operación'] || '') && (l['Tipo operación'] || '') === operacionGenericaEquivalente);
     const conZona = [], sinZona = [];
     genericos.forEach(l => {
       const coincideZona = !!barrio && normalizarTextoGenerico(l['Zonas interés'] || '').includes(barrio);
