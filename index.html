@@ -184,6 +184,11 @@
   }
   .tipo-badge.tipo-ficha{background:#eaf1f6;color:var(--navy);}
   .tipo-badge.tipo-leads{background:#fdeee0;color:var(--orange);}
+  /* Acento de color en el borde izquierdo de la tarjeta, para distinguir
+     Leads (pre-visita) de Ficha completa de un vistazo, sin tener que leer
+     la etiqueta pequeña. */
+  .form-card.card-ficha{border-left:4px solid var(--navy);}
+  .form-card.card-leads{border-left:4px solid var(--orange);}
   .map-row{display:flex;align-items:center;gap:8px;margin:10px 0 2px;font-size:12px;font-weight:700;color:var(--navy-dark);}
   .map-row select{flex:1;font:inherit;font-weight:600;padding:7px 9px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--navy-dark);cursor:pointer;}
   .map-row select.res{background:#fff4cf;border-color:#e0a800;}
@@ -2966,7 +2971,7 @@
     emptyForms.style.display = 'none';
 
     formsGrid.innerHTML = pisosFiltrados.map(p => `
-      <div class="form-card">
+      <div class="form-card ${p['Tipo'] === 'Leads (pre-visita)' ? 'card-leads' : 'card-ficha'}">
         ${p['Imagen'] ? `<img class="thumb" src="${p['Imagen']}" alt="${p['Piso']}">` : ''}
         <div class="body">
           <div class="name">${p['Piso'] || 'Sin nombre'}</div>
