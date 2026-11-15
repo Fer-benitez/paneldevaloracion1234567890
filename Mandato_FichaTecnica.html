@@ -442,11 +442,18 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
   var FICHA_FIELDS = ['ref_catastral','sup_construida','sup_util','sup_comunes','anio_edificacion','cedula_numero','cedula_vigencia','energia_consumo','energia_emisiones','energia_registro','energia_vigencia','idx_inferior','idx_media','idx_superior','serpavi_min','serpavi_max','zona_tensionada','alquilada_antes','alquilada_antes_fechas','alquilada_antes_renta'];
 
   // ---------- Lectura con IA de Claude ----------
-  // Clave incrustada directamente en este archivo, tal y como pidió Fer, para
-  // no tener que pegarla cada vez. Al ser un HTML local que se abre en el
-  // propio navegador, cualquiera que tenga este archivo puede ver la clave en
-  // su código -- no compartir este archivo fuera de la empresa.
-  var CLAUDE_API_KEY_EMBEBIDA = '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';
+  // IMPORTANTE: ya NO hay ninguna clave de Anthropic escrita en este archivo.
+  // Este HTML vive en un repositorio PÚBLICO de GitHub (GitHub Pages en plan
+  // gratuito no admite repos privados), y cualquier clave puesta aquí es
+  // detectada por el "secret scanning" de GitHub -- que se la reenvía a
+  // Anthropic, y Anthropic la revoca automáticamente. Por eso el lector se
+  // rompía solo cada vez que generábamos una clave nueva.
+  //
+  // La solución: la clave vive SOLO en un Cloudflare Worker privado (ver
+  // cf_worker/worker.js), configurada ahí como "Secret", nunca visible desde
+  // el navegador. Este archivo llama a ese Worker, y el Worker llama a
+  // Anthropic con la clave real.
+  var CLAUDE_WORKER_URL = 'https://lector-agn-proxy.losextintos.workers.dev';
   var CLAUDE_MODEL = 'claude-sonnet-5-5';
   var CLAUDE_API_VERSION = '2023-06-01';
   var CLAUDE_STORAGE_ENABLED = 'mandato_claude_ia_activada_v1';
@@ -546,8 +553,12 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
     return !!(chk && chk.checked && obtenerClaudeApiKey());
   }
 
+  // Ya no hay clave que leer en el navegador: el Worker es quien la tiene.
+  // Se mantiene esta función (devolviendo un valor "truthy" fijo) para no
+  // tocar el resto del código, que la usa solo para saber si la IA está
+  // disponible, no para enviar ninguna clave real.
   function obtenerClaudeApiKey() {
-    return CLAUDE_API_KEY_EMBEBIDA.trim();
+    return CLAUDE_WORKER_URL ? 'worker' : '';
   }
 
   function arrayBufferABase64(buffer) {
@@ -603,13 +614,14 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       // "tool"/"any" no están soportados en este modelo). En vez de usar
       // tools, se usa "salida estructurada" (output_config.format): se le pide
       // directamente un JSON con el esquema exacto, sin tools ni tool_choice.
-      return fetch('https://api.anthropic.com/v1/messages', {
+      //
+      // La petición va al Worker (proxy privado), NO a api.anthropic.com
+      // directamente -- el Worker añade la clave real por su lado, así que
+      // aquí no se manda ninguna clave ni cabecera de Anthropic.
+      return fetch(CLAUDE_WORKER_URL, {
         method: 'POST',
         headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': CLAUDE_API_VERSION,
-          'content-type': 'application/json',
-          'anthropic-dangerous-direct-browser-access': 'true'
+          'content-type': 'application/json'
         },
         body: JSON.stringify({
           model: CLAUDE_MODEL,
@@ -877,8 +889,9 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
   }
 
   // ---------- Recordar si la IA está activada en este navegador ----------
-  // La clave ya está incrustada en el archivo (CLAUDE_API_KEY_EMBEBIDA); aquí
-  // solo se recuerda si la casilla estaba marcada o desmarcada la última vez.
+  // La IA llama al Worker (CLAUDE_WORKER_URL), que es quien tiene la clave
+  // real; aquí solo se recuerda si la casilla estaba marcada o desmarcada la
+  // última vez.
   (function initClaudeIA(){
     var chk = document.getElementById('usarClaudeIA');
     try {
