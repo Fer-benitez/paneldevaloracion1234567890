@@ -446,7 +446,7 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
   // no tener que pegarla cada vez. Al ser un HTML local que se abre en el
   // propio navegador, cualquiera que tenga este archivo puede ver la clave en
   // su código -- no compartir este archivo fuera de la empresa.
-  var CLAUDE_API_KEY_EMBEBIDA = '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';
+  var CLAUDE_API_KEY_EMBEBIDA = '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';
   var CLAUDE_MODEL = 'claude-sonnet-5-5';
   var CLAUDE_API_VERSION = '2023-06-01';
   var CLAUDE_STORAGE_ENABLED = 'mandato_claude_ia_activada_v1';
@@ -504,7 +504,7 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       'Vas a recibir UN documento (mandato de alquiler, nota catastral, informe SERPAVI, índice de referencia de alquiler, cédula de habitabilidad o certificado de eficiencia energética, o algo distinto). ' +
       'Identifica primero el TIPO de documento, eligiendo exactamente una de estas opciones: ' + TIPOS_CONOCIDOS.join(' | ') + '. ' +
       'Después extrae SOLO los datos que encuentres realmente escritos en el documento, usando estas claves de campo:\n' + lineas.join('\n') + '\n' +
-      'Reglas importantes: no inventes ni deduzcas ningún valor que no esté literalmente en el documento; si un dato no aparece, simplemente no incluyas esa clave (u ponla como cadena vacía); las fechas siempre en formato YYYY-MM-DD; responde ÚNICAMENTE con el JSON pedido, sin ningún texto antes ni después.';
+      'Reglas importantes: no inventes ni deduzcas ningún valor que no esté literalmente en el documento; si un dato no aparece, pon esa clave con cadena vacía (""), pero inclúyela siempre; las fechas siempre en formato YYYY-MM-DD; responde ÚNICAMENTE con el JSON pedido, sin ningún texto antes ni después.';
   }
 
   // Esquema para la salida estructurada de Claude (output_config.format).
@@ -512,6 +512,14 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
   // "tool"/"any" devuelven error 400 en este modelo) -- en vez de eso se le
   // pide directamente una respuesta en JSON con esta forma exacta, sin usar
   // tools en absoluto. Ver https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+  //
+  // IMPORTANTE: los ~34 campos de "campos" deben ir TODOS en su "required"
+  // (aunque luego Claude los rellene con "" si no encuentra el dato). Si se
+  // dejan como opcionales, la API los cuenta como "parámetros opcionales del
+  // esquema" y con más de 24 devuelve 400 "Schemas contains too many
+  // optional parameters... Reduce the number of optional parameters in your
+  // tool schemas (limit: 24)" -- esto es justo lo que rompía el lector de
+  // documentos en TODOS los ordenadores, no un problema de la clave de API.
   var CLAUDE_OUTPUT_SCHEMA = {
     type: 'object',
     properties: {
@@ -519,12 +527,13 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       direccion: { type: 'string', description: 'Dirección del inmueble, si aparece en el documento (vacío si no aparece)' },
       campos: {
         type: 'object',
-        description: 'Solo las claves de campo que se hayan encontrado realmente en el documento, como texto. Omite las que no se encuentren.',
+        description: 'Todas las claves de campo, con el valor encontrado en el documento o cadena vacía si no se encuentra.',
         properties: (function(){
           var p = {};
           Object.keys(CAMPOS_PARA_IA).forEach(function(k){ p[k] = { type: 'string' }; });
           return p;
         })(),
+        required: Object.keys(CAMPOS_PARA_IA),
         additionalProperties: false
       }
     },
