@@ -2947,7 +2947,14 @@
       });
       await fetch(APPS_SCRIPT_URL, {
         method:'POST', mode:'no-cors',
-        body: JSON.stringify({ action:'nuevo_piso', piso: nombre, imagen: fotosFinal[0] || '', link: link, tipo: 'Leads (pre-visita)' })
+        // "activo_id" es el slug SIN el sufijo del enlace público (base), para
+        // que coincida con el mismo identificador de "propiedad" que ya usan
+        // Mandato_FichaTecnica.html, Motor_Contrato_Final.html y las páginas
+        // Comparativa_<slug>.html -- así este activo se puede seleccionar más
+        // adelante en el Lector de documentos sin tener que escribir el slug
+        // a mano ni que se desajuste con el id del enlace público (que sí
+        // lleva el sufijo, para evitar choques entre formularios).
+        body: JSON.stringify({ action:'nuevo_piso', piso: nombre, imagen: fotosFinal[0] || '', link: link, tipo: 'Leads (pre-visita)', activo_id: base })
       });
       flLinkGenerado.value = link;
       flResultado.style.display = 'block';
@@ -9031,6 +9038,60 @@
       });
     })
     .catch(function(){ /* backend inalcanzable — no pasa nada, simplemente no se muestran los subtítulos */ });
+
+  // ---- Paso 0 (ACTIVOS): tarjetas automáticas para los pisos creados desde
+  // el formulario PRE-VISITA (o "Añadir a Gestión"), sin tener que escribir
+  // la tarjeta a mano cada vez como hasta ahora. Las tarjetas antiguas, ya
+  // puestas a mano arriba, no se tocan -- esto solo AÑADE las que falten,
+  // comparando por "Activo ID" (14 nov 2026, ver apps_script_COMPLETO-1.gs).
+  var PISOS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwJe2nw_bpxIqsZKvW3mj1eMkG4OkTSPYjrkD6BvPbXze5Q1z0e90kUMqcsB-k-hlgMw/exec';
+
+  function inicialesActivo(nombre){
+    var palabras = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+    if(!palabras.length) return '?';
+    if(palabras.length === 1) return palabras[0].slice(0, 2).toUpperCase();
+    return (palabras[0][0] + palabras[1][0]).toUpperCase();
+  }
+
+  function crearTarjetaActivoAuto(nombre, activoId){
+    var card = document.createElement('div');
+    card.className = 'activo-card';
+    card.setAttribute('data-propiedad', activoId);
+    card.innerHTML =
+      '<div class="activo-card-head">' +
+        '<div class="activo-ico">' + esc(inicialesActivo(nombre)) + '</div>' +
+        '<div class="activo-info">' +
+          '<div class="activo-name">' + esc(nombre) + '</div>' +
+          '<div class="activo-tag tag-live">Nuevo · sin documentos todavía</div>' +
+        '</div>' +
+        '<svg class="activo-chev" width="11" height="7" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      '</div>' +
+      '<div class="activo-reports">' +
+        '<a class="informe-row" href="Mandato_FichaTecnica.html?propiedad=' + encodeURIComponent(activoId) + '" target="_blank" rel="noopener">' +
+          '<span class="informe-row-name">📄 Subir documentos (Lector)</span>' +
+          '<span class="informe-row-arrow">→</span>' +
+        '</a>' +
+      '</div>';
+    var head = card.querySelector('.activo-card-head');
+    head.addEventListener('click', function(){ card.classList.toggle('expanded'); });
+    return card;
+  }
+
+  if(activosList){
+    fetch(PISOS_SCRIPT_URL + '?tipo=pisos')
+      .then(function(r){ return r.json(); })
+      .then(function(resp){
+        if(!resp || !resp.success || !Array.isArray(resp.data)) return;
+        resp.data.forEach(function(row){
+          var activoId = String(row['Activo ID'] || '').trim();
+          if(!activoId) return; // pisos de antes de este cambio, sin este dato -- se dejan como están
+          if(document.querySelector('.activo-card[data-propiedad="' + activoId + '"]')) return; // ya tiene tarjeta (a mano o creada antes)
+          var card = crearTarjetaActivoAuto(row['Piso'] || activoId, activoId);
+          activosList.appendChild(card);
+        });
+      })
+      .catch(function(){ /* backend inalcanzable -- no pasa nada, se queda la lista de siempre */ });
+  }
 
   function marcarCerrado(card, aceptado){
     if(!card || card.classList.contains('cerrado')) return;
