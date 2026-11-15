@@ -328,8 +328,9 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       <div class="propiedad-bar">
         <div class="field">
           <label>Identificador de la propiedad (el mismo slug que usa Comparativa_&lt;piso&gt;.html)</label>
-          <input type="text" id="propiedadInput" placeholder="ej: arago-643">
-          <div class="hint">Este identificador es lo que enlaza el mandato con los candidatos de esa propiedad. Cópialo tal cual de PROPIEDAD_ID en el archivo Comparativa correspondiente.</div>
+          <input type="text" id="propiedadInput" list="activosPropiedadList" placeholder="ej: arago-643">
+          <datalist id="activosPropiedadList"></datalist>
+          <div class="hint">Elige un activo de la lista (vienen de los formularios PRE-VISITA) o, para propiedades antiguas, escribe el identificador a mano tal cual aparece en PROPIEDAD_ID dentro del archivo Comparativa correspondiente.</div>
         </div>
         <button class="btn-ghost" id="cargarBtn">Cargar datos existentes</button>
       </div>
@@ -1029,6 +1030,43 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
   function getPropiedad() {
     return document.getElementById('propiedadInput').value.trim();
   }
+
+  // ---------- Desplegable de activos (paso "0", creados desde PRE-VISITA en GESTION) ----------
+  // Mismo backend que usa GESTION para la lista de Pisos (no el de
+  // mandatos/candidatos). Solo lectura (GET), no hace falta ninguna clave.
+  (function cargarActivosPropiedad(){
+    var PISOS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwJe2nw_bpxIqsZKvW3mj1eMkG4OkTSPYjrkD6BvPbXze5Q1z0e90kUMqcsB-k-hlgMw/exec';
+    var datalist = document.getElementById('activosPropiedadList');
+    if (!datalist) return;
+    fetch(PISOS_SCRIPT_URL + '?tipo=pisos')
+      .then(function(r){ return r.json(); })
+      .then(function(resp){
+        if (!resp || !resp.success || !Array.isArray(resp.data)) return;
+        var vistos = {};
+        resp.data.forEach(function(row){
+          var activoId = String(row['Activo ID'] || '').trim();
+          if (!activoId || vistos[activoId]) return;
+          vistos[activoId] = true;
+          var opt = document.createElement('option');
+          opt.value = activoId;
+          opt.label = row['Piso'] || activoId;
+          datalist.appendChild(opt);
+        });
+      })
+      .catch(function(){ /* backend inalcanzable -- se puede seguir escribiendo el identificador a mano */ });
+  })();
+
+  // Si se llega desde la tarjeta de un activo en GESTION (Informes →
+  // Activos → "Subir documentos (Lector)"), el enlace trae
+  // ?propiedad=<slug> -- se rellena solo y se carga lo que ya hubiera.
+  (function precargarDesdeUrl(){
+    var propiedadUrl = new URLSearchParams(location.search).get('propiedad');
+    if (!propiedadUrl) return;
+    var input = document.getElementById('propiedadInput');
+    if (input) input.value = propiedadUrl;
+    var btn = document.getElementById('cargarBtn');
+    if (btn) setTimeout(function(){ btn.click(); }, 50);
+  })();
 
   document.getElementById('cargarBtn').addEventListener('click', function(){
     var propiedad = getPropiedad();
