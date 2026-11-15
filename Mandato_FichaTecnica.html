@@ -268,6 +268,49 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
   .stepnav-step:hover{background:rgba(255,255,255,0.18);}
   .stepnav-step.current{background:#fff;color:var(--navy-darker);pointer-events:none;}
   @media(max-width:680px){.stepnav-wrap{justify-content:center;}.stepnav-steps{justify-content:center;width:100%;}}
+
+  /* ---- Vista "Hilo del activo" (paso 3, 15 nov 2026): vive DENTRO de este
+     mismo archivo, como una segunda vista que se enseña/oculta con el
+     stepnav de arriba -- usa la misma "Propiedad" ya cargada en el paso 1,
+     no navega a ningún otro archivo. ---- */
+  #vistaHilo .card h2.section{margin-bottom:10px;}
+  .loading-hilo, .empty-hilo{color:var(--muted);font-size:13.5px;padding:8px 0;}
+  .progreso-bar{height:10px;border-radius:999px;background:var(--bg);border:1px solid var(--border);overflow:hidden;margin:10px 0 8px;}
+  .progreso-fill{height:100%;border-radius:999px;transition:width .3s;}
+  .progreso-label{font-size:13px;color:var(--muted);}
+  .faltan-list{margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.6;}
+  .faltan-list strong{color:var(--text);}
+  .datos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 18px;font-size:13px;}
+  .datos-grid .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;}
+  .datos-grid .v{font-weight:600;color:var(--text);}
+  .resumen-numeros{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+  .numero-chip{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 16px;text-align:center;min-width:86px;}
+  .numero-chip .num{font-size:22px;font-weight:800;color:var(--navy-darker);font-family:'Montserrat',sans-serif;}
+  .numero-chip .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em;}
+  .numero-chip.verde .num{color:var(--green);}
+  .numero-chip.rojo .num{color:#d64545;}
+  .lead-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);font-size:13.5px;flex-wrap:wrap;}
+  .lead-row:first-child{border-top:none;}
+  .lead-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:#c6ccd3;}
+  .lead-dot.verde{background:var(--green);}
+  .lead-dot.rojo{background:#d64545;}
+  .lead-dot.amarillo{background:#d99a1b;}
+  .lead-row .nivel2-tag{font-size:10.5px;font-weight:700;color:var(--navy);background:#e8f0f8;padding:2px 7px;border-radius:999px;}
+  .lead-row .visita-tag{font-size:11.5px;color:var(--navy-dark);background:#eef4f9;padding:2px 8px;border-radius:999px;}
+  .lead-row.es-rechazado{opacity:.55;text-decoration:line-through;text-decoration-color:#d64545;}
+  .lead-row .tel{color:var(--muted);}
+  .calendario-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);font-size:13.5px;}
+  .calendario-row:first-child{border-top:none;}
+  .calendario-row .fecha{font-weight:700;color:var(--navy-darker);min-width:120px;}
+  .candidato-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--border);font-size:13.5px;flex-wrap:wrap;}
+  .candidato-row:first-child{border-top:none;}
+  .candidato-row.elegido{background:#fbf1dd;border-radius:8px;padding:11px 10px;margin:2px 0;border-top:none;}
+  .elegido-star{color:#8a6d17;font-weight:700;}
+  .mini-badge{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;text-transform:uppercase;}
+  .mini-badge.verde{background:#e5f3ec;color:var(--green);}
+  .mini-badge.ambar{background:#fbeee0;color:#b5730f;}
+  .mini-badge.rojo{background:#fbeaea;color:#d64545;}
+  .ir-valorar{margin-left:auto;font-size:12px;color:var(--navy);text-decoration:none;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -278,22 +321,23 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
       <div class="stepnav-wrap">
         <a class="stepnav-back" href="index.html">← Volver a Gestión</a>
         <div class="stepnav-steps">
-          <a class="stepnav-step current" href="Mandato_FichaTecnica.html">1 · Lector de documentos</a>
+          <a class="stepnav-step" href="index.html#activos">0 · Activos</a>
+          <a class="stepnav-step current" href="#" id="stepnavLectorBtn">1 · Lector de documentos</a>
           <a class="stepnav-step" href="Mandatos_Guardados.html">2 · Mandatos + Fichas técnicas</a>
-          <a class="stepnav-step" href="Crear_Propiedad.html">3 · Crear página</a>
-          <a class="stepnav-step" href="index.html#informes">4 · Informes</a>
-          <a class="stepnav-step" href="CONTRATO/Motor_Contrato_Final.html">5 · Motor de Contrato</a>
+          <a class="stepnav-step" href="#" id="stepnavHiloBtn">3 · Hilo del activo</a>
+          <a class="stepnav-step" href="CONTRATO/Motor_Contrato_Final.html">4 · Motor de Contrato</a>
         </div>
       </div>
     </div>
     <div class="logo-bar">
       <div class="head-titles">
-        <div class="eyebrow">AG Núñez · Paso 1 de 5</div>
-        <h1>Lector de documentos</h1>
+        <div class="eyebrow" id="pasoEyebrow">AG Núñez · Paso 1 de 5</div>
+        <h1 id="pasoTitulo">Lector de documentos</h1>
       </div>
     </div>
   </header>
 
+  <div id="vistaLector">
   <main>
     <div class="card" id="autoCard">
       <h2 class="section"><span class="n">⚡</span>Detección automática (Mandato + Ficha Técnica)</h2>
@@ -433,6 +477,47 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
   <div class="save-bar">
     <button class="btn-orange" id="guardarBtn">Guardar mandato + ficha técnica</button>
   </div>
+  </div><!-- /vistaLector -->
+
+  <div id="vistaHilo" style="display:none;">
+  <main>
+
+    <div class="card" id="hiloSinPropiedad">
+      <h2 class="section"><span class="n">3</span>Hilo del activo</h2>
+      <div class="hint">Elige primero una propiedad arriba, en el paso 1 ("Identificador de la propiedad"), y vuelve a pulsar "3 · Hilo del activo".</div>
+    </div>
+
+    <div class="card" id="hiloCabecera" style="display:none;">
+      <div id="hiloCabeceraContenido"></div>
+    </div>
+
+    <div class="card" id="hiloFicha" style="display:none;">
+      <h2 class="section"><span class="n">✓</span>Ficha técnica</h2>
+      <div id="hiloFichaContenido"></div>
+    </div>
+
+    <div class="card" id="hiloPrevisita" style="display:none;">
+      <h2 class="section"><span class="n">0</span>Formulario PRE-VISITA</h2>
+      <div id="hiloPrevisitaContenido"></div>
+    </div>
+
+    <div class="card" id="hiloLeads" style="display:none;">
+      <h2 class="section"><span class="n">💬</span>Hilo de leads (WhatsApp)</h2>
+      <div id="hiloLeadsContenido"></div>
+    </div>
+
+    <div class="card" id="hiloCalendario" style="display:none;">
+      <h2 class="section"><span class="n">📅</span>Visitas en el calendario</h2>
+      <div id="hiloCalendarioContenido"></div>
+    </div>
+
+    <div class="card" id="hiloCandidatos" style="display:none;">
+      <h2 class="section"><span class="n">⭐</span>Análisis de candidatos · Elegido</h2>
+      <div id="hiloCandidatosContenido"></div>
+    </div>
+
+  </main>
+  </div><!-- /vistaHilo -->
 </div>
 
 <script>
@@ -1067,6 +1152,224 @@ this.attribute(att));if(0===node.children.length||node.children.every(function(e
     var btn = document.getElementById('cargarBtn');
     if (btn) setTimeout(function(){ btn.click(); }, 50);
   })();
+
+  // ======================================================================
+  // Paso "3 · Hilo del activo" (15 nov 2026): vive DENTRO de este mismo
+  // archivo, como segunda vista del mismo paso 1 -- no navega a ningún otro
+  // archivo ni página. Usa la MISMA "Propiedad" que ya está escrita arriba
+  // (el mismo "Identificador de la propiedad" del Lector de documentos).
+  // ======================================================================
+  var PISOS_SCRIPT_URL_HILO = 'https://script.google.com/macros/s/AKfycbzwJe2nw_bpxIqsZKvW3mj1eMkG4OkTSPYjrkD6BvPbXze5Q1z0e90kUMqcsB-k-hlgMw/exec';
+  var CAMPO_LABEL_HILO = {
+    propietario_nombre:'Nombre propietario', propietario_dni:'DNI propietario', propietario_domicilio:'Domicilio propietario',
+    propietario_telefono:'Teléfono propietario', propietario_email:'Email propietario', gran_tenedor:'Gran tenedor',
+    porcentaje_administracion:'% administración', direccion:'Dirección', localidad:'Localidad', cp:'Código postal',
+    provincia:'Provincia', renta_propuesta:'Renta propuesta', duracion_propuesta:'Duración propuesta', fecha_encargo:'Fecha de encargo',
+    ref_catastral:'Referencia catastral', sup_construida:'Superficie construida', sup_util:'Superficie útil',
+    sup_comunes:'Superficies comunes', anio_edificacion:'Año de edificación', cedula_numero:'Nº cédula',
+    cedula_vigencia:'Vigencia cédula', energia_consumo:'Consumo energético', energia_emisiones:'Emisiones',
+    energia_registro:'Nº registro energético', energia_vigencia:'Vigencia energética', idx_inferior:'Índice inferior',
+    idx_media:'Índice medio', idx_superior:'Índice superior', serpavi_min:'SERPAVI mín.', serpavi_max:'SERPAVI máx.',
+    zona_tensionada:'Zona tensionada', alquilada_antes:'¿Alquilada antes?', alquilada_antes_fechas:'Fechas alquiler anterior',
+    alquilada_antes_renta:'Renta alquiler anterior'
+  };
+  function escHilo(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function fetchJsonHilo(url){ return fetch(url).then(function(r){ return r.json(); }).catch(function(){ return null; }); }
+
+  function mostrarVista(vista){
+    var esLector = vista === 'lector';
+    document.getElementById('vistaLector').style.display = esLector ? '' : 'none';
+    document.getElementById('vistaHilo').style.display = esLector ? 'none' : '';
+    document.getElementById('stepnavLectorBtn').classList.toggle('current', esLector);
+    document.getElementById('stepnavHiloBtn').classList.toggle('current', !esLector);
+    document.getElementById('pasoEyebrow').textContent = esLector ? 'AG Núñez · Paso 1 de 5' : 'AG Núñez · Paso 3 de 5';
+    document.getElementById('pasoTitulo').textContent = esLector ? 'Lector de documentos' : 'Hilo del activo';
+  }
+
+  document.getElementById('stepnavLectorBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    mostrarVista('lector');
+  });
+  document.getElementById('stepnavHiloBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    mostrarVista('hilo');
+    var propiedad = getPropiedad();
+    if (propiedad) cargarHilo(propiedad);
+    else {
+      document.getElementById('hiloSinPropiedad').style.display = '';
+      ['hiloCabecera','hiloFicha','hiloPrevisita','hiloLeads','hiloCalendario','hiloCandidatos'].forEach(function(id){
+        document.getElementById(id).style.display = 'none';
+      });
+    }
+  });
+
+  // Si se llega desde la tarjeta de un activo en GESTION con
+  // Mandato_FichaTecnica.html?propiedad=<id>#hilo, se abre directamente en
+  // la vista del hilo (en vez de en el Lector de documentos).
+  if (location.hash === '#hilo') {
+    setTimeout(function(){ document.getElementById('stepnavHiloBtn').click(); }, 200);
+  }
+
+  function cargarHilo(propiedad){
+    ['hiloCabecera','hiloFicha','hiloPrevisita','hiloLeads','hiloCalendario','hiloCandidatos'].forEach(function(id){
+      document.getElementById(id).style.display = '';
+    });
+    document.getElementById('hiloSinPropiedad').style.display = 'none';
+    document.getElementById('hiloCabeceraContenido').innerHTML = '<div class="loading-hilo">Cargando…</div>';
+    document.getElementById('hiloFichaContenido').innerHTML = '<div class="loading-hilo">Cargando…</div>';
+    document.getElementById('hiloPrevisitaContenido').innerHTML = '<div class="loading-hilo">Cargando…</div>';
+    document.getElementById('hiloLeadsContenido').innerHTML = '<div class="loading-hilo">Cargando…</div>';
+    document.getElementById('hiloCalendarioContenido').innerHTML = '<div class="loading-hilo">Cargando…</div>';
+    document.getElementById('hiloCandidatosContenido').innerHTML = '<div class="loading-hilo">Cargando…</div>';
+
+    fetchJsonHilo(PISOS_SCRIPT_URL_HILO + '?tipo=pisos').then(function(pisosResp){
+      var pisos = (pisosResp && pisosResp.success && Array.isArray(pisosResp.data)) ? pisosResp.data : [];
+      var activo = pisos.find(function(p){ return String(p['Activo ID'] || '').trim() === propiedad; });
+
+      if (!activo) {
+        document.getElementById('hiloCabeceraContenido').innerHTML = '<div class="hint" style="color:#8c2b2b;">No se encontró ningún activo con el identificador "' + escHilo(propiedad) + '" en la hoja de Pisos. Si es una propiedad antigua (de antes de este sistema), es normal que no tenga hilo todavía.</div>';
+        ['hiloFicha','hiloPrevisita','hiloLeads','hiloCalendario','hiloCandidatos'].forEach(function(id){ document.getElementById(id).style.display = 'none'; });
+        return;
+      }
+
+      var piso = String(activo['Piso'] || '').trim();
+      pintarCabeceraHilo(activo, propiedad, piso);
+
+      Promise.all([
+        fetchJsonHilo(SCRIPT_URL + '?action=get_mandato&propiedad=' + encodeURIComponent(propiedad)),
+        fetchJsonHilo(SCRIPT_URL + '?action=get_ficha_tecnica&propiedad=' + encodeURIComponent(propiedad)),
+        fetchJsonHilo(PISOS_SCRIPT_URL_HILO + '?tipo=formularios_leads'),
+        fetchJsonHilo(PISOS_SCRIPT_URL_HILO + '?tipo=leads'),
+        fetchJsonHilo(PISOS_SCRIPT_URL_HILO)
+      ]).then(function(res){
+        pintarFichaHilo(res[0] || {}, res[1] || {});
+        pintarPrevisitaHilo(res[2], piso);
+        var leadsDelPiso = pintarLeadsHilo(res[3], piso);
+        pintarCalendarioHilo(leadsDelPiso);
+        pintarCandidatosHilo(res[4], piso);
+      });
+    });
+  }
+
+  function pintarCabeceraHilo(activo, id, piso){
+    var link = activo['Link'] ? '<div class="hint">🔗 <a href="' + escHilo(activo['Link']) + '" target="_blank" rel="noopener">Enlace público del formulario</a></div>' : '';
+    document.getElementById('hiloCabeceraContenido').innerHTML =
+      '<h2 class="section"><span class="n">🧵</span>' + escHilo(piso || id) + '</h2>' +
+      '<div class="hint">ID: ' + escHilo(id) + ' · ' + escHilo(activo['Tipo'] || '') + '</div>' + link;
+  }
+
+  function pintarFichaHilo(mandato, ficha){
+    var todas = MANDATO_FIELDS.concat(FICHA_FIELDS);
+    var rellenos = [], faltan = [];
+    todas.forEach(function(k){
+      var val = (mandato && mandato[k] !== undefined) ? mandato[k] : (ficha && ficha[k]);
+      if (val !== undefined && val !== null && String(val).trim() !== '') rellenos.push(k);
+      else faltan.push(k);
+    });
+    var pct = Math.round((rellenos.length / todas.length) * 100);
+    var color = pct === 100 ? 'var(--green)' : (pct >= 50 ? '#d99a1b' : '#d64545');
+    var html = '<div class="progreso-label">' + rellenos.length + ' de ' + todas.length + ' campos rellenados (' + pct + '%)</div>' +
+      '<div class="progreso-bar"><div class="progreso-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>';
+    if (faltan.length > 0) {
+      html += '<div class="faltan-list"><strong>Todavía falta:</strong> ' + faltan.map(function(k){ return escHilo(CAMPO_LABEL_HILO[k] || k); }).join(', ') + '</div>';
+    } else {
+      html += '<div class="faltan-list" style="color:var(--green);"><strong>✓ Ficha completa.</strong></div>';
+    }
+    document.getElementById('hiloFichaContenido').innerHTML = html;
+  }
+
+  function pintarPrevisitaHilo(formulariosResp, piso){
+    var formularios = (formulariosResp && formulariosResp.success && Array.isArray(formulariosResp.data)) ? formulariosResp.data : [];
+    var delPiso = formularios.filter(function(f){ return String(f['PisoNombre'] || '').trim() === piso; });
+    var html = '';
+    if (delPiso.length === 0) {
+      html = '<div class="empty-hilo">No se encontró el formulario PRE-VISITA guardado para este piso.</div>';
+    } else {
+      var f = delPiso[delPiso.length - 1];
+      var fotos = String(f['Fotos'] || '').split('|').filter(Boolean);
+      function dato(k, v){ if (v === undefined || v === null || v === '') return ''; return '<div><div class="k">' + escHilo(k) + '</div><div class="v">' + escHilo(v) + '</div></div>'; }
+      html = '<div class="datos-grid">' +
+        dato('Habitaciones', f['Habitaciones']) + dato('Baños', f['Banos']) + dato('m²', f['M2']) +
+        dato('Planta', f['Planta']) + dato('Ascensor', f['Ascensor']) + dato('Parking', f['Parking']) +
+        dato('Balcón', f['Balcon']) + dato('Alquiler', f['Alquiler'] ? f['Alquiler'] + ' €' : '') +
+        dato('Fianza', f['Fianza']) + dato('Barrio', f['Barrio']) + dato('Fotos subidas', fotos.length) +
+      '</div>';
+      if (f['Descripcion']) html += '<div class="faltan-list" style="margin-top:12px;"><strong>Descripción:</strong> ' + escHilo(f['Descripcion']) + '</div>';
+      if (f['Condiciones']) html += '<div class="faltan-list"><strong>Condiciones:</strong> ' + escHilo(f['Condiciones']) + '</div>';
+    }
+    document.getElementById('hiloPrevisitaContenido').innerHTML = html;
+  }
+
+  function pintarLeadsHilo(leadsResp, piso){
+    var leads = (leadsResp && leadsResp.success && Array.isArray(leadsResp.data)) ? leadsResp.data : [];
+    var delPiso = leads.filter(function(l){ return String(l['Piso interés'] || '').trim() === piso; });
+    var n2 = delPiso.filter(function(l){ return String(l['Nivel']) === '2'; });
+    var verdes = delPiso.filter(function(l){ return l['Semáforo'] === 'verde'; });
+    var rojos = delPiso.filter(function(l){ return l['Semáforo'] === 'rojo'; });
+
+    var html = '<div class="resumen-numeros">' +
+      '<div class="numero-chip"><div class="num">' + delPiso.length + '</div><div class="lbl">Leads totales</div></div>' +
+      '<div class="numero-chip"><div class="num">' + n2.length + '</div><div class="lbl">Pasaron a Nivel 2</div></div>' +
+      '<div class="numero-chip verde"><div class="num">' + verdes.length + '</div><div class="lbl">Aceptados</div></div>' +
+      '<div class="numero-chip rojo"><div class="num">' + rojos.length + '</div><div class="lbl">Rechazados</div></div>' +
+    '</div>';
+
+    if (delPiso.length === 0) {
+      html += '<div class="empty-hilo">Todavía no ha llegado ningún lead de WhatsApp para este piso.</div>';
+    } else {
+      delPiso.forEach(function(l){
+        var sema = l['Semáforo'] || '';
+        var esRechazado = sema === 'rojo';
+        var visita = (l['Día visita'] || l['Hora visita']) ? '<span class="visita-tag">📅 ' + escHilo(l['Día visita'] || '') + (l['Hora visita'] ? ' · ' + escHilo(l['Hora visita']) : '') + '</span>' : '';
+        html += '<div class="lead-row' + (esRechazado ? ' es-rechazado' : '') + '">' +
+          '<span class="lead-dot ' + escHilo(sema) + '"></span>' +
+          '<span>' + escHilo(l['Fecha'] ? new Date(l['Fecha']).toLocaleDateString('es-ES') : '') + '</span>' +
+          '<span class="tel">' + escHilo(l['Teléfono'] || '') + '</span>' +
+          (String(l['Nivel']) === '2' ? '<span class="nivel2-tag">Nivel 2</span>' : '') +
+          visita +
+        '</div>';
+      });
+    }
+    document.getElementById('hiloLeadsContenido').innerHTML = html;
+    return delPiso;
+  }
+
+  function pintarCalendarioHilo(leadsDelPiso){
+    var conCita = leadsDelPiso.filter(function(l){ return String(l['Nivel']) === '2' && (l['Día visita'] || l['Hora visita']); });
+    var html = '';
+    if (conCita.length === 0) {
+      html = '<div class="empty-hilo">No hay visitas agendadas todavía para este piso.</div>';
+    } else {
+      conCita.forEach(function(l){
+        html += '<div class="calendario-row"><span class="fecha">' + escHilo(l['Día visita'] || 'Sin día') + '</span><span>' + escHilo(l['Hora visita'] || 'Sin hora') + '</span><span class="tel">' + escHilo(l['Teléfono'] || '') + '</span></div>';
+      });
+    }
+    document.getElementById('hiloCalendarioContenido').innerHTML = html;
+  }
+
+  function pintarCandidatosHilo(candidatosResp, piso){
+    var candidatos = (candidatosResp && candidatosResp.success && Array.isArray(candidatosResp.data)) ? candidatosResp.data : [];
+    var delPiso = candidatos.filter(function(c){ return String(c['Piso'] || '').trim() === piso; });
+    var html = '';
+    if (delPiso.length === 0) {
+      html = '<div class="empty-hilo">Todavía no hay interesados con ficha completa para este piso.</div>';
+    } else {
+      delPiso.forEach(function(c){
+        var esElegido = String(c['Elegido'] || '').trim() === 'Sí';
+        var sema = c['Semáforo'] || '';
+        var semaLabel = sema === 'verde' ? 'Analizado' : (sema === 'ambar' ? 'Sin analizar' : (sema === 'rojo' ? 'Rechazado' : 'Pendiente'));
+        html += '<div class="candidato-row' + (esElegido ? ' elegido' : '') + '">' +
+          (esElegido ? '<span class="elegido-star">⭐</span>' : '') +
+          '<strong>' + escHilo(c['Nombre'] || 'Sin nombre') + '</strong>' +
+          (sema ? '<span class="mini-badge ' + escHilo(sema) + '">' + escHilo(semaLabel) + '</span>' : '') +
+          '<span class="tel">' + escHilo(c['Teléfono'] || '') + '</span>' +
+          (esElegido ? '<span class="elegido-star">ELEGIDO PARA ESTE PISO</span>' : '') +
+        '</div>';
+      });
+    }
+    html += '<div style="margin-top:14px;"><a class="ir-valorar" href="index.html#valoracion" target="_blank" rel="noopener">→ Ir al panel de valoración para marcar el elegido</a></div>';
+    document.getElementById('hiloCandidatosContenido').innerHTML = html;
+  }
 
   document.getElementById('cargarBtn').addEventListener('click', function(){
     var propiedad = getPropiedad();
