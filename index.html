@@ -318,6 +318,22 @@
   .status-badge.rojo .circle{background:var(--red);}
   .card.status-{border-left:4px solid var(--border);}
 
+  /* "Elegido" (15 nov 2026): marca manual del candidato final para un piso,
+     la decide el abogado dentro del análisis -- no se calcula sola. */
+  .card.elegido{border-left:4px solid #c9972e;box-shadow:0 2px 10px rgba(201,151,46,0.25);}
+  .elegido-badge{
+    display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;
+    padding:3px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:0.03em;
+    background:#fbf1dd;color:#9a7417;
+  }
+  .elegido-toggle{
+    width:100%;border:1.5px solid #c9972e;background:#fff;color:#9a7417;
+    font:inherit;font-weight:700;font-size:12.5px;padding:9px 12px;border-radius:9px;
+    cursor:pointer;margin-bottom:10px;transition:background .15s var(--ease),color .15s var(--ease);
+  }
+  .elegido-toggle:hover{background:#fbf1dd;}
+  .elegido-toggle.is-elegido{background:#c9972e;color:#fff;}
+
   .card-grid{display:grid;grid-template-columns:1.3fr 1fr;}
   .card-data{padding:22px 24px;border-right:1px solid var(--border);}
   .card-review{padding:22px 24px;background:var(--bg);}
@@ -1180,6 +1196,10 @@
         <div class="informes-panel proceso-panel" id="procesoPanel">
           <div class="panel-eyebrow">Flujo de trabajo</div>
           <div class="panel-title">Del mandato al contrato</div>
+          <a class="proceso-row" href="#" id="procesoActivosLink">
+            <div class="proceso-num">0</div>
+            <div class="proceso-label"><b>Activos</b><span>Los pisos creados desde PRE-VISITA, listos para elegir</span></div>
+          </a>
           <a class="proceso-row" href="Mandato_FichaTecnica.html">
             <div class="proceso-num">1</div>
             <div class="proceso-label"><b>Lector de documentos</b><span>Sube los 6 documentos del encargo</span></div>
@@ -1190,16 +1210,12 @@
             <div class="proceso-label"><b>Mandatos + Fichas técnicas</b><span>Consulta y edita lo guardado en el paso 1</span></div>
           </a>
 
-          <a class="proceso-row" href="Crear_Propiedad.html">
+          <a class="proceso-row" href="#" id="procesoHiloLink">
             <div class="proceso-num">3</div>
-            <div class="proceso-label"><b>Crear página de propiedad</b><span>Genera la Comparativa en blanco</span></div>
-          </a>
-          <a class="proceso-row" href="#" id="procesoInformesLink">
-            <div class="proceso-num">4</div>
-            <div class="proceso-label"><b>Informes · Aceptar candidato</b><span>Compara y acepta desde el panel Informes</span></div>
+            <div class="proceso-label"><b>Hilo del activo</b><span>Abre el hilo de cada piso desde su tarjeta en Activos</span></div>
           </a>
           <a class="proceso-row" href="CONTRATO/Motor_Contrato_Final.html">
-            <div class="proceso-num">5</div>
+            <div class="proceso-num">4</div>
             <div class="proceso-label"><b>Motor de Contrato</b><span>Completa lo que falte y genera el .docx</span></div>
           </a>
         </div>
@@ -3356,8 +3372,9 @@
         return `<a href="${url}" target="_blank" rel="noopener">⬇ ${name}</a>`;
       })() : '';
 
+      const esElegido = String(c['Elegido'] || '').trim() === 'Sí';
       const card = document.createElement('div');
-      card.className = 'card ' + statusClass;
+      card.className = 'card ' + statusClass + (esElegido ? ' elegido' : '');
       card.dataset.trayKey = (c['Fecha'] || '') + '|' + (c['Teléfono'] || '');
       card.innerHTML = `
         <div class="card-grid">
@@ -3365,6 +3382,7 @@
             <div class="card-name-row">
               <div class="card-name">${c['Nombre'] || 'Sin nombre'}</div>
               ${statusBadge(c['Semáforo'])}
+              ${esElegido ? '<span class="elegido-badge">⭐ Elegido</span>' : ''}
             </div>
             <div class="card-date">${formatDate(c['Fecha'])} · ${c['Situación laboral'] || '—'}</div>
             ${c['Piso'] ? `<div class="card-piso">📍 ${c['Piso']}</div>` : ''}
@@ -3389,6 +3407,7 @@
             ${notesPreview(c['Semáforo'], c['Notas Fernando'])}
           </div>
           <div class="card-review">
+            <button class="elegido-toggle ${esElegido ? 'is-elegido' : ''}">${esElegido ? '⭐ Elegido para este piso' : '☆ Marcar como elegido para este piso'}</button>
             <div class="review-label">Tu valoración</div>
             <div class="semaforo">
               <button class="sema-btn ${c['Semáforo']==='verde'?'selected':''}" data-val="verde"><span class="circle"></span>Doc. descargados y analizados</button>
@@ -3402,6 +3421,56 @@
           </div>
         </div>
       `;
+
+      // "Elegido" (15 nov 2026): el abogado marca manualmente al candidato
+      // final de este piso. Al elegir a uno se guarda enseguida (no espera
+      // a "Guardar valoración") y desmarca a cualquier otro interesado del
+      // mismo piso que estuviera marcado -- solo puede haber un elegido.
+      const elegidoBtn = card.querySelector('.elegido-toggle');
+      let esElegidoActual = esElegido;
+      elegidoBtn.addEventListener('click', async ()=>{
+        const nuevoValor = !esElegidoActual;
+        elegidoBtn.disabled = true;
+        const textoAnterior = elegidoBtn.textContent;
+        elegidoBtn.textContent = 'Guardando...';
+        try{
+          await fetch(APPS_SCRIPT_URL, {
+            method:'POST',
+            mode:'no-cors',
+            body: JSON.stringify({
+              action:'actualizar_elegido',
+              nombre: c['Nombre'],
+              telefono: c['Teléfono'],
+              piso: c['Piso'],
+              elegido: nuevoValor
+            })
+          });
+          esElegidoActual = nuevoValor;
+          c['Elegido'] = nuevoValor ? 'Sí' : '';
+          elegidoBtn.classList.toggle('is-elegido', nuevoValor);
+          elegidoBtn.textContent = nuevoValor ? '⭐ Elegido para este piso' : '☆ Marcar como elegido para este piso';
+          card.classList.toggle('elegido', nuevoValor);
+          const nameRow = card.querySelector('.card-name-row');
+          const oldElegidoBadge = nameRow.querySelector('.elegido-badge');
+          if(oldElegidoBadge) oldElegidoBadge.remove();
+          if(nuevoValor) nameRow.insertAdjacentHTML('beforeend', '<span class="elegido-badge">⭐ Elegido</span>');
+          // si se elige a este, se desmarca visualmente a cualquier otro
+          // candidato del mismo piso que estuviera marcado en esta misma vista
+          if(nuevoValor){
+            allCandidates.forEach(otro=>{
+              if(otro !== c && otro['Piso'] === c['Piso'] && String(otro['Elegido'] || '').trim() === 'Sí'){
+                otro['Elegido'] = '';
+              }
+            });
+            // repinta todas las tarjetas para reflejar el cambio de "elegido único por piso"
+            renderCards();
+          }
+        } catch(err){
+          elegidoBtn.textContent = textoAnterior;
+        } finally {
+          elegidoBtn.disabled = false;
+        }
+      });
 
       let selectedSemaforo = c['Semáforo'] || '';
       const semaBtns = card.querySelectorAll('.sema-btn');
@@ -5187,20 +5256,34 @@
     var informesDD = setupNavDropdown('informesBtn', 'informesPanel');
     var procesoDD = setupNavDropdown('procesoBtn', 'procesoPanel');
 
-    var procesoInformesLink = document.getElementById('procesoInformesLink');
-    if(procesoInformesLink){
-      procesoInformesLink.addEventListener('click', function(e){
+    // Paso "0 · Activos" (15 nov 2026): abre el panel de Informes, pestaña
+    // Activos, donde se listan los pisos creados desde PRE-VISITA.
+    var procesoActivosLink = document.getElementById('procesoActivosLink');
+    if(procesoActivosLink){
+      procesoActivosLink.addEventListener('click', function(e){
         e.preventDefault();
         e.stopPropagation();
         if(procesoDD) procesoDD.close();
         if(informesDD) informesDD.open();
+        if(typeof setTab === 'function') setTab('activos');
       });
     }
+    // Paso "3 · Hilo del activo" (15 nov 2026): el hilo vive DENTRO de
+    // Mandato_FichaTecnica.html, como una segunda vista de esa misma página
+    // (no es un archivo aparte) -- este enlace la abre directamente ahí.
+    var procesoHiloLink = document.getElementById('procesoHiloLink');
+    if(procesoHiloLink){
+      procesoHiloLink.setAttribute('href', 'Mandato_FichaTecnica.html#hilo');
+    }
 
-    // Si se llega desde otra página del flujo (paso 4, enlace a
-    // index.html#informes), abre el panel de Informes directamente.
+    // Si se llega desde otra página del flujo (enlace a index.html#informes),
+    // abre el panel de Informes directamente.
     if(location.hash === '#informes' && informesDD){
       informesDD.open();
+    }
+    if(location.hash === '#activos' && informesDD){
+      informesDD.open();
+      if(typeof setTab === 'function') setTab('activos');
     }
 
     document.querySelectorAll('.activo-card:not(.disabled)').forEach((card)=>{
@@ -9071,6 +9154,10 @@
           '<span class="informe-row-name">📄 Subir documentos (Lector)</span>' +
           '<span class="informe-row-arrow">→</span>' +
         '</a>' +
+        '<a class="informe-row informe-row-hilo" href="Mandato_FichaTecnica.html?propiedad=' + encodeURIComponent(activoId) + '#hilo" target="_blank" rel="noopener">' +
+          '<span class="informe-row-name">🧵 Ver hilo completo</span>' +
+          '<span class="informe-row-arrow">→</span>' +
+        '</a>' +
       '</div>';
     var head = card.querySelector('.activo-card-head');
     head.addEventListener('click', function(){ card.classList.toggle('expanded'); });
@@ -9092,6 +9179,22 @@
       })
       .catch(function(){ /* backend inalcanzable -- no pasa nada, se queda la lista de siempre */ });
   }
+
+  // "Ver hilo completo" (15 nov 2026): añade el enlace al hilo también en las
+  // tarjetas de Activos escritas a mano (las de antes de este cambio), sin
+  // tener que editar cada una -- se basa en su mismo data-propiedad.
+  document.querySelectorAll('.activo-card[data-propiedad]').forEach(function(card){
+    var reports = card.querySelector('.activo-reports');
+    var activoId = card.getAttribute('data-propiedad');
+    if(!reports || !activoId || reports.querySelector('.informe-row-hilo')) return;
+    var row = document.createElement('a');
+    row.className = 'informe-row informe-row-hilo';
+    row.href = 'Mandato_FichaTecnica.html?propiedad=' + encodeURIComponent(activoId) + '#hilo';
+    row.target = '_blank';
+    row.rel = 'noopener';
+    row.innerHTML = '<span class="informe-row-name">🧵 Ver hilo completo</span><span class="informe-row-arrow">→</span>';
+    reports.insertBefore(row, reports.firstChild);
+  });
 
   function marcarCerrado(card, aceptado){
     if(!card || card.classList.contains('cerrado')) return;
