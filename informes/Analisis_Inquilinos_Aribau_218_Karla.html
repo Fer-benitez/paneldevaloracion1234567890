@@ -31,7 +31,7 @@
     --red:#d64545; --red-wash:#fbeaea; --red-ink:#8c2b2b;
     --amber:#d99a1b; --amber-wash:#fbeee0; --amber-ink:#b5730f;
     --navy-wash:#eaf1f6;
-    --offer:#2563eb; --offer-wash:#eaf2fd; --offer-ink:#1750b3; --offer-border:#bcd4f5;
+    --offer:#F5A623; --offer-wash:#fff4de; --offer-ink:#8a5800; --offer-border:#ffcf70;
     --ease:cubic-bezier(.22,.68,0,1);
   }
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -116,8 +116,8 @@
   .human-alerts-editor .hae-label{color:var(--muted);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;flex:none;}
   .human-alerts-editor select, .human-alerts-editor input[type=text]{font-family:'Inter',sans-serif;font-size:12.5px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;color:var(--text);background:#fff;}
   .human-alerts-editor input[type=text]{flex:1 1 180px;min-width:160px;}
-  .alert-add-btn{background:var(--offer);color:#fff;border:none;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;flex:none;}
-  .alert-add-btn:hover{background:var(--offer-ink);}
+  .alert-add-btn{background:var(--offer);color:var(--navy-darker);border:none;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;flex:none;}
+  .alert-add-btn:hover{background:var(--offer-ink);color:#fff;}
   @media print{.human-alerts-editor{display:none !important;} .alert-chip .alert-remove{display:none;}}
   .pw-input{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:8px;font-family:'Inter',sans-serif;letter-spacing:.04em;}
   .pw-input:focus{outline:none;border-color:var(--navy);}
@@ -256,6 +256,17 @@
   /* zip download */
   .zipbox{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;box-shadow:0 2px 8px rgba(31,68,96,0.05);text-align:center;}
   .zipbox p{font-size:12.5px;color:var(--muted);margin-bottom:14px;}
+
+  /* ===== lista de documentos analizados ===== */
+  .doclist-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 2px 8px rgba(31,68,96,0.05);margin-top:14px;}
+  .doclist-card>p{font-size:12.5px;color:var(--muted);margin-bottom:12px;text-align:center;}
+  .doclist{display:flex;flex-direction:column;gap:8px;}
+  .doclist-item{display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 14px;}
+  .doclist-item .doc-icon{width:32px;height:32px;border-radius:9px;background:var(--navy-wash);color:var(--navy-dark);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;}
+  .doclist-item .doc-txt{flex:1;min-width:0;}
+  .doclist-item .doc-txt b{display:block;font-size:13px;color:var(--text);font-weight:700;font-family:'Inter',sans-serif;}
+  .doclist-item .doc-txt span{font-size:11.3px;color:var(--muted);}
+  .doc-verified{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--green-wash);color:var(--green-ink);text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;vertical-align:middle;margin-left:6px;}
   .zip-btn{display:block;width:100%;background:var(--white);color:var(--navy);border:2px solid var(--navy);border-radius:10px;padding:14px 18px;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;text-align:center;text-decoration:none;transition:background .2s var(--ease),color .2s var(--ease);cursor:pointer;}
   .zip-btn:hover{background:var(--navy);color:#fff;}
   .zip-btn:disabled{opacity:.6;cursor:wait;}
@@ -388,9 +399,9 @@
     .sheet{max-width:none;}
     header{background:var(--navy) !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     .solicitantes,.foot-band{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    .card,.chartbox,table.doc,.flag,.tile,.verdict{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none;}
+    .card,.chartbox,table.doc,.flag,.tile,.verdict,.doclist-card,.doclist-item{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none;}
     .verdict-edit-btn,.verdict-toolbar,.zip-info-overlay,.pdf-btn-top,.no-print{display:none !important;}
-    .cards,h2.section,.flag,.chartbox,.tile,.verdict,.doc-wrap,.presentacion-card,.verdict-grid,.ia-detector{break-inside:avoid;}
+    .cards,h2.section,.flag,.chartbox,.tile,.verdict,.doc-wrap,.presentacion-card,.verdict-grid,.ia-detector,.doclist-card{break-inside:avoid;}
     
     @page{margin:12mm 10mm;}
   }
@@ -851,6 +862,23 @@
       <a id="zipRealLink" download="Documentos_Karla_Fuentes_Daniel_Belmonte.zip" href=""></a>
       <button type="button" id="zipOpenBtn" class="zip-btn">⬇ Descargar ficha (ZIP)</button>
     </div>
+    </div>
+
+    <div class="doclist-card">
+      <p>Documentos analizados en este expediente, en el orden en que se han revisado:</p>
+      <div class="doclist">
+        <div class="doclist-item"><div class="doc-icon">📋</div><div class="doc-txt"><b>Ficha del interesado</b><span>Karla Fuentes Banegas y Josué Daniel Belmonte Crevillen</span></div></div>
+        <div class="doclist-item"><div class="doc-icon">🪪</div><div class="doc-txt"><b>DNI</b><span>Karla Fuentes Banegas</span></div></div>
+        <div class="doclist-item"><div class="doc-icon">🪪</div><div class="doc-txt"><b>DNI</b><span>Josué Daniel Belmonte Crevillen</span></div></div>
+        <div class="doclist-item"><div class="doc-icon">🧾</div><div class="doc-txt"><b>Nómina — julio 2026</b><span>Karla Fuentes Banegas</span></div></div>
+        <div class="doclist-item"><div class="doc-icon">🧾</div><div class="doc-txt"><b>Nómina — agosto 2026</b><span>Karla Fuentes Banegas</span></div></div>
+        <div class="doclist-item"><div class="doc-icon">🧾</div><div class="doc-txt"><b>Nómina — septiembre 2026</b><span>Karla Fuentes Banegas</span></div></div>
+        <div class="doclist-item"><div class="doc-icon">🧾</div><div class="doc-txt"><b>Nómina — julio 2026</b><span>Josué Daniel Belmonte Crevillen</span></div></div>
+        <div class="doclist-item"><div class="doc-icon">🧾</div><div class="doc-txt"><b>Nómina — agosto 2026</b><span>Josué Daniel Belmonte Crevillen</span></div></div>
+        <div class="doclist-item"><div class="doc-icon">🧾</div><div class="doc-txt"><b>Nómina — septiembre 2026</b><span>Josué Daniel Belmonte Crevillen</span></div></div>
+        <div class="doclist-item"><div class="doc-icon">🏛️</div><div class="doc-txt"><b>Declaración de la Renta 2025 (Modelo 100)</b><span>Karla Fuentes Banegas<span class="doc-verified">🛡️ Verificado AEAT</span></span></div></div>
+        <div class="doclist-item"><div class="doc-icon">🏛️</div><div class="doc-txt"><b>Declaración de la Renta 2025 (Modelo 100)</b><span>Josué Daniel Belmonte Crevillen<span class="doc-verified">🛡️ Verificado AEAT</span></span></div></div>
+      </div>
     </div>
 
   </main>
