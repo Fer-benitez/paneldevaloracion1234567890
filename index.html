@@ -1448,7 +1448,7 @@
               <div class="activo-ico">A2</div>
               <div class="activo-info">
                 <div class="activo-name">Aribau 218</div>
-                <div class="activo-tag tag-live">1 informe</div>
+                <div class="activo-tag tag-live">2 informes</div>
               </div>
               <svg class="activo-chev" width="11" height="7" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
@@ -1460,6 +1460,10 @@
               <div class="informe-row-divider">Informes individuales</div>
               <a class="informe-row" href="informes/Analisis_Inquilinos_Aribau_218_Alexis.html" target="_blank" rel="noopener">
                 <span class="informe-row-name">Alexis Coleman</span>
+                <span class="informe-row-arrow">→</span>
+              </a>
+              <a class="informe-row" href="informes/Analisis_Inquilinos_Aribau_218_Karla.html" target="_blank" rel="noopener">
+                <span class="informe-row-name">Karla Fuentes y Daniel Belmonte</span>
                 <span class="informe-row-arrow">→</span>
               </a>
             </div>
@@ -1511,6 +1515,28 @@
                 <span class="informe-row-arrow">→</span>
               </a>
               <a class="informe-row" href="informes/Analisis_Inquilinos_Miquel_Bleach_Ravil.html" target="_blank" rel="noopener">
+                <span class="informe-row-name">Ravil Gizatulin y Diana Gizatulina</span>
+                <span class="informe-row-arrow">→</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="activo-card" id="cardCanBaro" data-propiedad="can-baro-22">
+            <div class="activo-card-head">
+              <div class="activo-ico">CB</div>
+              <div class="activo-info">
+                <div class="activo-name">Can Baró 22</div>
+                <div class="activo-tag tag-live">1 informe</div>
+              </div>
+              <svg class="activo-chev" width="11" height="7" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="activo-reports">
+              <a class="informe-row informe-row-compare" href="informes/Comparativa_Can_Baro_22.html" target="_blank" rel="noopener">
+                <span class="informe-row-name">📊 Comparativa de candidaturas</span>
+                <span class="informe-row-arrow">→</span>
+              </a>
+              <div class="informe-row-divider">Informes individuales</div>
+              <a class="informe-row" href="informes/Analisis_Inquilinos_Can_Baro_22_Ravil.html" target="_blank" rel="noopener">
                 <span class="informe-row-name">Ravil Gizatulin y Diana Gizatulina</span>
                 <span class="informe-row-arrow">→</span>
               </a>
@@ -2571,6 +2597,17 @@
     <button class="zonas-close" id="zonasClose">✕</button>
     <h3>📍 Zonas de interés</h3>
     <div class="zonas-chips" id="zonasChipsContenido"></div>
+  </div>
+</div>
+
+<!-- Popup de texto largo (19 nov 2026): reutiliza el mismo estilo del popup de
+     "Zonas de interés" para cualquier texto libre de una tarjeta de lead que no
+     entre entero (p. ej. "Cuéntanos sobre vuestra situación laboral"). -->
+<div class="zonas-overlay" id="textoLargoOverlay">
+  <div class="zonas-card">
+    <button class="zonas-close" id="textoLargoClose">✕</button>
+    <h3 id="textoLargoTitulo"></h3>
+    <p id="textoLargoContenido" style="font-size:13.5px;color:var(--text);line-height:1.5;white-space:pre-wrap;"></p>
   </div>
 </div>
 
@@ -4072,6 +4109,23 @@
     }
   });
 
+  // ---- Popup de texto largo (19 nov 2026) ----
+  // Mismo patrón que el de zonas: delegado en document, porque las tarjetas se
+  // vuelven a pintar y el botón es distinto cada vez.
+  const textoLargoOverlay = document.getElementById('textoLargoOverlay');
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.tag-texto-btn');
+    if(btn){
+      document.getElementById('textoLargoTitulo').textContent = btn.getAttribute('data-titulo') || '';
+      document.getElementById('textoLargoContenido').textContent = btn.getAttribute('data-texto') || '';
+      textoLargoOverlay.classList.add('show');
+      return;
+    }
+    if(e.target.id === 'textoLargoClose' || e.target === textoLargoOverlay){
+      textoLargoOverlay.classList.remove('show');
+    }
+  });
+
   // ---- Reco detail modal ----
   const recoDetailOverlay = document.getElementById('recoDetailOverlay');
   const recoDetailTitle = document.getElementById('recoDetailTitle');
@@ -5084,6 +5138,10 @@
         const entrada = l['Entrada disponible'] || '';
         const presupuestoAlq = l['Presupuesto alquiler'] || '';
         const presupuestoCompra = l['Presupuesto compra'] || '';
+        // NUEVO (19 nov 2026): "Quién eres" del formulario de alquiler genérico —
+        // cuántas personas van a vivir + descripción libre de su situación laboral.
+        const personasConvivencia = l['Personas que convivirán'] || '';
+        const situacionLaboralDetalle = l['Situación laboral (detalle)'] || '';
         genericDetailsHtml = `
           <div class="lead-tags">
             <span class="lead-tag tag-generico-badge">🌐 GENÉRICO</span>
@@ -5111,6 +5169,17 @@
             ${tipoOp === 'Compra' && entrada ? `<span class="lead-tag tag-neutral">💰 Entrada: ${entrada}</span>` : ''}
             ${presupuestoAlq ? `<span class="lead-tag tag-ingresos">💶 Máx. alquiler: ${presupuestoAlq} €</span>` : ''}
             ${presupuestoCompra ? `<span class="lead-tag tag-ingresos">💶 Presupuesto: ${presupuestoCompra} €</span>` : ''}
+            ${personasConvivencia ? `<span class="lead-tag tag-ocupantes">👨‍👩‍👧 ${personasConvivencia} conviviendo</span>` : ''}
+            ${situacionLaboralDetalle ? (function(){
+              // Texto libre de hasta 500 caracteres ("Cuéntanos sobre vuestra
+              // situación laboral") -- nunca se pinta entero en la tarjeta, solo
+              // un adelanto; el texto completo se ve en el popup al hacer clic
+              // (mismo patrón que el popup de "Zonas de interés").
+              function escapeAttrLocal(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+              const texto = String(situacionLaboralDetalle);
+              const adelanto = texto.length > 40 ? texto.slice(0, 40).trim() + '…' : texto;
+              return `<button type="button" class="lead-tag tag-neutral tag-texto-btn" data-titulo="💬 Situación laboral" data-texto="${escapeAttrLocal(texto)}">💬 ${escapeAttrLocal(adelanto)}</button>`;
+            })() : ''}
           </div>
         `;
       }
