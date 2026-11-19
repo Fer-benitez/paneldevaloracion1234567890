@@ -497,6 +497,28 @@
   }
   .reco-detail-photos .photo-thumb{width:90px;height:90px;}
 
+  /* Popup de "Zonas interés" (19 nov 2026) -- lista completa de zonas de un
+     lead GENÉRICO, para no desbordar la tarjeta cuando eligió varias. */
+  .tag-zonas-btn{cursor:pointer;border:none;font-family:'Inter',sans-serif;max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+  .tag-zonas-btn:hover{background:#dde4ea;}
+  .zonas-overlay{
+    display:none;position:fixed;inset:0;background:rgba(22,50,74,0.6);
+    z-index:220;align-items:center;justify-content:center;padding:20px;
+  }
+  .zonas-overlay.show{display:flex;}
+  .zonas-card{
+    background:var(--white);border-radius:14px;max-width:420px;width:100%;
+    max-height:80vh;overflow-y:auto;padding:26px 24px;position:relative;
+  }
+  .zonas-card h3{font-size:15.5px;color:var(--navy-darker);margin-bottom:14px;padding-right:30px;}
+  .zonas-close{
+    position:absolute;top:14px;right:14px;background:var(--bg);border:none;
+    width:30px;height:30px;border-radius:50%;font-size:14px;color:var(--muted);cursor:pointer;
+  }
+  .zonas-close:hover{background:var(--border);color:var(--text);}
+  .zonas-chips{display:flex;flex-wrap:wrap;gap:7px;}
+  .zonas-chips .lead-tag{white-space:normal;}
+
   .download-all-btn{
     width:100%;background:var(--navy);color:var(--white);border:none;padding:11px;
     border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif;
@@ -1426,7 +1448,7 @@
               <div class="activo-ico">A2</div>
               <div class="activo-info">
                 <div class="activo-name">Aribau 218</div>
-                <div class="activo-tag tag-live">2 informes</div>
+                <div class="activo-tag tag-live">1 informe</div>
               </div>
               <svg class="activo-chev" width="11" height="7" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
@@ -1438,10 +1460,6 @@
               <div class="informe-row-divider">Informes individuales</div>
               <a class="informe-row" href="informes/Analisis_Inquilinos_Aribau_218_Alexis.html" target="_blank" rel="noopener">
                 <span class="informe-row-name">Alexis Coleman</span>
-                <span class="informe-row-arrow">→</span>
-              </a>
-              <a class="informe-row" href="informes/Analisis_Inquilinos_Aribau_218_Karla.html" target="_blank" rel="noopener">
-                <span class="informe-row-name">Karla Fuentes y Daniel Belmonte</span>
                 <span class="informe-row-arrow">→</span>
               </a>
             </div>
@@ -1493,28 +1511,6 @@
                 <span class="informe-row-arrow">→</span>
               </a>
               <a class="informe-row" href="informes/Analisis_Inquilinos_Miquel_Bleach_Ravil.html" target="_blank" rel="noopener">
-                <span class="informe-row-name">Ravil Gizatulin y Diana Gizatulina</span>
-                <span class="informe-row-arrow">→</span>
-              </a>
-            </div>
-          </div>
-
-          <div class="activo-card" id="cardCanBaro" data-propiedad="can-baro-22">
-            <div class="activo-card-head">
-              <div class="activo-ico">CB</div>
-              <div class="activo-info">
-                <div class="activo-name">Can Baró 22</div>
-                <div class="activo-tag tag-live">1 informe</div>
-              </div>
-              <svg class="activo-chev" width="11" height="7" viewBox="0 0 11 7" fill="none"><path d="M1 1L5.5 5.5L10 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-            <div class="activo-reports">
-              <a class="informe-row informe-row-compare" href="informes/Comparativa_Can_Baro_22.html" target="_blank" rel="noopener">
-                <span class="informe-row-name">📊 Comparativa de candidaturas</span>
-                <span class="informe-row-arrow">→</span>
-              </a>
-              <div class="informe-row-divider">Informes individuales</div>
-              <a class="informe-row" href="informes/Analisis_Inquilinos_Can_Baro_22_Ravil.html" target="_blank" rel="noopener">
                 <span class="informe-row-name">Ravil Gizatulin y Diana Gizatulina</span>
                 <span class="informe-row-arrow">→</span>
               </a>
@@ -2567,6 +2563,14 @@
       <button class="zip-info-cancel" id="zipInfoCancel">Cancelar</button>
       <button class="zip-info-confirm" id="zipInfoConfirm">⬇ Descargar</button>
     </div>
+  </div>
+</div>
+
+<div class="zonas-overlay" id="zonasOverlay">
+  <div class="zonas-card">
+    <button class="zonas-close" id="zonasClose">✕</button>
+    <h3>📍 Zonas de interés</h3>
+    <div class="zonas-chips" id="zonasChipsContenido"></div>
   </div>
 </div>
 
@@ -4049,6 +4053,25 @@
     }
   }
 
+  // ---- Popup "Zonas de interés" (19 nov 2026) ----
+  // Delegado en document (no en un contenedor fijo) porque las tarjetas de
+  // leads se vuelven a pintar muchas veces y el botón .tag-zonas-btn es
+  // distinto cada vez.
+  const zonasOverlay = document.getElementById('zonasOverlay');
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.tag-zonas-btn');
+    if(btn){
+      const lista = String(btn.getAttribute('data-zonas') || '').split(',').map(z => z.trim()).filter(Boolean);
+      function escapeHtmlLocal(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      document.getElementById('zonasChipsContenido').innerHTML = lista.map(z => `<span class="lead-tag tag-neutral">📍 ${escapeHtmlLocal(z)}</span>`).join('');
+      zonasOverlay.classList.add('show');
+      return;
+    }
+    if(e.target.id === 'zonasClose' || e.target === zonasOverlay){
+      zonasOverlay.classList.remove('show');
+    }
+  });
+
   // ---- Reco detail modal ----
   const recoDetailOverlay = document.getElementById('recoDetailOverlay');
   const recoDetailTitle = document.getElementById('recoDetailTitle');
@@ -5065,7 +5088,17 @@
           <div class="lead-tags">
             <span class="lead-tag tag-generico-badge">🌐 GENÉRICO</span>
             <span class="lead-tag tag-generico-op">${tipoOp === 'Compra' ? '🔑 Compra' : '🏠 Alquiler'}</span>
-            ${zonas ? `<span class="lead-tag tag-neutral">📍 ${zonas}</span>` : ''}
+            ${zonas ? (function(){
+              // "Zonas interés" (19 nov 2026): con varias zonas elegidas, antes se
+              // metían TODAS en una sola etiqueta sin salto de línea y se salían
+              // de la tarjeta -- aquí se muestra un resumen corto y la lista
+              // completa se ve en un popup (data-zonas lleva el texto escapado a
+              // mano, sin depender de ningún "esc()" de otro alcance del archivo).
+              function escapeAttrLocal(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+              const listaZonas = String(zonas).split(',').map(z => z.trim()).filter(Boolean);
+              const resumenZonas = listaZonas.length <= 1 ? escapeAttrLocal(zonas) : (escapeAttrLocal(listaZonas[0]) + ' +' + (listaZonas.length - 1) + ' más');
+              return `<button type="button" class="lead-tag tag-neutral tag-zonas-btn" data-zonas="${escapeAttrLocal(zonas)}">📍 ${resumenZonas}</button>`;
+            })() : ''}
             ${hab ? `<span class="lead-tag tag-neutral">🛏️ ${hab} hab.</span>` : ''}
             ${banos ? `<span class="lead-tag tag-neutral">🛁 ${banos} baño${String(banos) === '1' ? '' : 's'}</span>` : ''}
             ${m2 ? `<span class="lead-tag tag-neutral">📐 ${m2} m²</span>` : ''}
