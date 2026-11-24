@@ -613,6 +613,14 @@
   .tag-neutral{background:#eef1f5;color:#64758a;}
   .tag-generico-badge{background:var(--navy-dark);color:#fff;}
   .tag-generico-op{background:#fff3df;color:#8a5a00;}
+  .tag-activo-asignado{background:#e3eef7;color:#1f5c8b;}
+  .tag-asignar-activos-btn{cursor:pointer;border:none;font-family:'Inter',sans-serif;}
+  .tag-asignar-activos-btn:hover{background:#dde4ea;}
+  .activo-asignar-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);padding:6px 8px;border-radius:7px;cursor:pointer;}
+  .activo-asignar-row:hover{background:var(--bg);}
+  .activo-asignar-row input{cursor:pointer;}
+  .activo-asignar-row.no-disponible{color:var(--muted);font-style:italic;}
+  .activo-asignar-vacio{font-size:12.5px;color:var(--muted);padding:4px 8px;}
   .lead-card .actions{display:flex;gap:8px;flex-wrap:wrap;}
   .lead-card .actions a, .lead-card .actions button{
     font-size:12px;font-weight:700;padding:8px 12px;border-radius:7px;border:none;cursor:pointer;
@@ -2611,6 +2619,30 @@
   </div>
 </div>
 
+<!-- Asignar activos a un lead GENÉRICO (24 nov 2026): lista seleccionable de
+     los pisos en alquiler y propiedades en venta creados desde PRE-VISITA,
+     con checkboxes, para marcar a mano qué activo(s) le interesan a este
+     lead concreto. Mismo patrón de popup que los de arriba. -->
+<div class="zonas-overlay" id="asignarActivosOverlay">
+  <div class="zonas-card" style="max-width:480px;">
+    <button class="zonas-close" id="asignarActivosClose">✕</button>
+    <h3>📌 Asignar activos a este lead</h3>
+    <div id="asignarActivosEstado" style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">Cargando activos…</div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11.5px;font-weight:700;color:var(--navy-dark);text-transform:uppercase;letter-spacing:0.03em;margin-bottom:8px;">🏠 Alquiler (PRE-VISITA)</div>
+      <div id="asignarActivosAlquilerLista" style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;"></div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11.5px;font-weight:700;color:var(--navy-dark);text-transform:uppercase;letter-spacing:0.03em;margin-bottom:8px;">💰 Venta</div>
+      <div id="asignarActivosVentaLista" style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" id="asignarActivosCancelar" style="background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:9px 16px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif;">Cancelar</button>
+      <button type="button" id="asignarActivosGuardar" style="background:var(--navy);border:none;color:#fff;padding:9px 16px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif;">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="reco-detail-overlay" id="recoDetailOverlay">
   <div class="reco-detail-card">
     <button class="reco-detail-close" id="recoDetailClose">✕</button>
@@ -4126,6 +4158,100 @@
     }
   });
 
+  // ---- Asignar activos a un lead GENÉRICO (24 nov 2026) ----
+  // Lista seleccionable (checkboxes) de los pisos en alquiler y propiedades en
+  // venta ya creados desde PRE-VISITA, para marcar a mano cuáles le interesan
+  // a un lead concreto. Se guarda como JSON en la columna "Activos asignados"
+  // de la hoja de Leads. No usa APPS_SCRIPT_URL_VENTA (vive en otro <script>
+  // de este archivo y no se puede leer desde aquí) -- es, de todas formas, el
+  // mismo backend, así que la URL va escrita a mano.
+  const ASIGNAR_ACTIVOS_URL = 'https://script.google.com/macros/s/AKfycbzwJe2nw_bpxIqsZKvW3mj1eMkG4OkTSPYjrkD6BvPbXze5Q1z0e90kUMqcsB-k-hlgMw/exec';
+  const asignarActivosOverlay = document.getElementById('asignarActivosOverlay');
+  const asignarActivosEstado = document.getElementById('asignarActivosEstado');
+  const asignarActivosAlquilerLista = document.getElementById('asignarActivosAlquilerLista');
+  const asignarActivosVentaLista = document.getElementById('asignarActivosVentaLista');
+  let asignarActivosLeadActual = null; // {fecha, telefono}
+  let asignarActivosSeleccionPrevia = []; // [{tipo,nombre}] con los que ya tenía al abrir el popup
+
+  function escapeHtmlAsignar(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function pintarListaAsignarActivos(contenedor, filas, tipo, nombreCampo){
+    const vistos = new Set();
+    let html = '';
+    filas.forEach(row => {
+      const nombre = String(row[nombreCampo] || '').trim();
+      if(!nombre || vistos.has(nombre)) return;
+      vistos.add(nombre);
+      const yaAsignado = asignarActivosSeleccionPrevia.some(a => a && a.tipo === tipo && a.nombre === nombre);
+      html += `<label class="activo-asignar-row"><input type="checkbox" data-tipo="${tipo}" data-nombre="${escapeHtmlAsignar(nombre)}" ${yaAsignado ? 'checked' : ''}> ${escapeHtmlAsignar(nombre)}</label>`;
+    });
+    // Los ya asignados que ya no salen en la lista de disponibles (p. ej. el
+    // piso se desactivó o la propiedad se vendió) se muestran igual, marcados,
+    // para no perder el dato al guardar si no se tocan.
+    asignarActivosSeleccionPrevia.filter(a => a && a.tipo === tipo && !vistos.has(a.nombre)).forEach(a => {
+      html += `<label class="activo-asignar-row no-disponible"><input type="checkbox" data-tipo="${tipo}" data-nombre="${escapeHtmlAsignar(a.nombre)}" checked> ${escapeHtmlAsignar(a.nombre)} (ya no disponible)</label>`;
+    });
+    contenedor.innerHTML = html || '<div class="activo-asignar-vacio">No hay activos disponibles.</div>';
+  }
+
+  document.addEventListener('click', (e)=>{
+    const asignarBtn = e.target.closest('.tag-asignar-activos-btn');
+    if(asignarBtn){
+      asignarActivosLeadActual = { fecha: asignarBtn.getAttribute('data-fecha') || '', telefono: asignarBtn.getAttribute('data-telefono') || '' };
+      try{ asignarActivosSeleccionPrevia = JSON.parse(asignarBtn.getAttribute('data-asignados') || '[]') || []; }catch(err){ asignarActivosSeleccionPrevia = []; }
+      if(!Array.isArray(asignarActivosSeleccionPrevia)) asignarActivosSeleccionPrevia = [];
+      asignarActivosEstado.textContent = 'Cargando activos…';
+      asignarActivosAlquilerLista.innerHTML = '';
+      asignarActivosVentaLista.innerHTML = '';
+      asignarActivosOverlay.classList.add('show');
+      Promise.all([
+        fetch(ASIGNAR_ACTIVOS_URL + '?tipo=pisos').then(r=>r.json()).catch(()=>({success:false})),
+        fetch(ASIGNAR_ACTIVOS_URL + '?tipo=propiedades_venta').then(r=>r.json()).catch(()=>({success:false}))
+      ]).then(([pisosResp, ventaResp])=>{
+        const pisosDisponibles = (pisosResp && pisosResp.success && Array.isArray(pisosResp.data))
+          ? pisosResp.data.filter(p => String(p['Activo']||'').trim().toLowerCase() !== 'no') : [];
+        const ventaDisponibles = (ventaResp && ventaResp.success && Array.isArray(ventaResp.data))
+          ? ventaResp.data.filter(p => !String(p['Estado']||'').trim()) : [];
+        pintarListaAsignarActivos(asignarActivosAlquilerLista, pisosDisponibles, 'alquiler', 'Piso');
+        pintarListaAsignarActivos(asignarActivosVentaLista, ventaDisponibles, 'venta', 'Dirección');
+        asignarActivosEstado.textContent = (pisosResp && pisosResp.success && ventaResp && ventaResp.success)
+          ? '' : 'No se pudo cargar alguna de las listas -- revisa tu conexión.';
+      });
+      return;
+    }
+    if(e.target.id === 'asignarActivosClose' || e.target.id === 'asignarActivosCancelar' || e.target === asignarActivosOverlay){
+      asignarActivosOverlay.classList.remove('show');
+      return;
+    }
+    if(e.target.id === 'asignarActivosGuardar'){
+      if(!asignarActivosLeadActual){ asignarActivosOverlay.classList.remove('show'); return; }
+      const seleccionados = [];
+      document.querySelectorAll('#asignarActivosAlquilerLista input:checked, #asignarActivosVentaLista input:checked').forEach(chk=>{
+        seleccionados.push({ tipo: chk.getAttribute('data-tipo'), nombre: chk.getAttribute('data-nombre') });
+      });
+      const btnGuardar = document.getElementById('asignarActivosGuardar');
+      const leadActual = asignarActivosLeadActual;
+      btnGuardar.disabled = true;
+      btnGuardar.textContent = 'Guardando...';
+      fetch(ASIGNAR_ACTIVOS_URL, {
+        method:'POST',
+        mode:'no-cors',
+        body: JSON.stringify({ action:'asignar_activos_lead', fecha: leadActual.fecha, telefono: leadActual.telefono, activos: JSON.stringify(seleccionados) })
+      }).then(()=>{
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = 'Guardar';
+        const idx = cachedLeads.findIndex(l => l['Fecha'] === leadActual.fecha && String(l['Teléfono']) === String(leadActual.telefono));
+        if(idx !== -1) cachedLeads[idx]['Activos asignados'] = JSON.stringify(seleccionados);
+        asignarActivosOverlay.classList.remove('show');
+        renderLeads();
+      }).catch(()=>{
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = 'Guardar';
+        alert('No se pudo guardar. Revisa tu conexión.');
+      });
+    }
+  });
+
   // ---- Reco detail modal ----
   const recoDetailOverlay = document.getElementById('recoDetailOverlay');
   const recoDetailTitle = document.getElementById('recoDetailTitle');
@@ -5142,6 +5268,15 @@
         // cuántas personas van a vivir + descripción libre de su situación laboral.
         const personasConvivencia = l['Personas que convivirán'] || '';
         const situacionLaboralDetalle = l['Situación laboral (detalle)'] || '';
+        // NUEVO (24 nov 2026): activos (pisos en alquiler o propiedades en venta,
+        // ambos creados desde PRE-VISITA) asignados a mano a este lead GENÉRICO.
+        // Se guardan como JSON en la columna "Activos asignados" de la hoja —
+        // nunca se confía en ningún parser de otro <script> del archivo, cada
+        // bloque hace su propio JSON.parse/escape, por si quedan en closures
+        // distintos (lección de la pestaña L de este mismo archivo).
+        let activosAsignados = [];
+        try{ activosAsignados = JSON.parse(l['Activos asignados'] || '[]') || []; }catch(e){ activosAsignados = []; }
+        if(!Array.isArray(activosAsignados)) activosAsignados = [];
         genericDetailsHtml = `
           <div class="lead-tags">
             <span class="lead-tag tag-generico-badge">🌐 GENÉRICO</span>
@@ -5180,6 +5315,14 @@
               const adelanto = texto.length > 40 ? texto.slice(0, 40).trim() + '…' : texto;
               return `<button type="button" class="lead-tag tag-neutral tag-texto-btn" data-titulo="💬 Situación laboral" data-texto="${escapeAttrLocal(texto)}">💬 ${escapeAttrLocal(adelanto)}</button>`;
             })() : ''}
+            ${(function(){
+              function escapeAttrLocal(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+              const chips = activosAsignados.map(a => {
+                const icono = a.tipo === 'venta' ? '💰' : '🏠';
+                return `<span class="lead-tag tag-activo-asignado">${icono} ${escapeAttrLocal(a.nombre || '')}</span>`;
+              }).join('');
+              return chips + `<button type="button" class="lead-tag tag-neutral tag-asignar-activos-btn" data-fecha="${escapeAttrLocal(l['Fecha'])}" data-telefono="${escapeAttrLocal(l['Teléfono'])}" data-asignados="${escapeAttrLocal(JSON.stringify(activosAsignados))}">📌 ${activosAsignados.length ? 'Editar activos' : 'Asignar activo(s)'}</button>`;
+            })()}
           </div>
         `;
       }
